@@ -1,0 +1,132 @@
+# ===========================================
+# GitHub Actions Workflow: CI Build & Deploy
+# Environment: Production
+# Description:
+#   - Builds and tests Android project using Gradle
+#   - Performs SonarCloud static analysis and Trivy security scanning
+#   - Produces production APK/Bundle artifacts for release management
+#   - Triggers on every push or pull request to the 'main' branch
+# ===========================================
+
+name: CI Build & Deploy (Android - Production)
+
+# -------------------------------------------
+# Trigger: Run workflow on push or PR to 'main' branch
+# -------------------------------------------
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# -------------------------------------------
+# Jobs Definition
+# -------------------------------------------
+jobs:
+  # =========================================
+  # Job: Security Scan (Trivy)
+  # Purpose: Scan filesystem and dependencies for vulnerabilities
+  # =========================================
+  trivy_scan:
+    name: Run Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Run Trivy filesystem scan
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+  # =========================================
+  # Job: SonarCloud Scan
+  # Purpose: Run static code analysis with SonarCloud
+  # =========================================
+  sonar_scan:
+    name: SonarCloud Analysis (Android)
+    needs: trivy_scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      # Step 3: Ensure Gradle wrapper executable
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Step 4: Build classes for analysis
+      - name: Gradle assemble
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      # Step 5: SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # =========================================
+  # Job: Build Stage
+  # Purpose: Build and test Android project for production readiness
+  # =========================================
+  build:
+    name: Build & Test (Android)
+    needs: sonar_scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Java
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # Step 3: Ensure Gradle wrapper executable
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Step 4: Run build and tests
+      - name: Build project
+        run: ./gradlew build --stacktrace
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      # Step 5: Build APK and Bundle
+      - name: Build APK and Bundle
+        run: ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
+
+      # Step 6: Upload production artifacts
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-production-artifacts
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/outputs/bundle/**/*.aab
