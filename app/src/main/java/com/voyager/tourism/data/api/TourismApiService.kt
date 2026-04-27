@@ -5,6 +5,9 @@ import com.voyager.tourism.data.dto.LoginResponse
 import com.voyager.tourism.data.dto.RegisterRequest
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.TripDto
+import com.voyager.tourism.data.dto.TravelerMatchDto
+import com.voyager.tourism.data.dto.ConnectionRequestDto
+import com.voyager.tourism.data.dto.SendConnectionRequestDto
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -120,4 +123,40 @@ interface TourismApiService {
         @Path("userId") userId: String,
         @Header("Authorization") token: String
     ): Response<Unit>
+    
+    // Traveler matching endpoints
+    @GET("travel-plans/{travelPlanId}/compatible-travelers")
+    suspend fun getCompatibleTravelers(
+        @Path("travelPlanId") travelPlanId: String,
+        @Header("Authorization") token: String
+    ): Response<List<TravelerMatchDto>>
+    
+    // Connection request endpoints
+    @POST("social/connections")
+    suspend fun sendConnectionRequest(
+        @Body request: SendConnectionRequestDto,
+        @Header("Authorization") token: String
+    ): Response<ConnectionRequestDto>
+    
+    @PUT("social/connections/{requestId}/accept")
+    suspend fun acceptConnectionRequest(
+        @Path("requestId") requestId: String,
+        @Header("Authorization") token: String
+    ): Response<ConnectionRequestDto>
+    
+    @PUT("social/connections/{requestId}/reject")
+    suspend fun rejectConnectionRequest(
+        @Path("requestId") requestId: String,
+        @Header("Authorization") token: String
+    ): Response<ConnectionRequestDto>
+    
+    @GET("social/connections/pending")
+    suspend fun getPendingRequests(
+        @Header("Authorization") token: String
+    ): Response<List<ConnectionRequestDto>>
+    
+    @GET("social/connections/sent")
+    suspend fun getSentRequests(
+        @Header("Authorization") token: String
+    ): Response<List<ConnectionRequestDto>>
 }
