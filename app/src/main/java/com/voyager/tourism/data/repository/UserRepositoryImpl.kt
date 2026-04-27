@@ -86,6 +86,7 @@ class UserRepositoryImpl @Inject constructor(
                     // Save auth token
                     preferencesManager.saveAuthToken(it.token)
                     preferencesManager.saveRefreshToken(it.refreshToken)
+                    preferencesManager.saveCurrentUserId(it.user.id)
                     
                     // Cache user locally
                     userDao.insertUser(userMapper.toEntity(it.user))
@@ -118,6 +119,7 @@ class UserRepositoryImpl @Inject constructor(
                 userDto?.let {
                     // Cache user locally
                     userDao.insertUser(userMapper.toEntity(it))
+                    preferencesManager.saveCurrentUserId(it.id)
                     Result.success(userMapper.toDomain(it))
                 } ?: Result.failure(Exception("Empty response"))
             } else {

@@ -4,12 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.ui.trip.TripListScreen
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
+import com.voyager.tourism.presentation.ui.social.SocialCollaborationScreen
 
 /**
  * Main navigation component for the Tourism Intelligent Platform
@@ -47,6 +47,9 @@ fun TourismNavigation(navController: NavHostController) {
                 },
                 onRecommendationsClick = {
                     navController.navigate("recommendations")
+                },
+                onSharedActivitiesClick = {
+                    navController.navigate("social")
                 },
                 onProfileClick = {
                     navController.navigate("profile")
@@ -98,7 +101,7 @@ fun TourismNavigation(navController: NavHostController) {
         }
         
         composable("social") {
-            // Social features screen implementation
+            SocialCollaborationScreen()
         }
         
         composable("ai_assistant") {
