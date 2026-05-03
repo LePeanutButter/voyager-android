@@ -6,8 +6,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
+import com.voyager.tourism.presentation.ui.auth.RegisterScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.ui.trip.TripListScreen
+import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
 
@@ -23,20 +25,11 @@ fun TourismNavigation(navController: NavHostController) {
     ) {
         // Authentication screens
         composable("login") {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate("dashboard") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                onRegisterClick = {
-                    navController.navigate("register")
-                }
-            )
+            LoginScreen(navController = navController)
         }
         
         composable("register") {
-            // Register screen implementation
+            RegisterScreen(navController = navController)
         }
         
         // Main app screens
@@ -70,8 +63,8 @@ fun TourismNavigation(navController: NavHostController) {
             // Trip detail screen implementation
         }
         
-        composable("create_trip") {
-            // Create trip screen implementation
+        composable("create_travel_plan") {
+            CreateTravelPlanScreen(navController = navController)
         }
         
         composable("recommendations") {
@@ -88,13 +81,7 @@ fun TourismNavigation(navController: NavHostController) {
         }
         
         composable("profile") {
-            ProfileScreen(
-                onLogout = {
-                    navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
-                    }
-                }
-            )
+            ProfileScreen(navController = navController)
         }
         
         composable("social") {

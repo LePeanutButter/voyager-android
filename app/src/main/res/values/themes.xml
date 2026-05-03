@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.VoyagerTourism" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorPrimaryDark">@color/md_theme_light_primary</item>
+        <item name="colorAccent">@color/md_theme_light_secondary</item>
+        <item name="android:windowBackground">@color/md_theme_light_background</item>
+    </style>
+
+    <style name="Theme.VoyagerTourism.Splash" parent="Theme.VoyagerTourism">
+        <item name="android:windowBackground">@color/md_theme_light_primary</item>
+    </style>
+
+    <style name="Theme.VoyagerTourism.NoActionBar" parent="Theme.VoyagerTourism">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

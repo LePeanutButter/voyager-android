@@ -37,8 +37,16 @@
         <!-- Main Activity -->
         <activity
             android:name=".presentation.MainActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoyagerTourism.NoActionBar" />
+            android:exported="true"
+            android:theme="@style/Theme.VoyagerTourism.NoActionBar">
+            <!-- Deep link for Google OAuth2 callback -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="smartrip" android:host="auth" />
+            </intent-filter>
+        </activity>
 
         <!-- Network Security Configuration -->
         <meta-data
