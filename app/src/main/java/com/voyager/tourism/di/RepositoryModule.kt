@@ -3,9 +3,11 @@ package com.voyager.tourism.di
 import com.voyager.tourism.data.repository.UserRepositoryImpl
 import com.voyager.tourism.data.repository.TripRepositoryImpl
 import com.voyager.tourism.data.repository.TravelPreferencesRepositoryImpl
+import com.voyager.tourism.data.repository.BehaviorAnalysisRepositoryImpl
 import com.voyager.tourism.domain.repository.UserRepository
 import com.voyager.tourism.domain.repository.TripRepository
 import com.voyager.tourism.domain.repository.TravelPreferencesRepository
+import com.voyager.tourism.domain.repository.BehaviorAnalysisRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -37,4 +39,10 @@ abstract class RepositoryModule {
     abstract fun bindTravelPreferencesRepository(
         impl: TravelPreferencesRepositoryImpl
     ): TravelPreferencesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBehaviorAnalysisRepository(
+        impl: BehaviorAnalysisRepositoryImpl
+    ): BehaviorAnalysisRepository
 }

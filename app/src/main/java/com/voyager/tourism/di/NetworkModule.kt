@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.voyager.tourism.BuildConfig
 import com.voyager.tourism.data.api.AiTravelPreferencesApi
+import com.voyager.tourism.data.api.BehaviorAnalysisApi
 import com.voyager.tourism.data.api.TourismApiService
 import dagger.Module
 import dagger.Provides
@@ -90,5 +91,11 @@ object NetworkModule {
     @Singleton
     fun provideAiTravelPreferencesApi(@Named("ai") retrofit: Retrofit): AiTravelPreferencesApi {
         return retrofit.create(AiTravelPreferencesApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBehaviorAnalysisApi(@Named("ai") retrofit: Retrofit): BehaviorAnalysisApi {
+        return retrofit.create(BehaviorAnalysisApi::class.java)
     }
 }
