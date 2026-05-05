@@ -17,6 +17,7 @@ import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    onTravelPreferences: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
@@ -159,6 +160,15 @@ fun ProfileScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text("Edit Profile")
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                OutlinedButton(
+                                    onClick = onTravelPreferences,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Cuestionario de preferencias (IA)")
                                 }
                                 
                                 Spacer(modifier = Modifier.height(8.dp))

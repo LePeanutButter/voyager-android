@@ -3,6 +3,7 @@ package com.voyager.tourism.di
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.voyager.tourism.BuildConfig
+import com.voyager.tourism.data.api.AiTravelPreferencesApi
 import com.voyager.tourism.data.api.TourismApiService
 import dagger.Module
 import dagger.Provides
@@ -13,6 +14,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -62,10 +64,31 @@ object NetworkModule {
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
+
+    /** Voyager AI microservice (questionnaire, recommendations, etc.) */
+    @Provides
+    @Singleton
+    @Named("ai")
+    fun provideAiRetrofit(
+        okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.AI_SERVICE_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
     
     @Provides
     @Singleton
     fun provideTourismApiService(retrofit: Retrofit): TourismApiService {
         return retrofit.create(TourismApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAiTravelPreferencesApi(@Named("ai") retrofit: Retrofit): AiTravelPreferencesApi {
+        return retrofit.create(AiTravelPreferencesApi::class.java)
     }
 }

@@ -2,8 +2,10 @@ package com.voyager.tourism.di
 
 import com.voyager.tourism.data.repository.UserRepositoryImpl
 import com.voyager.tourism.data.repository.TripRepositoryImpl
+import com.voyager.tourism.data.repository.TravelPreferencesRepositoryImpl
 import com.voyager.tourism.domain.repository.UserRepository
 import com.voyager.tourism.domain.repository.TripRepository
+import com.voyager.tourism.domain.repository.TravelPreferencesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -29,4 +31,10 @@ abstract class RepositoryModule {
     abstract fun bindTripRepository(
         tripRepositoryImpl: TripRepositoryImpl
     ): TripRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTravelPreferencesRepository(
+        impl: TravelPreferencesRepositoryImpl
+    ): TravelPreferencesRepository
 }
