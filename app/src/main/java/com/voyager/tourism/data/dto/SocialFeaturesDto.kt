@@ -17,17 +17,14 @@ data class ApiErrorDto(
     @Json(name = "error") val error: String? = null
 )
 
+/** Conexión aceptada (`TravelConnectionDto` en el backend). */
 @JsonClass(generateAdapter = true)
 data class ConnectionDto(
-    @Json(name = "id") val id: Long,
+    @Json(name = "userId") val userId: Long,
     @Json(name = "username") val username: String,
-    @Json(name = "status") val status: String
-)
-
-@JsonClass(generateAdapter = true)
-data class TravelPlanActivityDto(
-    @Json(name = "id") val id: Long,
-    @Json(name = "name") val name: String? = null
+    @Json(name = "firstName") val firstName: String? = null,
+    @Json(name = "lastName") val lastName: String? = null,
+    @Json(name = "status") val status: String,
 )
 
 @JsonClass(generateAdapter = true)

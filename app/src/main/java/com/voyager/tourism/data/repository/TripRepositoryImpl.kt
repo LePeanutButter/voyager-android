@@ -1,209 +1,188 @@
 package com.voyager.tourism.data.repository
 
-import com.voyager.tourism.data.api.TourismApiService
+import com.voyager.tourism.data.api.TravelPlanApiService
 import com.voyager.tourism.data.database.dao.TripDao
-import com.voyager.tourism.data.mapper.TripMapper
+import com.voyager.tourism.data.dto.TravelPlanStatus
 import com.voyager.tourism.data.local.PreferencesManager
+import com.voyager.tourism.data.mapper.TripMapper
 import com.voyager.tourism.domain.model.Trip
 import com.voyager.tourism.domain.repository.TripRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of TripRepository interface
- * Handles trip data operations combining remote API and local database
+ * Viajes locales + **travel-plans** del backend Spring.
  */
 @Singleton
 class TripRepositoryImpl @Inject constructor(
-    private val apiService: TourismApiService,
+    private val travelPlanApi: TravelPlanApiService,
     private val tripDao: TripDao,
     private val tripMapper: TripMapper,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
 ) : TripRepository {
-    
-    override suspend fun getTrips(): Result<List<Trip>> {
+
+    private fun currentUserId(): String? = preferencesManager.getCurrentUserId()
+
+    override suspend fun getUserTrips(userId: String): Result<List<Trip>> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
-                // Try to get from local cache
-                val localTrips = tripDao.getAllTrips()
-                Result.success(localTrips.map { tripMapper.toDomain(it) })
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
+                Result.success(tripDao.getTripsByUserId(userId).map { tripMapper.toDomain(it) })
             } else {
-                val response = apiService.getTrips("Bearer $token")
-                if (response.isSuccessful) {
-                    val trips = response.body()
-                    trips?.let {
-                        // Cache trips locally
-                        tripDao.deleteAllTrips()
-                        tripDao.insertTrips(it.map { tripMapper.toEntity(it) })
-                        Result.success(it)
-                    } ?: Result.failure(Exception("Empty response"))
+                val uid = userId.toLongOrNull()
+                    ?: return Result.failure(IllegalArgumentException("userId inválido"))
+                val resp = travelPlanApi.getTravelPlansByUser(uid)
+                if (resp.status == 200 && resp.data != null) {
+                    val trips = resp.data.map { tripMapper.fromTravelPlanDto(it, userId) }
+                    tripDao.deleteAllTrips()
+                    tripDao.insertTrips(trips.map { tripMapper.toEntityFromTrip(it) })
+                    Result.success(trips)
                 } else {
-                    // Try to get from local cache if API fails
-                    val localTrips = tripDao.getAllTrips()
-                    localTrips.let { Result.success(it.map { tripMapper.toDomain(it) }) }
-                        ?: Result.failure(Exception("No trip data available"))
+                    Result.success(tripDao.getTripsByUserId(userId).map { tripMapper.toDomain(it) })
                 }
             }
         } catch (e: Exception) {
-            // Try local cache as fallback
-            try {
-                val localTrips = tripDao.getAllTrips()
-                Result.success(localTrips.map { tripMapper.toDomain(it) })
-            } catch (ex: Exception) {
-                Result.failure(ex)
-            }
+            Result.success(tripDao.getTripsByUserId(userId).map { tripMapper.toDomain(it) })
         }
     }
-    
+
     override suspend fun getTripById(tripId: String): Result<Trip?> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
-                // Try to get from local cache
-                val localTrip = tripDao.getTripById(tripId)
-                localTrip?.let { tripMapper.toDomain(it) }?.let { Result.success(it) } ?: Result.success(null)
+            val id = tripId.toLongOrNull()
+                ?: return Result.success(tripDao.getTripById(tripId)?.let { tripMapper.toDomain(it) })
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
+                Result.success(tripDao.getTripById(tripId)?.let { tripMapper.toDomain(it) })
             } else {
-                val response = apiService.getTripById(tripId, "Bearer $token")
-                if (response.isSuccessful) {
-                    val tripDto = response.body()
-                    tripDto?.let {
-                        // Cache trip locally
-                        tripDao.insertTrip(tripMapper.toEntity(it))
-                        Result.success(tripMapper.toDomain(it))
-                    } ?: Result.success(null)
+                val resp = travelPlanApi.getTravelPlanById(id)
+                if (resp.status == 200 && resp.data != null) {
+                    val trip = tripMapper.fromTravelPlanDto(resp.data!!, currentUserId().orEmpty())
+                    tripDao.insertTrip(tripMapper.toEntityFromTrip(trip))
+                    Result.success(trip)
                 } else {
-                    // Try to get from local cache if API fails
-                    val localTrip = tripDao.getTripById(tripId)
-                    Result.success(localTrip?.let { tripMapper.toDomain(it) })
+                    Result.success(tripDao.getTripById(tripId)?.let { tripMapper.toDomain(it) })
                 }
             }
         } catch (e: Exception) {
-            // Try local cache as fallback
-            val localTrip = tripDao.getTripById(tripId)
-            Result.success(localTrip?.let { tripMapper.toDomain(it) })
+            Result.success(tripDao.getTripById(tripId)?.let { tripMapper.toDomain(it) })
         }
     }
-    
+
     override suspend fun createTrip(trip: Trip): Result<Trip> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
                 Result.failure(Exception("User not authenticated"))
             } else {
-                val response = apiService.createTrip(tripMapper.toDto(trip), "Bearer $token")
-                if (response.isSuccessful) {
-                    val tripDto = response.body()
-                    tripDto?.let {
-                        // Cache trip locally
-                        tripDao.insertTrip(tripMapper.toEntity(it))
-                        Result.success(tripMapper.toDomain(it))
-                    } ?: Result.failure(Exception("Failed to create trip"))
+                val body = tripMapper.toTravelPlanDto(trip)
+                val resp = travelPlanApi.createTravelPlan(body)
+                if ((resp.status == 200 || resp.status == 201) && resp.data != null) {
+                    val created = tripMapper.fromTravelPlanDto(
+                        resp.data!!,
+                        currentUserId().orEmpty(),
+                    )
+                    tripDao.insertTrip(tripMapper.toEntityFromTrip(created))
+                    Result.success(created)
                 } else {
-                    Result.failure(Exception("Failed to create trip"))
+                    Result.failure(Exception(resp.message ?: "Failed to create trip"))
                 }
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     override suspend fun updateTrip(trip: Trip): Result<Trip> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
                 Result.failure(Exception("User not authenticated"))
             } else {
-                val response = apiService.updateTrip(trip.id, tripMapper.toDto(trip), "Bearer $token")
-                if (response.isSuccessful) {
-                    val tripDto = response.body()
-                    tripDto?.let {
-                        // Update trip locally
-                        tripDao.updateTrip(tripMapper.toEntity(it))
-                        Result.success(tripMapper.toDomain(it))
-                    } ?: Result.failure(Exception("Empty response"))
+                val id = trip.id.toLongOrNull()
+                    ?: return Result.failure(IllegalArgumentException("id inválido"))
+                val resp = travelPlanApi.updateTravelPlan(id, tripMapper.toTravelPlanDto(trip))
+                if (resp.status == 200 && resp.data != null) {
+                    val updated = tripMapper.fromTravelPlanDto(resp.data!!, currentUserId().orEmpty())
+                    tripDao.updateTrip(tripMapper.toEntityFromTrip(updated))
+                    Result.success(updated)
                 } else {
-                    Result.failure(Exception("Failed to update trip"))
+                    Result.failure(Exception(resp.message ?: "Failed to update trip"))
                 }
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteTrip(tripId: String): Result<Unit> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
                 Result.failure(Exception("User not authenticated"))
             } else {
-                val response = apiService.deleteTrip(tripId, "Bearer $token")
-                if (response.isSuccessful) {
-                    // Delete trip locally
+                val id = tripId.toLongOrNull()
+                    ?: return Result.failure(IllegalArgumentException("id inválido"))
+                val resp = travelPlanApi.deleteTravelPlan(id)
+                if (resp.status == 200) {
                     tripDao.deleteTripById(tripId)
                     Result.success(Unit)
                 } else {
-                    Result.failure(Exception("Failed to delete trip"))
+                    Result.failure(Exception(resp.message ?: "Failed to delete trip"))
                 }
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
-    override suspend fun getUserTrips(userId: String): Result<List<Trip>> {
-        return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
-                // Try to get from local cache
-                val localTrips = tripDao.getTripsByUserId(userId)
-                Result.success(localTrips.map { tripMapper.toDomain(it) })
-            } else {
-                val response = apiService.getUserTrips(userId, "Bearer $token")
-                if (response.isSuccessful) {
-                    val tripDtos = response.body()
-                    tripDtos?.let {
-                        // Cache trips locally
-                        tripDao.deleteAllTrips()
-                        tripDao.insertTrips(it.map { tripMapper.toEntity(it) })
-                        Result.success(it.map { tripMapper.toDomain(it) })
-                    } ?: Result.failure(Exception("Empty response"))
-                } else {
-                    Result.failure(Exception("Failed to get user trips"))
-                }
-            }
-        } catch (e: Exception) {
-            // Try local cache as fallback
-            val localTrips = tripDao.getTripsByUserId(userId)
-            localTrips.let { Result.success(it.map { tripMapper.toDomain(it) }) }
-                ?: Result.failure(e)
+
+    override suspend fun getActiveTrips(userId: String): Result<List<Trip>> =
+        filterMyPlans(userId) { it.status == TravelPlanStatus.ACTIVE }
+
+    override suspend fun getUpcomingTrips(userId: String): Result<List<Trip>> {
+        val now = OffsetDateTime.now(ZoneOffset.UTC).toInstant().toEpochMilli()
+        return filterMyPlans(userId) { plan ->
+            val start = plan.startDate?.let { parseStart(it) } ?: return@filterMyPlans false
+            start > now && plan.status != TravelPlanStatus.COMPLETED && plan.status != TravelPlanStatus.CANCELLED
         }
     }
-    
-    override suspend fun getActiveTrips(userId: String): Result<List<Trip>> {
+
+    override suspend fun getCompletedTrips(userId: String): Result<List<Trip>> =
+        filterMyPlans(userId) { it.status == TravelPlanStatus.COMPLETED }
+
+    override suspend fun searchTripsByDestination(userId: String, destination: String): Result<List<Trip>> =
+        filterMyPlans(userId) {
+            it.destinationLocation?.contains(destination, ignoreCase = true) == true
+        }
+
+    override fun streamTripUpdates(tripId: String): Flow<Trip?> {
+        return tripDao.streamTripById(tripId).map { entity ->
+            entity?.let { tripMapper.toDomain(it) }
+        }
+    }
+
+    private suspend fun filterMyPlans(
+        userId: String,
+        predicate: (com.voyager.tourism.data.dto.TravelPlanDto) -> Boolean,
+    ): Result<List<Trip>> {
         return try {
-            val token = preferencesManager.getAuthToken()
-            if (token.isNullOrEmpty()) {
-                Result.failure(Exception("User not authenticated"))
+            if (preferencesManager.getAuthToken().isNullOrEmpty()) {
+                Result.success(emptyList())
             } else {
-                val response = apiService.getActiveTrips("Bearer $token")
-                if (response.isSuccessful) {
-                    val tripDtos = response.body()
-                    tripDtos?.let { tripDtos ->
-                        try {
-                            Result.success(tripDtos.map { tripMapper.toDomain(it) })
-                        } catch (e: Exception) {
-                            Result.failure(e)
-                        }
-                    } ?: Result.failure(Exception("Empty response"))
+                val resp = travelPlanApi.getMyTravelPlans()
+                if (resp.status == 200 && resp.data != null) {
+                    val trips = resp.data!!.filter(predicate).map { tripMapper.fromTravelPlanDto(it, userId) }
+                    Result.success(trips)
                 } else {
-                    Result.failure(Exception("Failed to get active trips"))
+                    Result.failure(Exception(resp.message ?: "Failed to load plans"))
                 }
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun parseStart(iso: String): Long = try {
+        OffsetDateTime.parse(iso).toInstant().toEpochMilli()
+    } catch (_: Exception) {
+        java.time.LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli()
     }
 }

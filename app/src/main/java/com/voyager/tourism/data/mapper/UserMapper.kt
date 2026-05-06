@@ -4,7 +4,11 @@ import com.voyager.tourism.data.database.entity.UserEntity
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserRole
 import com.voyager.tourism.data.dto.UserStatus
+import com.voyager.tourism.data.dto.UserUpdateDto
 import com.voyager.tourism.domain.model.User
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,10 +19,10 @@ import javax.inject.Singleton
  */
 @Singleton
 class UserMapper @Inject constructor() {
-    
+
     fun toDomain(userDto: UserDto): User {
         return User(
-            id = userDto.id.toString(), // Convert Long to String for domain
+            id = userDto.id.toString(),
             email = userDto.email,
             username = userDto.username,
             firstName = userDto.firstName,
@@ -32,13 +36,13 @@ class UserMapper @Inject constructor() {
             dateOfBirth = userDto.dateOfBirth,
             createdAt = userDto.createdAt,
             updatedAt = userDto.updatedAt,
-            token = userDto.token
+            token = userDto.token,
         )
     }
-    
+
     fun toDto(user: User): UserDto {
         return UserDto(
-            id = user.id.toLongOrNull() ?: 0L, // Convert String to Long for backend
+            id = user.id.toLongOrNull() ?: 0L,
             username = user.username,
             email = user.email,
             firstName = user.firstName,
@@ -52,10 +56,10 @@ class UserMapper @Inject constructor() {
             dateOfBirth = user.dateOfBirth,
             createdAt = user.createdAt,
             updatedAt = user.updatedAt,
-            token = user.token
+            token = user.token,
         )
     }
-    
+
     fun toEntity(userDto: UserDto): UserEntity {
         return UserEntity(
             id = userDto.id.toString(),
@@ -63,18 +67,14 @@ class UserMapper @Inject constructor() {
             email = userDto.email,
             firstName = userDto.firstName,
             lastName = userDto.lastName,
-            phoneNumber = userDto.phoneNumber,
-            role = userDto.role.value,
-            status = userDto.status.value,
-            profileImageUrl = userDto.profileImageUrl,
-            bio = userDto.bio,
-            interests = userDto.interests?.toSet() ?: emptySet(),
-            dateOfBirth = userDto.dateOfBirth,
-            createdAt = userDto.createdAt,
-            updatedAt = userDto.updatedAt
+            avatar = userDto.profileImageUrl,
+            preferences = null,
+            isVerified = userDto.status == UserStatus.ACTIVE,
+            createdAt = parseBackendInstantToMillis(userDto.createdAt),
+            updatedAt = parseBackendInstantToMillis(userDto.updatedAt),
         )
     }
-    
+
     fun toEntity(user: User): UserEntity {
         return UserEntity(
             id = user.id,
@@ -82,35 +82,55 @@ class UserMapper @Inject constructor() {
             email = user.email,
             firstName = user.firstName,
             lastName = user.lastName,
-            phoneNumber = user.phoneNumber,
-            role = user.role,
-            status = user.status,
-            profileImageUrl = user.profileImageUrl,
-            bio = user.bio,
-            interests = user.interests,
-            dateOfBirth = user.dateOfBirth,
-            createdAt = user.createdAt,
-            updatedAt = user.updatedAt
+            avatar = user.profileImageUrl,
+            preferences = null,
+            isVerified = user.status.equals(UserStatus.ACTIVE.value, ignoreCase = true),
+            createdAt = parseBackendInstantToMillis(user.createdAt),
+            updatedAt = parseBackendInstantToMillis(user.updatedAt),
         )
     }
-    
+
+    fun toUserUpdateDto(user: User): UserUpdateDto {
+        return UserUpdateDto(
+            firstName = user.firstName,
+            lastName = user.lastName,
+            phoneNumber = user.phoneNumber,
+            profileImageUrl = user.profileImageUrl,
+            bio = user.bio,
+            interests = user.interests.toList(),
+            dateOfBirth = user.dateOfBirth,
+        )
+    }
+
     fun entityToDomain(userEntity: UserEntity): User {
+        val created = Instant.ofEpochMilli(userEntity.createdAt).toString()
+        val updated = Instant.ofEpochMilli(userEntity.updatedAt).toString()
         return User(
             id = userEntity.id,
             email = userEntity.email,
             username = userEntity.username,
             firstName = userEntity.firstName,
             lastName = userEntity.lastName,
-            phoneNumber = userEntity.phoneNumber,
-            role = userEntity.role,
-            status = userEntity.status,
-            profileImageUrl = userEntity.profileImageUrl,
-            bio = userEntity.bio,
-            interests = userEntity.interests,
-            dateOfBirth = userEntity.dateOfBirth,
-            createdAt = userEntity.createdAt,
-            updatedAt = userEntity.updatedAt,
-            token = null // Entity doesn't store token
+            phoneNumber = null,
+            role = UserRole.USER.value,
+            status = if (userEntity.isVerified) UserStatus.ACTIVE.value else UserStatus.PENDING.value,
+            profileImageUrl = userEntity.avatar,
+            bio = null,
+            interests = emptySet(),
+            dateOfBirth = null,
+            createdAt = created,
+            updatedAt = updated,
+            token = null,
         )
+    }
+
+    private fun parseBackendInstantToMillis(iso: String?): Long {
+        if (iso.isNullOrBlank()) return System.currentTimeMillis()
+        runCatching { Instant.parse(iso) }.getOrNull()?.let { return it.toEpochMilli() }
+        runCatching {
+            val local = LocalDateTime.parse(iso.take(19))
+            local.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }.getOrNull()?.let { return it }
+        return System.currentTimeMillis()
     }
 }

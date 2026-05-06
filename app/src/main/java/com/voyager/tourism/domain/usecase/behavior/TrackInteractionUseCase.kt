@@ -1,6 +1,6 @@
 package com.voyager.tourism.domain.usecase.behavior
 
-import com.voyager.tourism.data.dto.ApiResponse
+import com.voyager.tourism.data.dto.BehaviorAnalysisSimpleResponse
 import com.voyager.tourism.data.dto.InteractionType
 import com.voyager.tourism.domain.repository.BehaviorAnalysisRepository
 import javax.inject.Inject
@@ -19,7 +19,7 @@ class TrackInteractionUseCase @Inject constructor(
         activityCategory: String? = null,
         sessionDuration: Int? = null,
         context: Map<String, Any> = emptyMap()
-    ): Result<ApiResponse> {
+    ): Result<BehaviorAnalysisSimpleResponse> {
         // Validate input
         if (userId.isBlank()) {
             return Result.failure(IllegalArgumentException("User ID cannot be blank"))

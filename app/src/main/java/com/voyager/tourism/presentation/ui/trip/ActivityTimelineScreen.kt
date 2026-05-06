@@ -41,8 +41,8 @@ fun ActivityTimelineScreen(
         items(ordered) { activity ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(activity.name)
-                    Text(activity.startTime)
+                    Text(activity.name ?: "")
+                    Text(activity.startTime ?: "")
                     activity.description?.let { Text(it) }
                 }
             }

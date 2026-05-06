@@ -2,11 +2,9 @@ package com.voyager.tourism.data.repository
 
 import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.api.GoogleAuthApiService
-import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
-import com.voyager.tourism.data.dto.UserUpdateDto
 import com.voyager.tourism.domain.repository.AuthRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,7 +38,7 @@ class AuthRepositoryImpl @Inject constructor(
             
             val response = userApiService.registerUser(request)
             
-            if (response.status == 201 && response.data != null) { // 201 Created
+            if ((response.status == 200 || response.status == 201) && response.data != null) {
                 Result.success(response.data)
             } else {
                 Result.failure(Exception(response.message ?: "Registration failed"))
@@ -74,12 +72,25 @@ class AuthRepositoryImpl @Inject constructor(
     
     override suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto> {
         return try {
-            val response = googleAuthApiService.handleGoogleCallback(code)
+            val response = googleAuthApiService.handleGoogleCallback(code, state)
             
             if (response.status == 200 && response.data != null) {
                 Result.success(response.data)
             } else {
                 Result.failure(Exception(response.message ?: "Google OAuth2 failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun initiateGoogleLogin(): Result<String> {
+        return try {
+            val response = googleAuthApiService.initiateGoogleLogin()
+            if (response.status == 200 && response.data != null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.message ?: "Google login init failed"))
             }
         } catch (e: Exception) {
             Result.failure(e)

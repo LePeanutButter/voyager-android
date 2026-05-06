@@ -1,5 +1,6 @@
 package com.voyager.tourism.presentation.ui.social
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -53,7 +57,7 @@ fun ConnectionRequestsScreen(
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    imageVector = Icons.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -99,7 +103,7 @@ fun ConnectionRequestsScreen(
                     )
                     IconButton(onClick = { viewModel.clearSuccessMessage() }) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                            imageVector = Icons.Filled.Close,
                             contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -131,7 +135,7 @@ fun ConnectionRequestsScreen(
                     )
                     IconButton(onClick = { viewModel.clearError() }) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                            imageVector = Icons.Filled.Close,
                             contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -184,6 +188,7 @@ fun ConnectionRequestsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConnectionRequestCard(
     request: ConnectionRequestDto,

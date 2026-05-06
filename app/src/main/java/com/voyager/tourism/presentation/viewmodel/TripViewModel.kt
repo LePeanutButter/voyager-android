@@ -2,6 +2,7 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.model.Trip
 import com.voyager.tourism.domain.usecase.trip.CreateTripUseCase
 import com.voyager.tourism.domain.usecase.trip.GetTripsUseCase
@@ -23,7 +24,8 @@ class TripViewModel @Inject constructor(
     private val createTripUseCase: CreateTripUseCase,
     private val getTripsUseCase: GetTripsUseCase,
     private val updateTripUseCase: UpdateTripUseCase,
-    private val deleteTripUseCase: DeleteTripUseCase
+    private val deleteTripUseCase: DeleteTripUseCase,
+    private val preferencesManager: PreferencesManager,
 ) : ViewModel() {
     
     private val _trips = MutableStateFlow<List<Trip>>(emptyList())
@@ -42,13 +44,21 @@ class TripViewModel @Inject constructor(
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
     
     /**
-     * Load all trips for the current user
+     * Carga viajes usando el user id guardado en sesión.
      */
+    fun loadTripsForCurrentUser() {
+        val userId = preferencesManager.getCurrentUserId()
+        if (userId.isNullOrBlank()) {
+            _errorMessage.value = "Sin sesión: inicia sesión de nuevo"
+            return
+        }
+        loadTrips(userId)
+    }
+
     fun loadTrips(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            
             getTripsUseCase(userId)
                 .onSuccess { tripList ->
                     _trips.value = tripList
@@ -56,7 +66,6 @@ class TripViewModel @Inject constructor(
                 .onFailure { exception ->
                     _errorMessage.value = exception.message ?: "Failed to load trips"
                 }
-            
             _isLoading.value = false
         }
     }

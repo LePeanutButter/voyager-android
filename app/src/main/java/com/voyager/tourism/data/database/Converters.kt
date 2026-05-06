@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import com.voyager.tourism.data.dto.CoordinatesDto
 import com.voyager.tourism.data.dto.DestinationDto
 import com.voyager.tourism.data.dto.UserPreferencesDto
 
@@ -38,7 +39,19 @@ class Converters {
     @TypeConverter
     fun toDestinationDto(value: String): DestinationDto {
         val adapter: JsonAdapter<DestinationDto> = moshi.adapter(DestinationDto::class.java)
-        return adapter.fromJson(value) ?: DestinationDto("", "", "", "")
+        return adapter.fromJson(value) ?: DestinationDto(
+            id = "",
+            name = "",
+            country = "",
+            coordinates = CoordinatesDto(0.0, 0.0),
+            timezone = "",
+            currency = "",
+            language = "",
+            climate = "",
+            bestTimeToVisit = "",
+            averageCost = 0.0,
+            rating = 0f,
+        )
     }
     
     @TypeConverter

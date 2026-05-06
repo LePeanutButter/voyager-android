@@ -114,8 +114,9 @@ data class BehaviorSummary(
     val lastAnalysis: LocalDateTime?
 )
 
+/** Respuesta genérica del servicio de análisis de comportamiento (no confundir con [ApiResponse]). */
 @JsonClass(generateAdapter = true)
-data class ApiResponse(
+data class BehaviorAnalysisSimpleResponse(
     @Json(name = "success")
     val success: Boolean,
     

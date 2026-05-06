@@ -31,13 +31,13 @@ data class TravelerMatchDto(
     val bio: String? = null,
     
     @Json(name = "travelPlanId")
-    val travelPlanId: Long,
+    val travelPlanId: Long? = null,
     
     @Json(name = "travelPlanTitle")
-    val travelPlanTitle: String,
+    val travelPlanTitle: String? = null,
     
     @Json(name = "destinationLocation")
-    val destinationLocation: String,
+    val destinationLocation: String? = null,
     
     @Json(name = "travelStartDate")
     val travelStartDate: String, // Using String for JSON compatibility
@@ -46,11 +46,11 @@ data class TravelerMatchDto(
     val travelEndDate: String, // Using String for JSON compatibility
     
     @Json(name = "numberOfTravelers")
-    val numberOfTravelers: Int,
+    val numberOfTravelers: Int? = null,
     
     @Json(name = "daysOverlap")
-    val daysOverlap: Int,
+    val daysOverlap: Int? = null,
     
     @Json(name = "compatibilityScore")
-    val compatibilityScore: Double
+    val compatibilityScore: Double? = null,
 )

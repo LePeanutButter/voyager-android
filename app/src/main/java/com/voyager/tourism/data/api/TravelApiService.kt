@@ -2,45 +2,31 @@ package com.voyager.tourism.data.api
 
 import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.TravelPlanDto
-import com.voyager.tourism.data.dto.TravelPlanRequest
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 
 /**
- * Travel API service interface
- * Handles travel plan management operations
+ * Alias práctico de planes de viaje para capas que aún usan [TravelApiService].
+ * Misma API que [TravelPlanApiService] (subset usado por [TravelRepositoryImpl]).
  */
 interface TravelApiService {
-    
-    /**
-     * Create a new travel plan
-     */
+
     @POST("travel-plans")
-    suspend fun createTravelPlan(@Body request: TravelPlanRequest): ApiResponse<TravelPlanDto>
-    
-    /**
-     * Get travel plans for a user
-     */
-    @GET("travel-plans")
-    suspend fun getUserTravelPlans(@Query("user_id") userId: String): ApiResponse<List<TravelPlanDto>>
-    
-    /**
-     * Get travel plan by ID
-     */
+    suspend fun createTravelPlan(@Body body: TravelPlanDto): ApiResponse<TravelPlanDto>
+
+    @GET("travel-plans/user/{userId}")
+    suspend fun getUserTravelPlans(@Path("userId") userId: Long): com.voyager.tourism.data.dto.PagedResponseTravelPlanDto
+
     @GET("travel-plans/{id}")
-    suspend fun getTravelPlanById(@Path("id") id: String): ApiResponse<TravelPlanDto>
-    
-    /**
-     * Update travel plan
-     */
+    suspend fun getTravelPlanById(@Path("id") id: Long): ApiResponse<TravelPlanDto>
+
     @PUT("travel-plans/{id}")
-    suspend fun updateTravelPlan(
-        @Path("id") id: String,
-        @Body request: TravelPlanRequest
-    ): ApiResponse<TravelPlanDto>
-    
-    /**
-     * Delete travel plan
-     */
+    suspend fun updateTravelPlan(@Path("id") id: Long, @Body body: TravelPlanDto): ApiResponse<TravelPlanDto>
+
     @DELETE("travel-plans/{id}")
-    suspend fun deleteTravelPlan(@Path("id") id: String): ApiResponse<Unit>
+    suspend fun deleteTravelPlan(@Path("id") id: Long): ApiResponse<Unit>
 }

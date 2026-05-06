@@ -4,28 +4,25 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * Enum matching backend TravelPlanStatus
+ * Estados de plan de viaje alineados con `com.tourism.platform.model.TravelPlanStatus`.
  */
 @JsonClass(generateAdapter = true)
-enum class TravelPlanStatus(val value: String) {
+enum class TravelPlanStatus {
     @Json(name = "DRAFT")
-    DRAFT("DRAFT"),
-    
-    @Json(name = "PLANNED")
-    PLANNED("PLANNED"),
-    
-    @Json(name = "IN_PROGRESS")
-    IN_PROGRESS("IN_PROGRESS"),
-    
+    DRAFT,
+
+    @Json(name = "ACTIVE")
+    ACTIVE,
+
     @Json(name = "COMPLETED")
-    COMPLETED("COMPLETED"),
-    
+    COMPLETED,
+
     @Json(name = "CANCELLED")
-    CANCELLED("CANCELLED");
-    
-    companion object {
-        fun fromValue(value: String): TravelPlanStatus {
-            return values().find { it.value == value } ?: DRAFT
-        }
-    }
+    CANCELLED,
+
+    @Json(name = "ON_HOLD")
+    ON_HOLD,
+
+    @Json(name = "ARCHIVED")
+    ARCHIVED,
 }

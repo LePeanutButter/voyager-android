@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
 
 /**
@@ -20,16 +21,21 @@ import com.voyager.tourism.presentation.viewmodel.TripViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripListScreen(
+    authViewModel: AuthViewModel,
     onTripClick: (String) -> Unit,
     onAddTrip: () -> Unit,
-    viewModel: TripViewModel = hiltViewModel()
+    viewModel: TripViewModel = hiltViewModel(),
 ) {
     val trips by viewModel.trips.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    
-    LaunchedEffect(Unit) {
-        viewModel.loadTrips("current_user_id")
+    val currentUser by authViewModel.currentUser.collectAsState()
+
+    LaunchedEffect(currentUser?.id) {
+        val uid = currentUser?.id
+        if (!uid.isNullOrBlank()) {
+            viewModel.loadTrips(uid)
+        }
     }
     
     Column(

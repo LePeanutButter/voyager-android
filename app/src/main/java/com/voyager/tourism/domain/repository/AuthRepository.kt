@@ -1,8 +1,6 @@
 package com.voyager.tourism.domain.repository
 
 import com.voyager.tourism.data.dto.UserDto
-import com.voyager.tourism.data.dto.ApiResponse
-
 /**
  * Repository interface for authentication operations
  * Defines the contract for authentication data layer
@@ -40,5 +38,10 @@ interface AuthRepository {
     /**
      * Handle Google OAuth2 callback
      */
-    suspend fun handleGoogleCallback(code: String, state: String): ApiResponse<com.voyager.tourism.data.dto.UserDto>
+    suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto>
+
+    /**
+     * Inicia el flujo OAuth2 (URL de autorización u token según backend).
+     */
+    suspend fun initiateGoogleLogin(): Result<String>
 }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.domain.usecase.auth.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase
+    private val loginUseCase: LoginUseCase,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
@@ -53,23 +55,23 @@ class LoginViewModel @Inject constructor(
      * Opens browser with Google login URL
      */
     fun loginWithGoogle(context: Context) {
-        try {
-            // For now, we'll use a placeholder implementation
-            // In a real implementation, this would call the backend to get the Google OAuth URL
-            val googleLoginUrl = "https://accounts.google.com/oauth/authorize?" +
-                "client_id=YOUR_GOOGLE_CLIENT_ID&" +
-                "response_type=code&" +
-                "scope=openid%20email%20profile&" +
-                "redirect_uri=smartrip://auth/callback&" +
-                "state=random_state_string"
-            
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(googleLoginUrl))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            
-            _uiState.value = LoginUiState.GoogleLoginInitiated
-        } catch (e: Exception) {
-            _uiState.value = LoginUiState.Error("No se pudo iniciar el login con Google: ${e.message}")
+        viewModelScope.launch {
+            try {
+                val urlResult = authRepository.initiateGoogleLogin()
+                if (urlResult.isFailure) {
+                    _uiState.value = LoginUiState.Error(
+                        urlResult.exceptionOrNull()?.message ?: "No se pudo obtener la URL de Google",
+                    )
+                    return@launch
+                }
+                val url = urlResult.getOrThrow()
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                _uiState.value = LoginUiState.GoogleLoginInitiated
+            } catch (e: Exception) {
+                _uiState.value = LoginUiState.Error("No se pudo iniciar el login con Google: ${e.message}")
+            }
         }
     }
     

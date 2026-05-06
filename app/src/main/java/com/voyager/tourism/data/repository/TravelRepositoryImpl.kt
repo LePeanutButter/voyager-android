@@ -1,27 +1,28 @@
 package com.voyager.tourism.data.repository
 
 import com.voyager.tourism.data.api.TravelApiService
+import com.voyager.tourism.data.dto.PagedResponseTravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanRequest
+import com.voyager.tourism.data.dto.TravelPlanStatus
+import com.voyager.tourism.data.dto.TravelType
 import com.voyager.tourism.domain.repository.TravelRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of TravelRepository interface
- * Handles travel plan data operations using the API service
+ * Planes de viaje contra el core Spring (DTO [TravelPlanDto]).
  */
 @Singleton
 class TravelRepositoryImpl @Inject constructor(
-    private val travelApiService: TravelApiService
+    private val travelApiService: TravelApiService,
 ) : TravelRepository {
-    
+
     override suspend fun createTravelPlan(request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
-            val response = travelApiService.createTravelPlan(request)
-            
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+            val response = travelApiService.createTravelPlan(request.toTravelPlanDto())
+            if ((response.status == 200 || response.status == 201) && response.data != null) {
+                Result.success(response.data!!)
             } else {
                 Result.failure(Exception(response.message ?: "Failed to create travel plan"))
             }
@@ -29,27 +30,29 @@ class TravelRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getUserTravelPlans(userId: String): Result<List<TravelPlanDto>> {
         return try {
-            val response = travelApiService.getUserTravelPlans(userId)
-            
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+            val uid = userId.toLongOrNull()
+                ?: return Result.failure(IllegalArgumentException("userId inválido"))
+            val response: PagedResponseTravelPlanDto = travelApiService.getUserTravelPlans(uid)
+            if (response.status == 200) {
+                Result.success(response.data.orEmpty())
             } else {
-                Result.failure(Exception(response.message ?: "Failed to get travel plans"))
+                Result.failure(Exception(response.message.ifBlank { "Failed to get travel plans" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getTravelPlanById(planId: String): Result<TravelPlanDto> {
         return try {
-            val response = travelApiService.getTravelPlanById(planId)
-            
+            val id = planId.toLongOrNull()
+                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+            val response = travelApiService.getTravelPlanById(id)
             if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+                Result.success(response.data!!)
             } else {
                 Result.failure(Exception(response.message ?: "Failed to get travel plan"))
             }
@@ -57,13 +60,14 @@ class TravelRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun updateTravelPlan(planId: String, request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
-            val response = travelApiService.updateTravelPlan(planId, request)
-            
+            val id = planId.toLongOrNull()
+                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+            val response = travelApiService.updateTravelPlan(id, request.toTravelPlanDto().copy(id = id))
             if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+                Result.success(response.data!!)
             } else {
                 Result.failure(Exception(response.message ?: "Failed to update travel plan"))
             }
@@ -71,11 +75,12 @@ class TravelRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteTravelPlan(planId: String): Result<Unit> {
         return try {
-            val response = travelApiService.deleteTravelPlan(planId)
-            
+            val id = planId.toLongOrNull()
+                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+            val response = travelApiService.deleteTravelPlan(id)
             if (response.status == 200) {
                 Result.success(Unit)
             } else {
@@ -85,4 +90,17 @@ class TravelRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    private fun TravelPlanRequest.toTravelPlanDto(): TravelPlanDto = TravelPlanDto(
+        title = title,
+        description = description,
+        status = TravelPlanStatus.DRAFT,
+        travelType = TravelType.LEISURE,
+        startDate = startDate,
+        endDate = endDate,
+        estimatedBudget = estimatedBudget,
+        numberOfTravelers = numberOfTravelers,
+        originLocation = originLocation,
+        destinationLocation = destinationLocation,
+    )
 }

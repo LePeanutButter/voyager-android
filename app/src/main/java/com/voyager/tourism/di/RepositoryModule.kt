@@ -7,6 +7,9 @@ import com.voyager.tourism.data.repository.TravelPreferencesRepositoryImpl
 import com.voyager.tourism.data.repository.BehaviorAnalysisRepositoryImpl
 import com.voyager.tourism.data.repository.AuthRepositoryImpl
 import com.voyager.tourism.data.repository.TravelRepositoryImpl
+import com.voyager.tourism.data.repository.VoyagerAiRepositoryImpl
+import com.voyager.tourism.data.repository.CatalogRepositoryImpl
+import com.voyager.tourism.data.repository.BackendSupplementRepositoryImpl
 import com.voyager.tourism.domain.repository.UserRepository
 import com.voyager.tourism.domain.repository.TripRepository
 import com.voyager.tourism.domain.repository.SocialRepository
@@ -14,6 +17,9 @@ import com.voyager.tourism.domain.repository.TravelPreferencesRepository
 import com.voyager.tourism.domain.repository.BehaviorAnalysisRepository
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.domain.repository.TravelRepository
+import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.domain.repository.CatalogRepository
+import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -68,4 +74,22 @@ abstract class RepositoryModule {
     abstract fun bindTravelRepository(
         travelRepositoryImpl: TravelRepositoryImpl
     ): TravelRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVoyagerAiRepository(
+        impl: VoyagerAiRepositoryImpl
+    ): VoyagerAiRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCatalogRepository(
+        impl: CatalogRepositoryImpl
+    ): CatalogRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBackendSupplementRepository(
+        impl: BackendSupplementRepositoryImpl
+    ): BackendSupplementRepository
 }

@@ -1,5 +1,9 @@
 package com.voyager.tourism.domain.usecase.auth
 
+import com.squareup.moshi.Moshi
+import com.voyager.tourism.data.dto.UserDto
+import com.voyager.tourism.data.local.PreferencesManager
+import com.voyager.tourism.data.local.TokenManager
 import com.voyager.tourism.domain.model.User
 import com.voyager.tourism.domain.repository.AuthRepository
 import javax.inject.Inject
@@ -9,7 +13,10 @@ import javax.inject.Inject
  * Encapsulates the business logic for creating a new user account
  */
 class RegisterUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val tokenManager: TokenManager,
+    private val preferencesManager: PreferencesManager,
+    private val moshi: Moshi,
 ) {
     
     /**
@@ -33,8 +40,9 @@ class RegisterUseCase @Inject constructor(
             
             if (userDtoResult.isSuccess) {
                 val userDto = userDtoResult.getOrThrow()
-                
-                // Convert to domain model
+                userDto.token?.let { tokenManager.saveToken(it) }
+                preferencesManager.saveCurrentUserId(userDto.id.toString())
+                tokenManager.saveUser(moshi.adapter(UserDto::class.java).toJson(userDto))
                 val user = com.voyager.tourism.domain.model.User(
                     id = userDto.id.toString(),
                     email = userDto.email,

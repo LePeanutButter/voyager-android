@@ -1,5 +1,6 @@
 package com.voyager.tourism.presentation.ui.social
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -56,7 +60,7 @@ fun TravelerMatchingScreen(
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    imageVector = Icons.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -102,7 +106,7 @@ fun TravelerMatchingScreen(
                     )
                     IconButton(onClick = { viewModel.clearSuccessMessage() }) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                            imageVector = Icons.Filled.Close,
                             contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -134,7 +138,7 @@ fun TravelerMatchingScreen(
                     )
                     IconButton(onClick = { viewModel.clearError() }) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                            imageVector = Icons.Filled.Close,
                             contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -239,7 +243,7 @@ private fun TravelerCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "${traveler.firstName.first()}${traveler.lastName.first()}",
+                                    text = "${traveler.firstName.firstOrNull() ?: '?'}${traveler.lastName.firstOrNull() ?: '?'}",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     fontWeight = FontWeight.Bold
@@ -278,7 +282,7 @@ private fun TravelerCard(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "${traveler.compatibilityScore}%",
+                        text = "${traveler.compatibilityScore ?: 0}%",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -304,13 +308,13 @@ private fun TravelerCard(
                     modifier = Modifier.padding(12.dp)
                 ) {
                     Text(
-                        text = traveler.travelPlanTitle,
+                        text = traveler.travelPlanTitle ?: "",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Destination: ${traveler.destinationLocation}",
+                        text = "Destination: ${traveler.destinationLocation ?: "—"}",
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
@@ -322,7 +326,7 @@ private fun TravelerCard(
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        text = "Group size: ${traveler.numberOfTravelers} ${if (traveler.numberOfTravelers == 1) "traveler" else "travelers"}",
+                        text = "Group size: ${traveler.numberOfTravelers ?: 0} ${if (traveler.numberOfTravelers == 1) "traveler" else "travelers"}",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

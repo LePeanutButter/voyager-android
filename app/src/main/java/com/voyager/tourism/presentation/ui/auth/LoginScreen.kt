@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.LoginViewModel
 import com.voyager.tourism.presentation.viewmodel.LoginUiState
 
@@ -30,7 +31,8 @@ import com.voyager.tourism.presentation.viewmodel.LoginUiState
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel = hiltViewModel()
+    authViewModel: AuthViewModel,
+    viewModel: LoginViewModel = hiltViewModel(),
 ) {
     var usernameOrEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -46,7 +48,10 @@ fun LoginScreen(
     LaunchedEffect(uiState) {
         when (uiState) {
             is LoginUiState.Success -> {
+                val user = (uiState as LoginUiState.Success).user
+                authViewModel.adoptAuthenticatedUser(user)
                 navController.navigate("dashboard") {
+                    launchSingleTop = true
                     popUpTo("login") { inclusive = true }
                 }
             }

@@ -25,7 +25,7 @@ data class UserUpdateDto(
     val bio: String? = null,
     
     @Json(name = "interests")
-    val interests: Set<String>? = null,
+    val interests: List<String>? = null,
     
     @Json(name = "dateOfBirth")
     val dateOfBirth: String? = null // LocalDateTime from backend

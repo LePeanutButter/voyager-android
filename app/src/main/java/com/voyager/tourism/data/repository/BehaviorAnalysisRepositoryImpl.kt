@@ -25,7 +25,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         activityCategory: String?,
         sessionDuration: Int?,
         context: Map<String, Any>
-    ): Result<ApiResponse> {
+    ): Result<BehaviorAnalysisSimpleResponse> {
         return try {
             val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
             
@@ -99,7 +99,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
     
     override suspend fun batchTrackInteractions(
         requests: List<BehaviorTrackingRequest>
-    ): Result<ApiResponse> {
+    ): Result<BehaviorAnalysisSimpleResponse> {
         return try {
             val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
             
@@ -134,7 +134,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun clearUserBehaviorData(userId: String): Result<ApiResponse> {
+    override suspend fun clearUserBehaviorData(userId: String): Result<BehaviorAnalysisSimpleResponse> {
         return try {
             val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
             

@@ -18,7 +18,7 @@ interface BehaviorAnalysisRepository {
         activityCategory: String? = null,
         sessionDuration: Int? = null,
         context: Map<String, Any> = emptyMap()
-    ): Result<ApiResponse>
+    ): Result<BehaviorAnalysisSimpleResponse>
     
     /**
      * Analyze user behavior patterns and generate preference updates
@@ -43,7 +43,7 @@ interface BehaviorAnalysisRepository {
      */
     suspend fun batchTrackInteractions(
         requests: List<BehaviorTrackingRequest>
-    ): Result<ApiResponse>
+    ): Result<BehaviorAnalysisSimpleResponse>
     
     /**
      * Get detected behavior patterns for a user
@@ -56,5 +56,5 @@ interface BehaviorAnalysisRepository {
     /**
      * Clear all behavior data for a user
      */
-    suspend fun clearUserBehaviorData(userId: String): Result<ApiResponse>
+    suspend fun clearUserBehaviorData(userId: String): Result<BehaviorAnalysisSimpleResponse>
 }

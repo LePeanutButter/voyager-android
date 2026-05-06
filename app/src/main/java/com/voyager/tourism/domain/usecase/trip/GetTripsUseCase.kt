@@ -1,5 +1,6 @@
 package com.voyager.tourism.domain.usecase.trip
 
+import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TripRepository
 import com.voyager.tourism.domain.model.Trip
 import javax.inject.Inject
@@ -9,20 +10,17 @@ import javax.inject.Inject
  * Encapsulates the business logic for retrieving trip data
  */
 class GetTripsUseCase @Inject constructor(
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val preferencesManager: PreferencesManager,
 ) {
     
     /**
-     * Get all trips for the current user
-     * @return Result containing list of trips or error
+     * Get all trips for the current user (uses stored user id).
      */
     suspend operator fun invoke(): Result<List<Trip>> {
-        return try {
-            // Use getCurrentUserId from auth repository or pass userId parameter
-            tripRepository.getUserTrips("") // TODO: Get current user ID
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val userId = preferencesManager.getCurrentUserId()
+            ?: return Result.failure(IllegalStateException("No hay sesión: falta user id"))
+        return invoke(userId)
     }
     
     /**

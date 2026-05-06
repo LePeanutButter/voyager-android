@@ -1,132 +1,244 @@
 package com.voyager.tourism.presentation.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.voyager.tourism.presentation.ui.assistant.AiAssistantScreen
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
 import com.voyager.tourism.presentation.ui.auth.RegisterScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
-import com.voyager.tourism.presentation.ui.trip.TripListScreen
-import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.voyager.tourism.presentation.ui.profile.ProfileScreen
+import com.voyager.tourism.presentation.ui.place.PlaceDetailScreen
 import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
+import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
 import com.voyager.tourism.presentation.ui.social.SocialCollaborationScreen
+import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
+import com.voyager.tourism.presentation.ui.trip.TripDetailScreen
+import com.voyager.tourism.presentation.ui.trip.TripListScreen
+import com.voyager.tourism.presentation.viewmodel.AuthState
 import com.voyager.tourism.presentation.viewmodel.AuthViewModel
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
-/**
- * Main navigation component for the Tourism Intelligent Platform
- * Handles navigation between different screens using Jetpack Navigation Compose
- */
+private const val ROUTE_BOOTSTRAP = "bootstrap"
+
 @Composable
-fun TourismNavigation(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = "login"
-    ) {
-        // Authentication screens
-        composable("login") {
-            LoginScreen(navController = navController)
-        }
-        
-        composable("register") {
-            RegisterScreen(navController = navController)
-        }
-        
-        // Main app screens
-        composable("dashboard") {
-            DashboardScreen(
-                onTripClick = { tripId ->
-                    navController.navigate("trip_detail/$tripId")
-                },
-                onRecommendationsClick = {
-                    navController.navigate("recommendations")
-                },
-                onSharedActivitiesClick = {
-                    navController.navigate("social")
-                },
-                onProfileClick = {
-                    navController.navigate("profile")
-                }
-            )
-        }
-        
-        composable("trips") {
-            TripListScreen(
-                onTripClick = { tripId ->
-                    navController.navigate("trip_detail/$tripId")
-                },
-                onAddTrip = {
-                    navController.navigate("create_trip")
-                }
-            )
-        }
-        
-        composable("trip_detail/{tripId}") { backStackEntry ->
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-            // Trip detail screen implementation
-        }
-        
-        composable("create_travel_plan") {
-            CreateTravelPlanScreen(navController = navController)
-        }
-        
-        composable("recommendations") {
-            RecommendationsScreen(
-                onPlaceClick = { placeId ->
-                    navController.navigate("place_detail/$placeId")
-                }
-            )
-        }
-        
-        composable("place_detail/{placeId}") { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getString("placeId") ?: ""
-            // Place detail screen implementation
-        }
-        
-        composable("profile") {
-            ProfileScreen(
-                onLogout = {
-                    navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
-                    }
-                },
-                onBack = { navController.navigateUp() },
-                onTravelPreferences = { navController.navigate("travel_preferences") }
-            )
-        }
+fun TourismNavigation(
+    navController: NavHostController,
+    authViewModel: AuthViewModel,
+) {
+    val authState by authViewModel.authState.collectAsState()
+    val oauthError by authViewModel.oauthError.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-        composable("travel_preferences") {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val currentUser by authViewModel.currentUser.collectAsState()
-            val user = currentUser
-            if (user != null) {
-                TravelPreferencesScreen(
-                    userId = user.id,
-                    onBack = { navController.popBackStack() }
-                )
-            } else {
-                Text(
-                    "Inicia sesión para configurar preferencias.",
-                    modifier = Modifier.padding(16.dp)
-                )
+    LaunchedEffect(oauthError) {
+        val msg = oauthError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        authViewModel.clearOAuthError()
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.navigateAfterAuth.collect { route ->
+            navController.navigate(route) {
+                launchSingleTop = true
+                popUpTo(navController.graph.id) { inclusive = true }
             }
         }
-        
-        composable("social") {
-            SocialCollaborationScreen()
-        }
-        
-        composable("ai_assistant") {
-            // AI assistant chat screen implementation
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = ROUTE_BOOTSTRAP,
+            ) {
+                composable(ROUTE_BOOTSTRAP) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        when (authState) {
+                            is AuthState.Loading -> CircularProgressIndicator()
+                            else -> {
+                                LaunchedEffect(authState) {
+                                    when (authState) {
+                                        is AuthState.Authenticated -> {
+                                            navController.navigate(AuthViewModel.ROUTE_DASHBOARD) {
+                                                popUpTo(ROUTE_BOOTSTRAP) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                        else -> {
+                                            navController.navigate(AuthViewModel.ROUTE_LOGIN) {
+                                                popUpTo(ROUTE_BOOTSTRAP) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                }
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+                composable(AuthViewModel.ROUTE_LOGIN) {
+                    LoginScreen(
+                        navController = navController,
+                        authViewModel = authViewModel,
+                    )
+                }
+                composable("register") {
+                    RegisterScreen(navController = navController)
+                }
+                composable(AuthViewModel.ROUTE_DASHBOARD) {
+                    DashboardScreen(
+                        authViewModel = authViewModel,
+                        onTripClick = { tripId ->
+                            navController.navigate("trip_detail/$tripId") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onRecommendationsClick = {
+                            navController.navigate("recommendations") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onSharedActivitiesClick = {
+                            navController.navigate("social") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onProfileClick = {
+                            navController.navigate("profile") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onPlanTripClick = {
+                            navController.navigate("create_travel_plan") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onAiAssistantClick = {
+                            navController.navigate("ai_assistant") {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable("trips") {
+                    TripListScreen(
+                        authViewModel = authViewModel,
+                        onTripClick = { tripId ->
+                            navController.navigate("trip_detail/$tripId") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onAddTrip = {
+                            navController.navigate("create_travel_plan") {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable(
+                    route = "trip_detail/{tripId}",
+                    arguments = listOf(
+                        navArgument("tripId") { type = NavType.StringType },
+                    ),
+                ) { entry ->
+                    val tripId = entry.arguments?.getString("tripId").orEmpty()
+                    TripDetailScreen(
+                        tripId = tripId,
+                        onBack = { navController.navigateUp() },
+                    )
+                }
+                composable("create_travel_plan") {
+                    CreateTravelPlanScreen(navController = navController)
+                }
+                composable("recommendations") {
+                    RecommendationsScreen(
+                        onPlaceClick = { placeId ->
+                            navController.navigate("place_detail/$placeId") {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable(
+                    route = "place_detail/{placeId}",
+                    arguments = listOf(
+                        navArgument("placeId") { type = NavType.StringType },
+                    ),
+                ) { entry ->
+                    val placeId = entry.arguments?.getString("placeId").orEmpty()
+                    PlaceDetailScreen(
+                        placeId = placeId,
+                        onBack = { navController.navigateUp() },
+                    )
+                }
+                composable("profile") {
+                    ProfileScreen(
+                        onLogout = {
+                            authViewModel.logout()
+                            navController.navigate(AuthViewModel.ROUTE_LOGIN) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onBack = { navController.navigateUp() },
+                        onTravelPreferences = {
+                            navController.navigate("travel_preferences") {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable("travel_preferences") {
+                    val currentUser by authViewModel.currentUser.collectAsState()
+                    val user = currentUser
+                    if (user != null) {
+                        TravelPreferencesScreen(
+                            userId = user.id,
+                            onBack = { navController.popBackStack() },
+                        )
+                    } else {
+                        Text(
+                            "Inicia sesión para configurar preferencias.",
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
+                composable("social") {
+                    SocialCollaborationScreen(
+                        onBack = { navController.navigateUp() },
+                    )
+                }
+                composable("ai_assistant") {
+                    AiAssistantScreen(onBack = { navController.navigateUp() })
+                }
+            }
         }
     }
 }

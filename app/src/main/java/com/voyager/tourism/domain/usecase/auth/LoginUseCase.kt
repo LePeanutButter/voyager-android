@@ -3,6 +3,7 @@ package com.voyager.tourism.domain.usecase.auth
 import com.voyager.tourism.domain.model.User
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.data.dto.UserDto
+import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.local.TokenManager
 import com.squareup.moshi.Moshi
 import javax.inject.Inject
@@ -14,7 +15,8 @@ import javax.inject.Inject
 class LoginUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val tokenManager: TokenManager,
-    private val moshi: Moshi
+    private val preferencesManager: PreferencesManager,
+    private val moshi: Moshi,
 ) {
     
     /**
@@ -38,10 +40,8 @@ class LoginUseCase @Inject constructor(
             if (userDtoResult.isSuccess) {
                 val userDto = userDtoResult.getOrThrow()
                 
-                // Save token and user data
                 userDto.token?.let { tokenManager.saveToken(it) }
-                
-                // Save user data as JSON
+                preferencesManager.saveCurrentUserId(userDto.id.toString())
                 val userJson = moshi.adapter(com.voyager.tourism.data.dto.UserDto::class.java).toJson(userDto)
                 tokenManager.saveUser(userJson)
                 
@@ -64,23 +64,16 @@ class LoginUseCase @Inject constructor(
      */
     suspend fun loginWithGoogle(code: String, state: String? = null): Result<User> {
         return try {
-            val response = authRepository.handleGoogleCallback(code, state ?: "")
-            
-            if (response.status == 200 && response.data != null) {
-                val userDto = response.data!!
-                
-                // Save token and user data
+            val result = authRepository.handleGoogleCallback(code, state ?: "")
+            if (result.isSuccess) {
+                val userDto = result.getOrThrow()
                 userDto.token?.let { tokenManager.saveToken(it) }
-                
-                // Save user data as JSON
+                preferencesManager.saveCurrentUserId(userDto.id.toString())
                 val userJson = moshi.adapter(UserDto::class.java).toJson(userDto)
                 tokenManager.saveUser(userJson)
-                
-                // Convert to domain model
-                val user = mapToDomainModel(userDto)
-                Result.success(user)
+                Result.success(mapToDomainModel(userDto))
             } else {
-                Result.failure(Exception(response.message ?: "Google OAuth2 failed"))
+                Result.failure(result.exceptionOrNull() ?: Exception("Google OAuth2 failed"))
             }
         } catch (e: Exception) {
             Result.failure(e)

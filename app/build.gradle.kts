@@ -7,6 +7,14 @@ plugins {
     id("kotlin-parcelize")
 }
 
+val voyagerBackendBaseUrl: String =
+    (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "http://10.0.2.2:8080/api/v1/"
+
+val voyagerAiBaseUrl: String =
+    (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "http://10.0.2.2:8000/api/v1/"
+
 android {
     namespace = "com.voyager.tourism"
     compileSdk = 34
@@ -18,12 +26,10 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // AI microservice (FastAPI). Emulator: 10.0.2.2 maps to host localhost.
-        buildConfigField(
-            "String",
-            "AI_SERVICE_BASE_URL",
-            "\"http://192.168.1.8:8000/api/v1/\""
-        )
+        // Spring Boot core (context-path /api/v1). Sobrescribe en gradle.properties: VOYAGER_BACKEND_BASE_URL=https://tu-api.com/api/v1/
+        buildConfigField("String", "BACKEND_BASE_URL", "\"${voyagerBackendBaseUrl.replace("\"", "\\\"")}\"")
+        // FastAPI AI (prefijo /api/v1). Sobrescribe: VOYAGER_AI_BASE_URL=https://tu-ia.com/api/v1/
+        buildConfigField("String", "AI_SERVICE_BASE_URL", "\"${voyagerAiBaseUrl.replace("\"", "\\\"")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -69,9 +75,11 @@ dependencies {
     // Core Android
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
 
     // Compose BOM
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
