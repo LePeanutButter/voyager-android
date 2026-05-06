@@ -18,6 +18,13 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
+        // AI microservice (FastAPI). Emulator: 10.0.2.2 maps to host localhost.
+        buildConfigField(
+            "String",
+            "AI_SERVICE_BASE_URL",
+            "\"http://192.168.1.8:8000/api/v1/\""
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -48,6 +55,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -62,6 +70,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
 
     // Compose BOM
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))

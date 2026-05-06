@@ -62,4 +62,17 @@ interface UserRepository {
      * Delete user account
      */
     suspend fun deleteUser(userId: String): Result<Unit>
+    
+        
+    /**
+     * Update user profile
+     */
+    suspend fun updateUser(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        bio: String,
+        phoneNumber: String?,
+        interests: List<String>
+    ): Result<com.voyager.tourism.data.dto.UserDto>
 }

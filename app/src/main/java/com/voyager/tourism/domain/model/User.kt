@@ -2,18 +2,24 @@ package com.voyager.tourism.domain.model
 
 /**
  * Domain model representing a user in the Tourism Intelligent Platform
+ * Matches backend UserDto structure for consistency
  */
 data class User(
-    val id: String,
+    val id: String, // Long from backend converted to String
     val email: String,
     val username: String,
     val firstName: String,
     val lastName: String,
-    val avatar: String? = null,
-    val preferences: UserPreferences? = null,
-    val isVerified: Boolean = false,
-    val createdAt: Long,
-    val updatedAt: Long
+    val phoneNumber: String? = null,
+    val role: String, // UserRole enum from backend converted to String
+    val status: String, // UserStatus enum from backend converted to String
+    val profileImageUrl: String? = null,
+    val bio: String? = null,
+    val interests: Set<String> = emptySet(),
+    val dateOfBirth: String? = null, // LocalDateTime from backend
+    val createdAt: String? = null, // LocalDateTime from backend
+    val updatedAt: String? = null, // LocalDateTime from backend
+    val token: String? = null // JWT token
 )
 
 /**

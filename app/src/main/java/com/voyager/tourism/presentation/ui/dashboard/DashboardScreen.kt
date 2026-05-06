@@ -3,7 +3,10 @@ package com.voyager.tourism.presentation.ui.dashboard
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +52,7 @@ fun DashboardScreen(
             
             IconButton(onClick = onProfileClick) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.AccountCircle,
+                    imageVector = Icons.Filled.AccountCircle,
                     contentDescription = "Profile"
                 )
             }
@@ -143,8 +146,9 @@ private fun TripCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

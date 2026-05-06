@@ -5,14 +5,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
-import com.voyager.tourism.data.database.converter.Converters
+import com.voyager.tourism.data.database.Converters
 import com.voyager.tourism.data.database.dao.UserDao
 import com.voyager.tourism.data.database.dao.TripDao
 import com.voyager.tourism.data.database.dao.DestinationDao
+import com.voyager.tourism.data.database.dao.ActivityDao
 import com.voyager.tourism.data.database.entity.UserEntity
 import com.voyager.tourism.data.database.entity.TripEntity
 import com.voyager.tourism.data.database.entity.DestinationEntity
 import com.voyager.tourism.data.database.entity.ItineraryItemEntity
+import com.voyager.tourism.data.database.entity.ActivityEntity
 
 /**
  * Room database for Tourism Intelligent Platform
@@ -23,7 +25,8 @@ import com.voyager.tourism.data.database.entity.ItineraryItemEntity
         UserEntity::class,
         TripEntity::class,
         DestinationEntity::class,
-        ItineraryItemEntity::class
+        ItineraryItemEntity::class,
+        ActivityEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -34,6 +37,7 @@ abstract class TourismDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao
     abstract fun destinationDao(): DestinationDao
+    abstract fun activityDao(): ActivityDao
     
     companion object {
         @Volatile

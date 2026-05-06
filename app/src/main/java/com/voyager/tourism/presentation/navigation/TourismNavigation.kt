@@ -5,11 +5,22 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
+import com.voyager.tourism.presentation.ui.auth.RegisterScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.ui.trip.TripListScreen
+import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
+import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
 import com.voyager.tourism.presentation.ui.social.SocialCollaborationScreen
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 /**
  * Main navigation component for the Tourism Intelligent Platform
@@ -23,20 +34,11 @@ fun TourismNavigation(navController: NavHostController) {
     ) {
         // Authentication screens
         composable("login") {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate("dashboard") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                onRegisterClick = {
-                    navController.navigate("register")
-                }
-            )
+            LoginScreen(navController = navController)
         }
         
         composable("register") {
-            // Register screen implementation
+            RegisterScreen(navController = navController)
         }
         
         // Main app screens
@@ -73,8 +75,8 @@ fun TourismNavigation(navController: NavHostController) {
             // Trip detail screen implementation
         }
         
-        composable("create_trip") {
-            // Create trip screen implementation
+        composable("create_travel_plan") {
+            CreateTravelPlanScreen(navController = navController)
         }
         
         composable("recommendations") {
@@ -96,8 +98,27 @@ fun TourismNavigation(navController: NavHostController) {
                     navController.navigate("login") {
                         popUpTo("dashboard") { inclusive = true }
                     }
-                }
+                },
+                onBack = { navController.navigateUp() },
+                onTravelPreferences = { navController.navigate("travel_preferences") }
             )
+        }
+
+        composable("travel_preferences") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val currentUser by authViewModel.currentUser.collectAsState()
+            val user = currentUser
+            if (user != null) {
+                TravelPreferencesScreen(
+                    userId = user.id,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                Text(
+                    "Inicia sesión para configurar preferencias.",
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
         
         composable("social") {

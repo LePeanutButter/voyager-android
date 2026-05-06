@@ -1,9 +1,12 @@
 package com.voyager.tourism.data.repository
 
 import com.voyager.tourism.data.api.TourismApiService
+import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.database.dao.UserDao
 import com.voyager.tourism.data.mapper.UserMapper
 import com.voyager.tourism.data.local.PreferencesManager
+import com.voyager.tourism.data.dto.UserDto
+import com.voyager.tourism.data.dto.UserUpdateRequest
 import com.voyager.tourism.domain.model.User
 import com.voyager.tourism.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val apiService: TourismApiService,
+    private val userApiService: UserApiService,
     private val userDao: UserDao,
     private val userMapper: UserMapper,
     private val preferencesManager: PreferencesManager
@@ -41,14 +45,14 @@ class UserRepositoryImpl @Inject constructor(
                 } else {
                     // Try to get from local cache if API fails
                     val localUser = userDao.getCurrentUser()
-                    localUser?.let { Result.success(userMapper.toDomain(it)) }
+                    localUser?.let { Result.success(userMapper.entityToDomain(it)) }
                         ?: Result.failure(Exception("No user data available"))
                 }
             }
         } catch (e: Exception) {
             // Try local cache as fallback
             val localUser = userDao.getCurrentUser()
-            localUser?.let { Result.success(userMapper.toDomain(it)) }
+            localUser?.let { Result.success(userMapper.entityToDomain(it)) }
                 ?: Result.failure(e)
         }
     }
@@ -56,21 +60,22 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUserById(userId: String): Result<User?> {
         return try {
             val token = preferencesManager.getAuthToken()
-            val response = apiService.getCurrentUser("Bearer $token")
-            if (response.isSuccessful) {
-                val userDto = response.body()
-                userDto?.let {
-                    Result.success(userMapper.toDomain(it))
-                } ?: Result.success(null)
+            val response = userApiService.getUserById(userId)
+            if (response.status == 200 && response.data != null) {
+                val userDto = response.data
+                val user = userMapper.toDomain(userDto)
+                // Cache user locally
+                userDao.insertUser(userMapper.toEntity(userDto))
+                Result.success(user)
             } else {
                 // Try local database
                 val localUser = userDao.getUserById(userId)
-                localUser?.let { Result.success(userMapper.toDomain(it)) }
+                localUser?.let { Result.success(userMapper.entityToDomain(it)) }
                     ?: Result.failure(Exception("User not found"))
             }
         } catch (e: Exception) {
             val localUser = userDao.getUserById(userId)
-            localUser?.let { Result.success(userMapper.toDomain(it)) }
+            localUser?.let { Result.success(userMapper.entityToDomain(it)) }
                 ?: Result.failure(e)
         }
     }
@@ -85,6 +90,7 @@ class UserRepositoryImpl @Inject constructor(
                 loginResponse?.let {
                     // Save auth token
                     preferencesManager.saveAuthToken(it.token)
+                    // Save refresh token
                     preferencesManager.saveRefreshToken(it.refreshToken)
                     preferencesManager.saveCurrentUserId(it.user.id)
                     
@@ -189,8 +195,8 @@ class UserRepositoryImpl @Inject constructor(
     }
     
     override fun isUserAuthenticated(): Flow<Boolean> {
-        return preferencesManager.getAuthTokenFlow().map { token ->
-            !token.isNullOrEmpty()
+        return preferencesManager.authTokenFlow.map { token ->
+            token != null
         }
     }
     
@@ -202,6 +208,40 @@ class UserRepositoryImpl @Inject constructor(
             userDao.deleteUserById(userId)
             preferencesManager.clearAuthData()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+        
+    override suspend fun updateUser(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        bio: String,
+        phoneNumber: String?,
+        interests: List<String>
+    ): Result<UserDto> {
+        return try {
+            val token = preferencesManager.getAuthToken()
+            if (token.isNullOrEmpty()) {
+                Result.failure(Exception("User not authenticated"))
+            } else {
+                val request = UserUpdateDto(
+                    firstName = firstName,
+                    lastName = lastName,
+                    bio = bio,
+                    phoneNumber = phoneNumber,
+                    interests = interests
+                )
+                
+                val response = userApiService.updateUser(userId, request)
+                if (response.status == 200 && response.data != null) {
+                    Result.success(response.data)
+                } else {
+                    Result.failure(Exception(response.message ?: "Failed to update user"))
+                }
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
