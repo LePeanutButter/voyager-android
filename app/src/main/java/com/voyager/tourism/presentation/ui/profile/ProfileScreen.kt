@@ -22,7 +22,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.voyager.tourism.presentation.viewmodel.ProfileViewModel
 import com.voyager.tourism.presentation.viewmodel.ProfileUiState
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +33,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navController: NavController,
+    onLogout: () -> Unit,
+    onBack: () -> Unit = {},
+    onTravelPreferences: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -104,7 +105,7 @@ fun ProfileScreen(
                 fontWeight = FontWeight.Bold
             )
             
-            IconButton(onClick = { navController.navigateUp() }) {
+            IconButton(onClick = onBack) {
                 Icon(Icons.Default.Close, contentDescription = "Cerrar")
             }
         }

@@ -18,6 +18,13 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
+        // AI microservice (FastAPI). Emulator: 10.0.2.2 maps to host localhost.
+        buildConfigField(
+            "String",
+            "AI_SERVICE_BASE_URL",
+            "\"http://192.168.1.8:8000/api/v1/\""
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -48,6 +55,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

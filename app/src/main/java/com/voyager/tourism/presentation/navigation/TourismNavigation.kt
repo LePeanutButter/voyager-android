@@ -10,8 +10,17 @@ import com.voyager.tourism.presentation.ui.auth.RegisterScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.ui.trip.TripListScreen
 import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
+import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 /**
  * Main navigation component for the Tourism Intelligent Platform
@@ -81,7 +90,32 @@ fun TourismNavigation(navController: NavHostController) {
         }
         
         composable("profile") {
-            ProfileScreen(navController = navController)
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("dashboard") { inclusive = true }
+                    }
+                },
+                onBack = { navController.navigateUp() },
+                onTravelPreferences = { navController.navigate("travel_preferences") }
+            )
+        }
+
+        composable("travel_preferences") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val currentUser by authViewModel.currentUser.collectAsState()
+            val user = currentUser
+            if (user != null) {
+                TravelPreferencesScreen(
+                    userId = user.id,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                Text(
+                    "Inicia sesión para configurar preferencias.",
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
         
         composable("social") {
