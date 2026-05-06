@@ -78,33 +78,7 @@ fun TourismNavigation(
                 startDestination = ROUTE_BOOTSTRAP,
             ) {
                 composable(ROUTE_BOOTSTRAP) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        when (authState) {
-                            is AuthState.Loading -> CircularProgressIndicator()
-                            else -> {
-                                LaunchedEffect(authState) {
-                                    when (authState) {
-                                        is AuthState.Authenticated -> {
-                                            navController.navigate(AuthViewModel.ROUTE_DASHBOARD) {
-                                                popUpTo(ROUTE_BOOTSTRAP) { inclusive = true }
-                                                launchSingleTop = true
-                                            }
-                                        }
-                                        else -> {
-                                            navController.navigate(AuthViewModel.ROUTE_LOGIN) {
-                                                popUpTo(ROUTE_BOOTSTRAP) { inclusive = true }
-                                                launchSingleTop = true
-                                            }
-                                        }
-                                    }
-                                }
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
+                    BootstrapRoute(authState = authState, navController = navController)
                 }
                 composable(AuthViewModel.ROUTE_LOGIN) {
                     LoginScreen(
@@ -243,5 +217,31 @@ fun TourismNavigation(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BootstrapRoute(
+    authState: AuthState,
+    navController: NavHostController,
+) {
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Loading) return@LaunchedEffect
+        val target = if (authState is AuthState.Authenticated) {
+            AuthViewModel.ROUTE_DASHBOARD
+        } else {
+            AuthViewModel.ROUTE_LOGIN
+        }
+        navController.navigate(target) {
+            popUpTo(ROUTE_BOOTSTRAP) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
     }
 }

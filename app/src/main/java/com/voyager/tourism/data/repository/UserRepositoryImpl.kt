@@ -32,6 +32,10 @@ class UserRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager,
 ) : UserRepository {
 
+    private companion object {
+        const val INVALID_USER_ID_MSG = "userId inválido"
+    }
+
     /** @see UserRepository.getCurrentUser */
     override suspend fun getCurrentUser(): Result<User?> {
         return try {
@@ -68,7 +72,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUserById(userId: String): Result<User?> {
         return try {
             val id = userId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("userId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_USER_ID_MSG))
             val response = userApiService.getUserById(id)
             if (response.status == 200 && response.data != null) {
                 val userDto = response.data
@@ -177,14 +181,14 @@ class UserRepositoryImpl @Inject constructor(
                 return Result.failure(Exception("Preferencias IA: HTTP ${aiResp.code()}"))
             }
             val uid = userId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("userId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_USER_ID_MSG))
             val response = userApiService.getUserById(uid)
             if (response.status == 200 && response.data != null) {
                 val dto = response.data
                 userDao.updateUser(userMapper.toEntity(dto))
                 Result.success(userMapper.toDomain(dto))
             } else {
-                Result.failure(Exception(response.message ?: "No se pudo refrescar el usuario"))
+                Result.failure(Exception(response.message.ifBlank { "No se pudo refrescar el usuario" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -227,7 +231,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun deleteUser(userId: String): Result<Unit> {
         return try {
             val id = userId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("userId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_USER_ID_MSG))
             val response = userApiService.deleteUser(id)
             if (response.status == 200) {
                 userDao.deleteUserById(userId)

@@ -39,66 +39,19 @@ class CreateTravelPlanUseCase @Inject constructor(
         travelers: Int,
         description: String?
     ): Result<TravelPlanDto> {
-        // Validate required fields
-        if (title.isBlank()) {
-            return Result.failure(IllegalArgumentException("El título es requerido"))
-        }
-        
-        if (destination.isBlank()) {
-            return Result.failure(IllegalArgumentException("El destino es requerido"))
-        }
-        
-        if (startDate.isBlank()) {
-            return Result.failure(IllegalArgumentException("La fecha de inicio es requerida"))
-        }
-        
-        if (endDate.isBlank()) {
-            return Result.failure(IllegalArgumentException("La fecha de fin es requerida"))
-        }
-        
-        // Validate date format and logic
-        val startDateObj = try {
-            dateFormat.parse(startDate)
-        } catch (e: Exception) {
-            return Result.failure(IllegalArgumentException("Formato de fecha de inicio inválido. Use yyyy-MM-dd"))
-        }
-        
-        val endDateObj = try {
-            dateFormat.parse(endDate)
-        } catch (e: Exception) {
-            return Result.failure(IllegalArgumentException("Formato de fecha de fin inválido. Use yyyy-MM-dd"))
-        }
-        
-        // Validate date range
-        if (startDateObj != null && endDateObj != null) {
-            if (endDateObj.before(startDateObj)) {
-                return Result.failure(IllegalArgumentException("El rango de fechas es inválido"))
-            }
-            
-            // Check if dates are in the past
-            val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.time
-            
-            if (startDateObj.before(today)) {
-                return Result.failure(IllegalArgumentException("La fecha de inicio no puede ser en el pasado"))
-            }
-        }
-        
-        // Validate number of travelers
-        if (travelers < 1) {
-            return Result.failure(IllegalArgumentException("El número de viajeros debe ser al menos 1"))
-        }
-        
-        // Validate budget if provided
-        budget?.let {
-            if (it < 0) {
-                return Result.failure(IllegalArgumentException("El presupuesto no puede ser negativo"))
-            }
-        }
+        validateRequired(title = title, destination = destination, startDate = startDate, endDate = endDate)
+            ?.let { return Result.failure(it) }
+
+        val startDateObj = parseRequiredDate(startDate)
+            ?: return Result.failure(IllegalArgumentException("Formato de fecha de inicio inválido. Use yyyy-MM-dd"))
+        val endDateObj = parseRequiredDate(endDate)
+            ?: return Result.failure(IllegalArgumentException("Formato de fecha de fin inválido. Use yyyy-MM-dd"))
+
+        validateDates(startDateObj = startDateObj, endDateObj = endDateObj)
+            ?.let { return Result.failure(it) }
+
+        validateTravelers(travelers)?.let { return Result.failure(it) }
+        validateBudget(budget)?.let { return Result.failure(it) }
         
         return try {
             val request = TravelPlanRequest(
@@ -116,5 +69,54 @@ class CreateTravelPlanUseCase @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun validateRequired(
+        title: String,
+        destination: String,
+        startDate: String,
+        endDate: String,
+    ): Exception? {
+        if (title.isBlank()) return IllegalArgumentException("El título es requerido")
+        if (destination.isBlank()) return IllegalArgumentException("El destino es requerido")
+        if (startDate.isBlank()) return IllegalArgumentException("La fecha de inicio es requerida")
+        if (endDate.isBlank()) return IllegalArgumentException("La fecha de fin es requerida")
+        return null
+    }
+
+    private fun parseRequiredDate(value: String): Date? {
+        return try {
+            dateFormat.parse(value)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun validateDates(startDateObj: Date, endDateObj: Date): Exception? {
+        if (endDateObj.before(startDateObj)) {
+            return IllegalArgumentException("El rango de fechas es inválido")
+        }
+
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.time
+
+        if (startDateObj.before(today)) {
+            return IllegalArgumentException("La fecha de inicio no puede ser en el pasado")
+        }
+        return null
+    }
+
+    private fun validateTravelers(travelers: Int): Exception? {
+        if (travelers < 1) return IllegalArgumentException("El número de viajeros debe ser al menos 1")
+        return null
+    }
+
+    private fun validateBudget(budget: Double?): Exception? {
+        if (budget != null && budget < 0) return IllegalArgumentException("El presupuesto no puede ser negativo")
+        return null
     }
 }

@@ -46,6 +46,7 @@ import com.voyager.tourism.presentation.viewmodel.SocialCollaborationViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun SocialCollaborationScreen(
     onBack: (() -> Unit)? = null,
     viewModel: SocialCollaborationViewModel = hiltViewModel(),

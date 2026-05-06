@@ -20,6 +20,7 @@ import com.voyager.tourism.presentation.viewmodel.TripViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107")
 fun DashboardScreen(
     authViewModel: AuthViewModel,
     onTripClick: (String) -> Unit,

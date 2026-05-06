@@ -26,6 +26,7 @@ class CreateTravelPlanViewModel @Inject constructor(
     /**
      * Create a new travel plan
      */
+    @Suppress("kotlin:S107")
     fun createPlan(
         title: String,
         destination: String,

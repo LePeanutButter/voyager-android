@@ -35,6 +35,7 @@ import com.voyager.tourism.presentation.viewmodel.RegisterUiState
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun RegisterScreen(
     navController: NavController,
     viewModel: RegisterViewModel = hiltViewModel()

@@ -18,14 +18,20 @@ class TravelRepositoryImpl @Inject constructor(
     private val travelApiService: TravelApiService,
 ) : TravelRepository {
 
+    private companion object {
+        const val INVALID_PLAN_ID_MSG = "planId inválido"
+        const val INVALID_USER_ID_MSG = "userId inválido"
+    }
+
     /** @see TravelRepository.createTravelPlan */
     override suspend fun createTravelPlan(request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
             val response = travelApiService.createTravelPlan(request.toTravelPlanDto())
-            if ((response.status == 200 || response.status == 201) && response.data != null) {
-                Result.success(response.data!!)
+            val data = response.data
+            if ((response.status == 200 || response.status == 201) && data != null) {
+                Result.success(data)
             } else {
-                Result.failure(Exception(response.message ?: "Failed to create travel plan"))
+                Result.failure(Exception(response.message.ifBlank { "Failed to create travel plan" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -36,7 +42,7 @@ class TravelRepositoryImpl @Inject constructor(
     override suspend fun getUserTravelPlans(userId: String): Result<List<TravelPlanDto>> {
         return try {
             val uid = userId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("userId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_USER_ID_MSG))
             val response: PagedResponseTravelPlanDto = travelApiService.getUserTravelPlans(uid)
             if (response.status == 200) {
                 Result.success(response.data.orEmpty())
@@ -52,12 +58,13 @@ class TravelRepositoryImpl @Inject constructor(
     override suspend fun getTravelPlanById(planId: String): Result<TravelPlanDto> {
         return try {
             val id = planId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_PLAN_ID_MSG))
             val response = travelApiService.getTravelPlanById(id)
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data!!)
+            val data = response.data
+            if (response.status == 200 && data != null) {
+                Result.success(data)
             } else {
-                Result.failure(Exception(response.message ?: "Failed to get travel plan"))
+                Result.failure(Exception(response.message.ifBlank { "Failed to get travel plan" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -68,12 +75,13 @@ class TravelRepositoryImpl @Inject constructor(
     override suspend fun updateTravelPlan(planId: String, request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
             val id = planId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_PLAN_ID_MSG))
             val response = travelApiService.updateTravelPlan(id, request.toTravelPlanDto().copy(id = id))
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data!!)
+            val data = response.data
+            if (response.status == 200 && data != null) {
+                Result.success(data)
             } else {
-                Result.failure(Exception(response.message ?: "Failed to update travel plan"))
+                Result.failure(Exception(response.message.ifBlank { "Failed to update travel plan" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -84,12 +92,12 @@ class TravelRepositoryImpl @Inject constructor(
     override suspend fun deleteTravelPlan(planId: String): Result<Unit> {
         return try {
             val id = planId.toLongOrNull()
-                ?: return Result.failure(IllegalArgumentException("planId inválido"))
+                ?: return Result.failure(IllegalArgumentException(INVALID_PLAN_ID_MSG))
             val response = travelApiService.deleteTravelPlan(id)
             if (response.status == 200) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception(response.message ?: "Failed to delete travel plan"))
+                Result.failure(Exception(response.message.ifBlank { "Failed to delete travel plan" }))
             }
         } catch (e: Exception) {
             Result.failure(e)

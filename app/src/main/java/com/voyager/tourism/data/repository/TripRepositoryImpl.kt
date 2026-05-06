@@ -25,6 +25,11 @@ class TripRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager,
 ) : TripRepository {
 
+    private companion object {
+        const val NOT_AUTHENTICATED_MSG = "User not authenticated"
+        const val INVALID_ID_MSG = "id inválido"
+    }
+
     /**
      * Reads the opaque user id string currently stored after login.
      */
@@ -62,8 +67,9 @@ class TripRepositoryImpl @Inject constructor(
                 Result.success(tripDao.getTripById(tripId)?.let { tripMapper.toDomain(it) })
             } else {
                 val resp = travelPlanApi.getTravelPlanById(id)
-                if (resp.status == 200 && resp.data != null) {
-                    val trip = tripMapper.fromTravelPlanDto(resp.data!!, currentUserId().orEmpty())
+                val data = resp.data
+                if (resp.status == 200 && data != null) {
+                    val trip = tripMapper.fromTravelPlanDto(data, currentUserId().orEmpty())
                     tripDao.insertTrip(tripMapper.toEntityFromTrip(trip))
                     Result.success(trip)
                 } else {
@@ -79,19 +85,20 @@ class TripRepositoryImpl @Inject constructor(
     override suspend fun createTrip(trip: Trip): Result<Trip> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
-                Result.failure(Exception("User not authenticated"))
+                Result.failure(Exception(NOT_AUTHENTICATED_MSG))
             } else {
                 val body = tripMapper.toTravelPlanDto(trip)
                 val resp = travelPlanApi.createTravelPlan(body)
-                if ((resp.status == 200 || resp.status == 201) && resp.data != null) {
+                val data = resp.data
+                if ((resp.status == 200 || resp.status == 201) && data != null) {
                     val created = tripMapper.fromTravelPlanDto(
-                        resp.data!!,
+                        data,
                         currentUserId().orEmpty(),
                     )
                     tripDao.insertTrip(tripMapper.toEntityFromTrip(created))
                     Result.success(created)
                 } else {
-                    Result.failure(Exception(resp.message ?: "Failed to create trip"))
+                    Result.failure(Exception(resp.message.ifBlank { "Failed to create trip" }))
                 }
             }
         } catch (e: Exception) {
@@ -103,17 +110,18 @@ class TripRepositoryImpl @Inject constructor(
     override suspend fun updateTrip(trip: Trip): Result<Trip> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
-                Result.failure(Exception("User not authenticated"))
+                Result.failure(Exception(NOT_AUTHENTICATED_MSG))
             } else {
                 val id = trip.id.toLongOrNull()
-                    ?: return Result.failure(IllegalArgumentException("id inválido"))
+                    ?: return Result.failure(IllegalArgumentException(INVALID_ID_MSG))
                 val resp = travelPlanApi.updateTravelPlan(id, tripMapper.toTravelPlanDto(trip))
-                if (resp.status == 200 && resp.data != null) {
-                    val updated = tripMapper.fromTravelPlanDto(resp.data!!, currentUserId().orEmpty())
+                val data = resp.data
+                if (resp.status == 200 && data != null) {
+                    val updated = tripMapper.fromTravelPlanDto(data, currentUserId().orEmpty())
                     tripDao.updateTrip(tripMapper.toEntityFromTrip(updated))
                     Result.success(updated)
                 } else {
-                    Result.failure(Exception(resp.message ?: "Failed to update trip"))
+                    Result.failure(Exception(resp.message.ifBlank { "Failed to update trip" }))
                 }
             }
         } catch (e: Exception) {
@@ -125,16 +133,16 @@ class TripRepositoryImpl @Inject constructor(
     override suspend fun deleteTrip(tripId: String): Result<Unit> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
-                Result.failure(Exception("User not authenticated"))
+                Result.failure(Exception(NOT_AUTHENTICATED_MSG))
             } else {
                 val id = tripId.toLongOrNull()
-                    ?: return Result.failure(IllegalArgumentException("id inválido"))
+                    ?: return Result.failure(IllegalArgumentException(INVALID_ID_MSG))
                 val resp = travelPlanApi.deleteTravelPlan(id)
                 if (resp.status == 200) {
                     tripDao.deleteTripById(tripId)
                     Result.success(Unit)
                 } else {
-                    Result.failure(Exception(resp.message ?: "Failed to delete trip"))
+                    Result.failure(Exception(resp.message.ifBlank { "Failed to delete trip" }))
                 }
             }
         } catch (e: Exception) {
@@ -184,11 +192,12 @@ class TripRepositoryImpl @Inject constructor(
                 Result.success(emptyList())
             } else {
                 val resp = travelPlanApi.getMyTravelPlans()
-                if (resp.status == 200 && resp.data != null) {
-                    val trips = resp.data!!.filter(predicate).map { tripMapper.fromTravelPlanDto(it, userId) }
+                val data = resp.data
+                if (resp.status == 200 && data != null) {
+                    val trips = data.filter(predicate).map { tripMapper.fromTravelPlanDto(it, userId) }
                     Result.success(trips)
                 } else {
-                    Result.failure(Exception(resp.message ?: "Failed to load plans"))
+                    Result.failure(Exception(resp.message.ifBlank { "Failed to load plans" }))
                 }
             }
         } catch (e: Exception) {

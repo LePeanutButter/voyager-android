@@ -127,10 +127,11 @@ class SocialRepositoryImpl @Inject constructor(
      * Ensures a single-element [ApiResponse] succeeded before returning its payload.
      */
     private fun <T> requireValue(response: ApiResponse<T>): T {
-        if (response.status in 200..299 && response.data != null) {
-            return response.data!!
+        val data = response.data
+        if (response.status in 200..299 && data != null) {
+            return data
         }
-        throw IllegalStateException(response.message ?: "HTTP ${response.status}")
+        throw IllegalStateException(response.message.ifBlank { "HTTP ${response.status}" })
     }
 
     /**
@@ -140,7 +141,7 @@ class SocialRepositoryImpl @Inject constructor(
         if (response.status in 200..299) {
             return response.data.orEmpty()
         }
-        throw IllegalStateException(response.message ?: "HTTP ${response.status}")
+        throw IllegalStateException(response.message.ifBlank { "HTTP ${response.status}" })
     }
 
     /**

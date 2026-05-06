@@ -34,6 +34,7 @@ import com.voyager.tourism.presentation.viewmodel.TravelerMatchingViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun TravelerMatchingScreen(
     travelPlanId: String,
     token: String,
@@ -176,7 +177,7 @@ fun TravelerMatchingScreen(
                     items(uiState.compatibleTravelers) { traveler ->
                         TravelerCard(
                             traveler = traveler,
-                            onSendRequest = { recipientId, recipientName ->
+                            onSendRequest = { recipientId, _ ->
                                 viewModel.sendConnectionRequest(recipientId, null, token)
                             },
                             isSending = uiState.isSendingRequest

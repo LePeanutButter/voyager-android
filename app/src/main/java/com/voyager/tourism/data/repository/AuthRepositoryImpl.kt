@@ -44,7 +44,7 @@ class AuthRepositoryImpl @Inject constructor(
             if ((response.status == 200 || response.status == 201) && response.data != null) {
                 Result.success(response.data)
             } else {
-                Result.failure(Exception(response.message ?: "Registration failed"))
+                Result.failure(Exception(response.message.ifBlank { "Registration failed" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -69,7 +69,7 @@ class AuthRepositoryImpl @Inject constructor(
             if (response.status == 200 && response.data != null) {
                 Result.success(response.data)
             } else {
-                Result.failure(Exception(response.message ?: "Login failed"))
+                Result.failure(Exception(response.message.ifBlank { "Login failed" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -86,7 +86,7 @@ class AuthRepositoryImpl @Inject constructor(
             if (response.status == 200 && response.data != null) {
                 Result.success(response.data)
             } else {
-                Result.failure(Exception(response.message ?: "Google OAuth2 failed"))
+                Result.failure(Exception(response.message.ifBlank { "Google OAuth2 failed" }))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -100,9 +100,9 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val response = googleAuthApiService.initiateGoogleLogin()
             if (response.status == 200 && response.data != null) {
-                Result.success(response.data!!)
+                Result.success(response.data)
             } else {
-                Result.failure(Exception(response.message ?: "Google login init failed"))
+                Result.failure(Exception(response.message.ifBlank { "Google login init failed" }))
             }
         } catch (e: Exception) {
             Result.failure(e)

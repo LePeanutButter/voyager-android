@@ -17,6 +17,10 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
     private val behaviorAnalysisApi: BehaviorAnalysisApi,
     private val preferencesManager: PreferencesManager
 ) : BehaviorAnalysisRepository {
+
+    private companion object {
+        const val NOT_AUTHENTICATED_MSG = "Not authenticated"
+    }
     
     /** @see BehaviorAnalysisRepository.trackInteraction */
     override suspend fun trackInteraction(
@@ -28,7 +32,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         context: Map<String, Any>
     ): Result<BehaviorAnalysisSimpleResponse> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val request = BehaviorTrackingRequest(
                 userId = userId,
@@ -41,8 +45,9 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
             
             val response = behaviorAnalysisApi.trackUserBehavior(request, "Bearer $token")
             
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed to track behavior: ${response.code()}"))
             }
@@ -59,7 +64,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         includePreferenceUpdates: Boolean
     ): Result<ImplicitPreferenceUpdate> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val request = BehaviorAnalysisRequest(
                 userId = userId,
@@ -70,8 +75,9 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
             
             val response = behaviorAnalysisApi.analyzeUserBehavior(request, "Bearer $token")
             
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed to analyze behavior: ${response.code()}"))
             }
@@ -86,12 +92,13 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         days: Int
     ): Result<BehaviorSummary> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val response = behaviorAnalysisApi.getBehaviorSummary(userId, days, "Bearer $token")
             
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed to get behavior summary: ${response.code()}"))
             }
@@ -105,12 +112,13 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         requests: List<BehaviorTrackingRequest>
     ): Result<BehaviorAnalysisSimpleResponse> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val response = behaviorAnalysisApi.batchTrackBehavior(requests, "Bearer $token")
             
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed to batch track behavior: ${response.code()}"))
             }

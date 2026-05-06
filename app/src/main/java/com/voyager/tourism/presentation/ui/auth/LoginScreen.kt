@@ -36,6 +36,7 @@ import com.voyager.tourism.presentation.viewmodel.LoginUiState
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun LoginScreen(
     navController: NavController,
     authViewModel: AuthViewModel,

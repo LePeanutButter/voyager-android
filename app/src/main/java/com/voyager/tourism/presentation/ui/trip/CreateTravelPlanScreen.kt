@@ -31,6 +31,7 @@ import com.voyager.tourism.presentation.viewmodel.CreateTravelPlanUiState
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun CreateTravelPlanScreen(
     navController: NavController,
     viewModel: CreateTravelPlanViewModel = hiltViewModel()

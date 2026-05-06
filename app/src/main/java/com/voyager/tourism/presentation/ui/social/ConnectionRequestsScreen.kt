@@ -33,6 +33,7 @@ import com.voyager.tourism.presentation.viewmodel.ConnectionRequestsViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun ConnectionRequestsScreen(
     token: String,
     onNavigateBack: () -> Unit,

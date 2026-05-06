@@ -9,6 +9,7 @@ import com.voyager.tourism.domain.model.User
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,7 +97,7 @@ class UserMapper @Inject constructor() {
             lastName = user.lastName,
             avatar = user.profileImageUrl,
             preferences = null,
-            isVerified = user.status.equals(UserStatus.ACTIVE.value, ignoreCase = true),
+            isVerified = user.status.uppercase(Locale.ROOT) == UserStatus.ACTIVE.value,
             createdAt = parseBackendInstantToMillis(user.createdAt),
             updatedAt = parseBackendInstantToMillis(user.updatedAt),
         )

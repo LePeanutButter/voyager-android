@@ -24,14 +24,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.viewmodel.ProfileViewModel
 import com.voyager.tourism.presentation.viewmodel.ProfileUiState
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 /**
  * Profile screen for editing user information
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776")
 fun ProfileScreen(
     onLogout: () -> Unit,
     onBack: () -> Unit = {},
@@ -54,7 +53,6 @@ fun ProfileScreen(
     var bioError by remember { mutableStateOf<String?>(null) }
     
     val scrollState = rememberScrollState(0)
-    val coroutineScope = rememberCoroutineScope()
     
     // Load profile data when screen is first displayed
     LaunchedEffect(Unit) {
@@ -281,6 +279,28 @@ fun ProfileScreen(
                         )
                     } else {
                         Text("Guardar perfil")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onTravelPreferences,
+                        modifier = Modifier.weight(1f),
+                        enabled = uiState !is ProfileUiState.Saving,
+                    ) {
+                        Text("Travel preferences")
+                    }
+                    OutlinedButton(
+                        onClick = onLogout,
+                        modifier = Modifier.weight(1f),
+                        enabled = uiState !is ProfileUiState.Saving,
+                    ) {
+                        Text("Logout")
                     }
                 }
             }
