@@ -31,7 +31,7 @@ abstract class RepositoryModule {
     abstract fun bindTripRepository(
         tripRepositoryImpl: TripRepositoryImpl
     ): TripRepository
-    
+
     @Binds
     @Singleton
     abstract fun bindSocialRepository(

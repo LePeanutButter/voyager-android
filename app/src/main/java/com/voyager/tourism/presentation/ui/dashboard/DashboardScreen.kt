@@ -19,6 +19,7 @@ import com.voyager.tourism.presentation.viewmodel.TripViewModel
 fun DashboardScreen(
     onTripClick: (String) -> Unit,
     onRecommendationsClick: () -> Unit,
+    onSharedActivitiesClick: () -> Unit,
     onProfileClick: () -> Unit,
     viewModel: TripViewModel = hiltViewModel()
 ) {
@@ -68,6 +69,13 @@ fun DashboardScreen(
                 Text("Discover")
             }
             
+            Button(
+                onClick = onSharedActivitiesClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Shared")
+            }
+
             Button(
                 onClick = { /* Navigate to create trip */ },
                 modifier = Modifier.weight(1f)

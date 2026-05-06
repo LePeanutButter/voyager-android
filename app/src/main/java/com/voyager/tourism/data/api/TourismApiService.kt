@@ -8,6 +8,14 @@ import com.voyager.tourism.data.dto.TripDto
 import com.voyager.tourism.data.dto.TravelerMatchDto
 import com.voyager.tourism.data.dto.ConnectionRequestDto
 import com.voyager.tourism.data.dto.SendConnectionRequestDto
+import com.voyager.tourism.data.dto.ApiResponseDto
+import com.voyager.tourism.data.dto.CompatibilityMatchRequestDto
+import com.voyager.tourism.data.dto.CompatibilityMatchResponseDto
+import com.voyager.tourism.data.dto.ConnectionDto
+import com.voyager.tourism.data.dto.ShareActivityRequestDto
+import com.voyager.tourism.data.dto.SharedActivityActionRequestDto
+import com.voyager.tourism.data.dto.SharedActivityResponseDto
+import com.voyager.tourism.data.dto.TravelPlanActivityDto
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -123,40 +131,74 @@ interface TourismApiService {
         @Path("userId") userId: String,
         @Header("Authorization") token: String
     ): Response<Unit>
-    
+
     // Traveler matching endpoints
     @GET("travel-plans/{travelPlanId}/compatible-travelers")
     suspend fun getCompatibleTravelers(
         @Path("travelPlanId") travelPlanId: String,
         @Header("Authorization") token: String
     ): Response<List<TravelerMatchDto>>
-    
+
     // Connection request endpoints
     @POST("social/connections")
     suspend fun sendConnectionRequest(
         @Body request: SendConnectionRequestDto,
         @Header("Authorization") token: String
     ): Response<ConnectionRequestDto>
-    
+
     @PUT("social/connections/{requestId}/accept")
     suspend fun acceptConnectionRequest(
         @Path("requestId") requestId: String,
         @Header("Authorization") token: String
     ): Response<ConnectionRequestDto>
-    
+
     @PUT("social/connections/{requestId}/reject")
     suspend fun rejectConnectionRequest(
         @Path("requestId") requestId: String,
         @Header("Authorization") token: String
     ): Response<ConnectionRequestDto>
-    
+
     @GET("social/connections/pending")
     suspend fun getPendingRequests(
         @Header("Authorization") token: String
     ): Response<List<ConnectionRequestDto>>
-    
+
     @GET("social/connections/sent")
     suspend fun getSentRequests(
         @Header("Authorization") token: String
     ): Response<List<ConnectionRequestDto>>
+
+    // Shared activity endpoints
+    @GET("/api/v1/social/connections/{userId}")
+    suspend fun getConnections(
+        @Path("userId") userId: Long,
+        @Header("Authorization") token: String
+    ): Response<ApiResponseDto<List<ConnectionDto>>>
+
+    @GET("/api/v1/travel-plans/{travelPlanId}/activities")
+    suspend fun getTravelPlanActivities(
+        @Path("travelPlanId") travelPlanId: Long,
+        @Header("Authorization") token: String
+    ): Response<ApiResponseDto<List<TravelPlanActivityDto>>>
+
+    @POST("/activities/{activityId}/share")
+    suspend fun shareActivity(
+        @Path("activityId") activityId: Long,
+        @Body request: ShareActivityRequestDto,
+        @Header("Authorization") token: String
+    ): Response<ApiResponseDto<SharedActivityResponseDto>>
+
+    @PATCH("/shared-activities/{sharedActivityId}")
+    suspend fun updateSharedActivity(
+        @Path("sharedActivityId") sharedActivityId: Long,
+        @Body request: SharedActivityActionRequestDto,
+        @Header("Authorization") token: String
+    ): Response<ApiResponseDto<SharedActivityResponseDto>>
+
+    // Compatibility endpoints
+    @POST("/compatibility/matches")
+    suspend fun getCompatibilityMatches(
+        @Body request: CompatibilityMatchRequestDto,
+        @Header("Authorization") token: String
+    ): Response<ApiResponseDto<List<CompatibilityMatchResponseDto>>>
 }
