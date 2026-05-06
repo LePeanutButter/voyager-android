@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
 import com.voyager.tourism.presentation.ui.auth.RegisterScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
@@ -18,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
+import com.voyager.tourism.presentation.ui.social.SocialCollaborationScreen
 import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -49,6 +49,9 @@ fun TourismNavigation(navController: NavHostController) {
                 },
                 onRecommendationsClick = {
                     navController.navigate("recommendations")
+                },
+                onSharedActivitiesClick = {
+                    navController.navigate("social")
                 },
                 onProfileClick = {
                     navController.navigate("profile")
@@ -119,7 +122,7 @@ fun TourismNavigation(navController: NavHostController) {
         }
         
         composable("social") {
-            // Social features screen implementation
+            SocialCollaborationScreen()
         }
         
         composable("ai_assistant") {
