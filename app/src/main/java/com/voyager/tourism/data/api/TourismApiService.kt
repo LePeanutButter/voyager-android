@@ -5,6 +5,10 @@ import com.voyager.tourism.data.dto.LoginResponse
 import com.voyager.tourism.data.dto.RegisterRequest
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.TripDto
+import com.voyager.tourism.data.dto.TravelPlanActivityDto
+import com.voyager.tourism.data.dto.UpdateActivityRequest
+import com.voyager.tourism.data.dto.CreateActivityRequest
+import com.voyager.tourism.data.dto.TravelerSummaryDto
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -120,4 +124,31 @@ interface TourismApiService {
         @Path("userId") userId: String,
         @Header("Authorization") token: String
     ): Response<Unit>
+
+    @GET("travel-plans/{id}/activities")
+    suspend fun getActivities(
+        @Path("id") id: String,
+        @Header("Authorization") token: String
+    ): Response<List<TravelPlanActivityDto>>
+
+    @POST("travel-plans/{id}/activities")
+    suspend fun createActivity(
+        @Path("id") tripId: String,
+        @Body request: CreateActivityRequest,
+        @Header("Authorization") token: String
+    ): Response<TravelPlanActivityDto>
+
+    @PUT("travel-plans/{id}/activities/{activityId}")
+    suspend fun updateActivity(
+        @Path("id") tripId: String,
+        @Path("activityId") actId: String,
+        @Body request: UpdateActivityRequest,
+        @Header("Authorization") token: String
+    ): Response<TravelPlanActivityDto>
+
+    @GET("social/travelers/{id}/summary")
+    suspend fun getTravelerSummary(
+        @Path("id") travelerId: String,
+        @Header("Authorization") token: String
+    ): Response<TravelerSummaryDto>
 }
