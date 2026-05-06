@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.voyager.tourism.data.dto.CoordinatesDto
 import com.voyager.tourism.data.dto.DestinationDto
 import com.voyager.tourism.data.dto.UserPreferencesDto
@@ -14,7 +15,9 @@ import com.voyager.tourism.data.dto.UserPreferencesDto
  */
 class Converters {
     
-    private val moshi = Moshi.Builder().build()
+    private val moshi = Moshi.Builder()
+        .addLast(KotlinJsonAdapterFactory())
+        .build()
     
     @TypeConverter
     fun fromStringList(value: List<String>): String {

@@ -1,12 +1,10 @@
 package com.voyager.tourism.data.dto
 
 import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
 
 /**
  * Enum matching backend TravelType
  */
-@JsonClass(generateAdapter = true)
 enum class TravelType(val value: String) {
     @Json(name = "LEISURE")
     LEISURE("LEISURE"),

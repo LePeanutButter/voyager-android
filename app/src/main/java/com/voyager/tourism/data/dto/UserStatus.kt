@@ -1,12 +1,10 @@
 package com.voyager.tourism.data.dto
 
 import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
 
 /**
  * Enum matching backend UserStatus
  */
-@JsonClass(generateAdapter = true)
 enum class UserStatus(val value: String) {
     @Json(name = "ACTIVE")
     ACTIVE("ACTIVE"),

@@ -5,6 +5,7 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
+    id("jacoco")
 }
 
 val voyagerBackendBaseUrl: String =
@@ -47,6 +48,13 @@ android {
         }
         debug {
             isDebuggable = true
+            enableUnitTestCoverage = true
+        }
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
         }
     }
 
@@ -121,10 +129,11 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.7.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core:1.5.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -139,4 +148,60 @@ dependencies {
 // Allow references to generated code
 kapt {
     correctErrorTypes = true
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+// Informe JaCoCo unificado (excluye UI Compose, Hilt y código generado para acercar el % a lógica de negocio)
+val jacocoExcluded = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*_HiltModules*",
+    "**/Hilt_*",
+    "**/*_Factory*",
+    "**/*_MembersInjector*",
+    "**/dagger/**",
+    "**/hilt/**",
+    "**/presentation/ui/**",
+    "**/presentation/MainActivity*",
+    "**/presentation/navigation/**",
+    "**/di/**",
+    "**/*Composable*",
+)
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    group = "verification"
+    description = "Genera informe HTML/XML de cobertura tras testDebugUnitTest"
+
+    val debugTree = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+        exclude(jacocoExcluded)
+    }
+    val javaTree = fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
+        exclude(jacocoExcluded)
+    }
+    classDirectories.setFrom(files(debugTree, javaTree))
+
+    val mainSrc = "${project.projectDir}/src/main/java"
+    sourceDirectories.setFrom(files(mainSrc))
+
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.asFile.get()) {
+            include(
+                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+                "jacoco/testDebugUnitTest.exec",
+            )
+        },
+    )
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
+    }
+
+    dependsOn("testDebugUnitTest")
 }
