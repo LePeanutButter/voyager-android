@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    onBack: () -> Unit = {},
     onTravelPreferences: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -104,7 +105,7 @@ fun ProfileScreen(
                 fontWeight = FontWeight.Bold
             )
             
-            IconButton(onClick = { navController.navigateUp() }) {
+            IconButton(onClick = onBack) {
                 Icon(Icons.Default.Close, contentDescription = "Cerrar")
             }
         }

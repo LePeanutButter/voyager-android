@@ -96,6 +96,7 @@ fun TourismNavigation(navController: NavHostController) {
                         popUpTo("dashboard") { inclusive = true }
                     }
                 },
+                onBack = { navController.navigateUp() },
                 onTravelPreferences = { navController.navigate("travel_preferences") }
             )
         }
