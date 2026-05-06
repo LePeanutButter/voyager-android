@@ -3,7 +3,7 @@
 # Environment: Production
 # Description:
 #   - Builds and tests Android project using Gradle
-#   - Performs SonarCloud static analysis and Trivy security scanning
+#   - SonarCloud (SONAR_TOKEN, ORGANIZATION_KEY, PROJECT_KEY) and Trivy (APT + skip-setup-trivy)
 #   - Produces production APK/Bundle artifacts for release management
 #   - Triggers on every push or pull request to the 'main' branch
 # ===========================================
@@ -38,6 +38,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Trivy
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y wget apt-transport-https gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -qq
+          sudo apt-get install -y trivy
+
       # Step 2: Run Trivy filesystem scan
       - name: Run Trivy FS Scan
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
@@ -47,6 +56,7 @@ jobs:
           format: 'table'
           severity: 'HIGH,CRITICAL'
           exit-code: '1'
+          skip-setup-trivy: 'true'
 
   # =========================================
   # Job: SonarCloud Scan
@@ -79,12 +89,36 @@ jobs:
       - name: Gradle assemble
         run: ./gradlew :app:assembleDebug --stacktrace
 
-      # Step 5: SonarCloud scan
-      - name: SonarCloud Scan
+      # Step 5: SonarCloud scan (PR vs branch, aligned with backend-core / ai-service)
+      - name: SonarCloud Scan (PR)
+        if: github.event_name == 'pull_request'
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ secrets.ORGANIZATION_KEY }}
+            -Dsonar.projectKey=${{ secrets.PROJECT_KEY }}
+            -Dsonar.scm.disabled=true
+            -Dsonar.pullrequest.key=${{ github.event.number }}
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
+            -Dsonar.scm.revision=${{ github.event.pull_request.head.sha }}
+
+      - name: SonarCloud Scan (branch)
+        if: github.event_name != 'pull_request'
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ secrets.ORGANIZATION_KEY }}
+            -Dsonar.projectKey=${{ secrets.PROJECT_KEY }}
+            -Dsonar.scm.disabled=true
+            -Dsonar.branch.name=main
+            -Dsonar.branch.target=development
 
   # =========================================
   # Job: Build Stage
