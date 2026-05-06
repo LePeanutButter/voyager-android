@@ -5,39 +5,54 @@ import com.squareup.moshi.JsonClass
 
 /**
  * Data Transfer Object for User API responses
- * Used for mapping between API responses and domain models
+ * Matches exactly the backend UserDto structure
  */
 @JsonClass(generateAdapter = true)
 data class UserDto(
     @Json(name = "id")
-    val id: String,
-    
-    @Json(name = "email")
-    val email: String,
+    val id: Long, // Backend uses Long
     
     @Json(name = "username")
     val username: String,
     
-    @Json(name = "first_name")
+    @Json(name = "email")
+    val email: String,
+    
+    @Json(name = "firstName")
     val firstName: String,
     
-    @Json(name = "last_name")
+    @Json(name = "lastName")
     val lastName: String,
     
-    @Json(name = "avatar")
-    val avatar: String? = null,
+    @Json(name = "phoneNumber")
+    val phoneNumber: String? = null,
     
-    @Json(name = "preferences")
-    val preferences: UserPreferencesDto? = null,
+    @Json(name = "role")
+    val role: UserRole,
     
-    @Json(name = "is_verified")
-    val isVerified: Boolean = false,
+    @Json(name = "status")
+    val status: UserStatus,
     
-    @Json(name = "created_at")
-    val createdAt: Long,
+    @Json(name = "profileImageUrl")
+    val profileImageUrl: String? = null,
     
-    @Json(name = "updated_at")
-    val updatedAt: Long
+    @Json(name = "bio")
+    val bio: String? = null,
+    
+    @Json(name = "interests")
+    val interests: Set<String>? = null,
+    
+    @Json(name = "dateOfBirth")
+    val dateOfBirth: String? = null, // LocalDateTime from backend
+    
+    @Json(name = "createdAt")
+    val createdAt: String? = null, // LocalDateTime from backend
+    
+    @Json(name = "updatedAt")
+    val updatedAt: String? = null, // LocalDateTime from backend
+    
+    @Json(name = "token")
+    val token: String? = null
 )
 
 /**

@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
-import com.voyager.tourism.data.database.converter.Converters
+import com.voyager.tourism.data.database.Converters
 import com.voyager.tourism.data.database.dao.UserDao
 import com.voyager.tourism.data.database.dao.TripDao
 import com.voyager.tourism.data.database.dao.DestinationDao

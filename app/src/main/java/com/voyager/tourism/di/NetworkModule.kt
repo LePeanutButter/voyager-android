@@ -3,16 +3,22 @@ package com.voyager.tourism.di
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.voyager.tourism.BuildConfig
-import com.voyager.tourism.data.api.TourismApiService
+import com.voyager.tourism.data.api.AiTravelPreferencesApi
+import com.voyager.tourism.data.api.BehaviorAnalysisApi
+import com.voyager.tourism.data.api.UserApiService
+import com.voyager.tourism.data.api.GoogleAuthApiService
+import com.voyager.tourism.data.api.TravelPlanApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import com.voyager.tourism.data.interceptor.AuthInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -33,17 +39,18 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    level = if (BuildConfig.DEBUG) {
+                    level = if (false) { // TODO: Change to BuildConfig.DEBUG when available
                         HttpLoggingInterceptor.Level.BODY
                     } else {
                         HttpLoggingInterceptor.Level.NONE
                     }
                 }
             )
+            .addInterceptor(authInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -57,7 +64,22 @@ object NetworkModule {
         moshi: Moshi
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.voyager-tourism.com/v1/") // Replace with actual API URL
+            .baseUrl("http://10.0.2.2:8080/") // Local backend URL for testing
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    /** Voyager AI microservice (questionnaire, recommendations, etc.) */
+    @Provides
+    @Singleton
+    @Named("ai")
+    fun provideAiRetrofit(
+        okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.AI_SERVICE_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -65,7 +87,31 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideTourismApiService(retrofit: Retrofit): TourismApiService {
-        return retrofit.create(TourismApiService::class.java)
+    fun provideUserApiService(retrofit: Retrofit): UserApiService {
+        return retrofit.create(UserApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGoogleAuthApiService(retrofit: Retrofit): GoogleAuthApiService {
+        return retrofit.create(GoogleAuthApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideTravelPlanApiService(retrofit: Retrofit): TravelPlanApiService {
+        return retrofit.create(TravelPlanApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAiTravelPreferencesApi(@Named("ai") retrofit: Retrofit): AiTravelPreferencesApi {
+        return retrofit.create(AiTravelPreferencesApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBehaviorAnalysisApi(@Named("ai") retrofit: Retrofit): BehaviorAnalysisApi {
+        return retrofit.create(BehaviorAnalysisApi::class.java)
     }
 }
