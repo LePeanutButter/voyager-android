@@ -41,7 +41,7 @@ interface AuthRepository {
     suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto>
 
     /**
-     * Inicia el flujo OAuth2 (URL de autorización u token según backend).
+     * Starts the Google OAuth2 flow and returns an authorization URL or intermediate token from the backend.
      */
     suspend fun initiateGoogleLogin(): Result<String>
 }

@@ -188,6 +188,9 @@ fun ConnectionRequestsScreen(
     }
 }
 
+/**
+ * Rich card for one inbound connection request with portrait, note, and decision buttons.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConnectionRequestCard(
@@ -362,6 +365,7 @@ private fun ConnectionRequestCard(
     }
 }
 
+/** Illustration shown when the pending-requests list is empty. */
 @Composable
 private fun EmptyState() {
     Box(
@@ -392,6 +396,7 @@ private fun EmptyState() {
     }
 }
 
+/** Formats backend ISO date-times for human-readable request timestamps. */
 private fun formatDate(dateString: String): String {
     return try {
         val date = java.time.LocalDateTime.parse(dateString)

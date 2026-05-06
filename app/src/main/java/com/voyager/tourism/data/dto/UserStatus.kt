@@ -19,6 +19,11 @@ enum class UserStatus(val value: String) {
     PENDING("PENDING");
     
     companion object {
+        /**
+         * Returns the [UserStatus] whose serialized [value] matches [value], or [ACTIVE] if none match.
+         *
+         * @param value Backend string value (e.g. `"PENDING"`).
+         */
         fun fromValue(value: String): UserStatus {
             return values().find { it.value == value } ?: ACTIVE
         }

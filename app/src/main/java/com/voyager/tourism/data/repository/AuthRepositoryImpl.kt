@@ -20,6 +20,9 @@ class AuthRepositoryImpl @Inject constructor(
     private val googleAuthApiService: GoogleAuthApiService
 ) : AuthRepository {
     
+    /**
+     * Persists a new user by calling the registration endpoint and mapping success to [Result].
+     */
     override suspend fun registerUser(
         username: String,
         email: String,
@@ -48,6 +51,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
     
+    /**
+     * Authenticates with username/email and password via the REST login route.
+     */
     override suspend fun loginUser(
         usernameOrEmail: String,
         password: String
@@ -70,6 +76,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
     
+    /**
+     * Exchanges the Google authorization code for a Voyager session profile.
+     */
     override suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto> {
         return try {
             val response = googleAuthApiService.handleGoogleCallback(code, state)
@@ -84,6 +93,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Requests the backend URL used to begin the Google OAuth2 redirect flow.
+     */
     override suspend fun initiateGoogleLogin(): Result<String> {
         return try {
             val response = googleAuthApiService.initiateGoogleLogin()

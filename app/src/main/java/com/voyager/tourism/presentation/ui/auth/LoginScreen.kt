@@ -27,6 +27,13 @@ import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.LoginViewModel
 import com.voyager.tourism.presentation.viewmodel.LoginUiState
 
+/**
+ * Sign-in screen: username or email plus password, optional Google OAuth, and navigation to registration.
+ *
+ * @param navController Host navigation controller for post-login and register routes.
+ * @param authViewModel Shared auth state updated when login succeeds.
+ * @param viewModel Handles credential and Google login flows.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
@@ -194,6 +201,14 @@ fun LoginScreen(
     }
 }
 
+/**
+ * Runs basic field validation for the login form.
+ *
+ * @param usernameOrEmail Non-blank username or email.
+ * @param password Non-blank password.
+ * @param onError Invoked with field key (`username` or `password`) and error message when invalid.
+ * @return `true` if validation failed (errors reported), `false` if inputs are acceptable.
+ */
 private fun validateLoginFields(
     usernameOrEmail: String,
     password: String,

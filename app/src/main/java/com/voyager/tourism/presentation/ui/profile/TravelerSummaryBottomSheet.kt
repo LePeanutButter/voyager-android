@@ -13,6 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.voyager.tourism.data.dto.TravelerSummaryDto
 
+/**
+ * Modal bottom sheet displaying a short traveler summary (name, bio, interests) with a dismiss action.
+ *
+ * @param summary Payload to show; if `null`, nothing is composed.
+ * @param onDismiss Called when the sheet should close.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TravelerSummaryBottomSheet(

@@ -27,8 +27,12 @@ import androidx.compose.ui.unit.sp
 import com.voyager.tourism.presentation.MainActivity
 import kotlinx.coroutines.delay
 
+/**
+ * Brief branded splash gate before handing off to [MainActivity].
+ */
 class SplashActivity : ComponentActivity() {
 
+    /** Shows [SplashContent] then launches the main task. */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -49,6 +53,9 @@ class SplashActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Centered Voyager branding with a short delay until [onFinished] runs.
+ */
 @Composable
 private fun SplashContent(onFinished: () -> Unit) {
     LaunchedEffect(Unit) {
@@ -82,6 +89,7 @@ private fun SplashContent(onFinished: () -> Unit) {
     }
 }
 
+/** Minimal light Material theme wrapper for the splash surface. */
 @Composable
 private fun TourismTheme(content: @Composable () -> Unit) {
     MaterialTheme(

@@ -16,12 +16,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Mapper for converting between different Trip representations
- * Handles conversion between domain model, DTO, and entity
+ * Bidirectional mapper between [Trip] domain instances, Room [TripEntity], [TripDto], and [TravelPlanDto].
  */
 @Singleton
 class TripMapper @Inject constructor() {
 
+    /**
+     * Builds a domain [Trip] from an API [TravelPlanDto], using [fallbackUserId] when the backend omits ownership.
+     */
     fun fromTravelPlanDto(dto: TravelPlanDto, fallbackUserId: String): Trip {
         val destLabel = dto.destinationLocation.orEmpty().ifBlank { "Sin destino" }
         val start = parseInstantMillis(dto.startDate) ?: System.currentTimeMillis()
@@ -58,6 +60,9 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Translates persisted travel-plan status enums into domain [TripStatus] values.
+     */
     private fun mapPlanStatus(status: TravelPlanStatus?): TripStatus = when (status) {
         TravelPlanStatus.DRAFT -> TripStatus.PLANNING
         TravelPlanStatus.ACTIVE -> TripStatus.ACTIVE
@@ -68,6 +73,9 @@ class TripMapper @Inject constructor() {
         null -> TripStatus.PLANNING
     }
 
+    /**
+     * Converts a domain [Trip] back into API representation for create/update calls.
+     */
     fun toTravelPlanDto(trip: Trip): TravelPlanDto {
         return TravelPlanDto(
             id = trip.id.toLongOrNull().takeIf { it != 0L },
@@ -84,9 +92,15 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Serializes epoch millis to UTC offset strings accepted by the backend.
+     */
     private fun millisToOffsetString(epoch: Long): String =
         OffsetDateTime.ofInstant(java.time.Instant.ofEpochMilli(epoch), ZoneOffset.UTC).toString()
 
+    /**
+     * Maps domain trip states to wire [TravelPlanStatus] constants.
+     */
     private fun mapTripStatusToPlan(status: TripStatus): TravelPlanStatus = when (status) {
         TripStatus.PLANNING -> TravelPlanStatus.DRAFT
         TripStatus.CONFIRMED -> TravelPlanStatus.ON_HOLD
@@ -95,6 +109,9 @@ class TripMapper @Inject constructor() {
         TripStatus.CANCELLED -> TravelPlanStatus.CANCELLED
     }
 
+    /**
+     * Parses ISO timestamps from the API into epoch millis, returning null when parsing fails.
+     */
     private fun parseInstantMillis(value: String?): Long? {
         if (value.isNullOrBlank()) return null
         return try {
@@ -108,6 +125,9 @@ class TripMapper @Inject constructor() {
         }
     }
     
+    /**
+     * Maps a legacy [TripDto] payload into the domain layer.
+     */
     fun toDomain(tripDto: TripDto): Trip {
         return Trip(
             id = tripDto.id,
@@ -128,6 +148,9 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Converts a Room entity row into a domain trip with synthetic [Destination] data.
+     */
     fun toDomain(tripEntity: TripEntity): Trip {
         val label = tripEntity.destination
         return Trip(
@@ -162,6 +185,9 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Serializes a trip to the wire DTO used by older endpoints.
+     */
     fun toDto(trip: Trip): TripDto {
         return TripDto(
             id = trip.id,
@@ -179,6 +205,9 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Maps catalog [TripDto] data into a Room-compatible entity snapshot.
+     */
     fun toEntity(tripDto: TripDto): TripEntity {
         return TripEntity(
             id = tripDto.id,
@@ -199,8 +228,14 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Convenience overload that converts through [toDto] before persisting.
+     */
     fun toEntityFromTrip(trip: Trip): TripEntity = toEntity(toDto(trip))
 
+    /**
+     * Converts nested destination DTO metadata into the domain model.
+     */
     private fun destinationDtoToDomain(d: DestinationDto): Destination {
         return Destination(
             id = d.id,
@@ -218,6 +253,9 @@ class TripMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Converts a domain [Destination] into the transport DTO structure.
+     */
     private fun destinationDomainToDto(d: Destination): DestinationDto {
         return DestinationDto(
             id = d.id,

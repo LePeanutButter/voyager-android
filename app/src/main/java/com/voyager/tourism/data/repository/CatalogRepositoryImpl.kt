@@ -5,6 +5,9 @@ import com.voyager.tourism.domain.repository.CatalogRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Exposes Amadeus catalog Retrofit calls through the [CatalogRepository] contract.
+ */
 @Singleton
 class CatalogRepositoryImpl @Inject constructor(
     api: CatalogApiService,

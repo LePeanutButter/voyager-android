@@ -26,6 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.viewmodel.TripDetailViewModel
 
+/**
+ * Trip overview: metadata, description, and an embedded activity timeline for the given trip.
+ *
+ * @param tripId Identifier of the trip to load.
+ * @param onBack Invoked when navigating back from the top bar.
+ * @param viewModel Provides trip, activities, loading, and error state.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripDetailScreen(

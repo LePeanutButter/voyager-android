@@ -34,18 +34,30 @@ data class UserPreferences(
     val notificationsEnabled: Boolean = true
 )
 
+/**
+ * High-level travel style used when modeling user preferences.
+ */
 enum class TravelStyle {
     ADVENTURE, LUXURY, BUDGET, CULTURAL, RELAXED, BALANCED
 }
 
+/**
+ * Coarse budget band for personalized suggestions and filtering.
+ */
 enum class BudgetRange {
     LOW, MEDIUM, HIGH, LUXURY
 }
 
+/**
+ * Thematic interests that can drive recommendations and matching.
+ */
 enum class TravelInterest {
     HISTORY, NATURE, FOOD, NIGHTLIFE, SHOPPING, ART, SPORTS, SPIRITUAL, FAMILY
 }
 
+/**
+ * Preferred lodging category when planning a trip.
+ */
 enum class AccommodationType {
     HOTEL, HOSTEL, AIRBNB, RESORT, CAMPING, APARTMENT
 }

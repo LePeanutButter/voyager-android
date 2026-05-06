@@ -23,6 +23,12 @@ import androidx.navigation.NavController
 import com.voyager.tourism.presentation.viewmodel.CreateTravelPlanViewModel
 import com.voyager.tourism.presentation.viewmodel.CreateTravelPlanUiState
 
+/**
+ * Form to create a travel plan (destination, dates, budget, travelers) and submit via [CreateTravelPlanViewModel].
+ *
+ * @param navController Navigates to dashboard after successful creation.
+ * @param viewModel Validates dates, calls create use case, and exposes UI state.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTravelPlanScreen(
@@ -291,6 +297,12 @@ fun CreateTravelPlanScreen(
     }
 }
 
+/**
+ * Client-side validation before creating a travel plan (required strings, travelers count, optional budget).
+ *
+ * @param onError Field key (`title`, `destination`, `startDate`, `endDate`, `travelers`, `budget`) and message.
+ * @return `true` if validation failed.
+ */
 private fun validateTravelPlanFields(
     title: String,
     destination: String,

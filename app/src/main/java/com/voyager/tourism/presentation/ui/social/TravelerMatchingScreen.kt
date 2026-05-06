@@ -188,6 +188,7 @@ fun TravelerMatchingScreen(
     }
 }
 
+/** Presents one compatible traveler, trip overlap context, and a connection CTA. */
 @Composable
 private fun TravelerCard(
     traveler: TravelerMatchDto,
@@ -357,6 +358,7 @@ private fun TravelerCard(
     }
 }
 
+/** Friendly empty state when the compatibility endpoint returns no rows. */
 @Composable
 private fun EmptyState() {
     Box(
@@ -387,6 +389,7 @@ private fun EmptyState() {
     }
 }
 
+/** Parses plan date fields for short labels in the traveler card. */
 private fun formatDate(dateString: String): String {
     return try {
         val date = java.time.LocalDateTime.parse(dateString)

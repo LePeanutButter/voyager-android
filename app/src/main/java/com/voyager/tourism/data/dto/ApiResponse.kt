@@ -28,6 +28,9 @@ data class ApiResponse<T>(
     val errors: List<ValidationError>? = null
 )
 
+/**
+ * One field-level validation problem parsed from an error response.
+ */
 @JsonClass(generateAdapter = true)
 data class ValidationError(
     @Json(name = "field")

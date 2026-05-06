@@ -3,19 +3,26 @@ package com.voyager.tourism.data.dto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
-// --- Chat ---
+/**
+ * Request payload for sending a chat message to the AI assistant service.
+ */
 @JsonClass(generateAdapter = true)
 data class AiChatRequestDto(
     @Json(name = "userId") val userId: String,
     @Json(name = "message") val message: String,
 )
 
+/**
+ * Assistant reply text returned for a chat turn.
+ */
 @JsonClass(generateAdapter = true)
 data class AiChatReplyDto(
     @Json(name = "reply") val reply: String,
 )
 
-// --- Recommendations (cuerpos Pydantic en snake_case) ---
+/**
+ * Geographic hint (coordinates and optional city label) used in AI recommendation bodies (snake_case JSON).
+ */
 @JsonClass(generateAdapter = true)
 data class AiLocationBody(
     @Json(name = "latitude") val latitude: Double,
@@ -23,6 +30,9 @@ data class AiLocationBody(
     @Json(name = "city") val city: String? = null,
 )
 
+/**
+ * Body for nearby or context-aware destination and activity recommendations.
+ */
 @JsonClass(generateAdapter = true)
 data class AiRecommendationRequestBody(
     @Json(name = "user_id") val userId: String,
@@ -34,6 +44,9 @@ data class AiRecommendationRequestBody(
     @Json(name = "budget_limit") val budgetLimit: Double? = null,
 )
 
+/**
+ * Body for AI-driven destination suggestions with optional trend and seasonality controls.
+ */
 @JsonClass(generateAdapter = true)
 data class AiDestinationRecommendationRequestBody(
     @Json(name = "user_id") val userId: String,
@@ -45,6 +58,9 @@ data class AiDestinationRecommendationRequestBody(
     @Json(name = "apply_seasonality_mitigation") val applySeasonalityMitigation: Boolean = true,
 )
 
+/**
+ * Body for activities suggested from current GPS, optional weather, and search radius.
+ */
 @JsonClass(generateAdapter = true)
 data class AiContextualActivityRequestBody(
     @Json(name = "user_id") val userId: String,
@@ -56,6 +72,9 @@ data class AiContextualActivityRequestBody(
     @Json(name = "radius_km") val radiusKm: Double = 25.0,
 )
 
+/**
+ * Body for ranking compatible travelers around a location and optional trip window.
+ */
 @JsonClass(generateAdapter = true)
 data class AiTravelerMatchRequestBody(
     @Json(name = "user_id") val userId: String,
@@ -65,6 +84,9 @@ data class AiTravelerMatchRequestBody(
     @Json(name = "max_matches") val maxMatches: Int = 10,
 )
 
+/**
+ * Body for reporting the outcome of a connection attempt for learning or ranking.
+ */
 @JsonClass(generateAdapter = true)
 data class AiConnectionOutcomeRequestBody(
     @Json(name = "user_id") val userId: String,
@@ -74,6 +96,9 @@ data class AiConnectionOutcomeRequestBody(
     @Json(name = "notes") val notes: String? = null,
 )
 
+/**
+ * Full synthetic profile block sent to AI endpoints that expect nested preferences and history.
+ */
 @JsonClass(generateAdapter = true)
 data class AiUserProfileBody(
     @Json(name = "user_id") val userId: String,
@@ -85,6 +110,9 @@ data class AiUserProfileBody(
     @Json(name = "travel_history") val travelHistory: List<Map<String, String>> = emptyList(),
 )
 
+/**
+ * Preference dimensions nested under [AiUserProfileBody] or update requests.
+ */
 @JsonClass(generateAdapter = true)
 data class AiUserPreferencesBody(
     @Json(name = "preferences") val preferences: List<String> = emptyList(),
@@ -96,6 +124,9 @@ data class AiUserPreferencesBody(
     @Json(name = "language_preferences") val languagePreferences: List<String> = listOf("English"),
 )
 
+/**
+ * Partial profile update: only fields present are applied server-side.
+ */
 @JsonClass(generateAdapter = true)
 data class AiUserProfileUpdateBody(
     @Json(name = "preferences") val preferences: AiUserPreferencesBody? = null,
@@ -103,6 +134,9 @@ data class AiUserProfileUpdateBody(
     @Json(name = "travel_history") val travelHistory: List<Map<String, String>>? = null,
 )
 
+/**
+ * Single user–activity interaction event for AI preference learning.
+ */
 @JsonClass(generateAdapter = true)
 data class AiUserInteractionBody(
     @Json(name = "user_id") val userId: String,
@@ -111,6 +145,9 @@ data class AiUserInteractionBody(
     @Json(name = "metadata") val metadata: Map<String, String>? = null,
 )
 
+/**
+ * Request seasonal demand or visibility forecast for a destination over a window of months.
+ */
 @JsonClass(generateAdapter = true)
 data class AiSeasonalForecastRequestBody(
     @Json(name = "destination_id") val destinationId: String,
@@ -118,6 +155,9 @@ data class AiSeasonalForecastRequestBody(
     @Json(name = "horizon_months") val horizonMonths: Int = 6,
 )
 
+/**
+ * Request ranking or visibility adjustments for multiple destinations in a given travel month.
+ */
 @JsonClass(generateAdapter = true)
 data class AiVisibilityAdjustmentsRequestBody(
     @Json(name = "destination_ids") val destinationIds: List<String>,

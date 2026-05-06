@@ -14,7 +14,14 @@ import javax.inject.Singleton
 class AuthInterceptor @Inject constructor(
     private val tokenManager: TokenManager
 ) : Interceptor {
-    
+
+    /**
+     * Observes the outgoing request, attaches `Authorization: Bearer <token>` when a JWT is stored,
+     * and proceeds with the possibly modified request.
+     *
+     * @param chain OkHttp chain for the current call.
+     * @return The [Response] from [Interceptor.Chain.proceed].
+     */
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = tokenManager.getToken()
         

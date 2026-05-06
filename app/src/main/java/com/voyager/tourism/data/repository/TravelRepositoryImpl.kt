@@ -11,13 +11,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Planes de viaje contra el core Spring (DTO [TravelPlanDto]).
+ * Travel plan CRUD backed by [TravelApiService] and DTO [TravelPlanDto] types.
  */
 @Singleton
 class TravelRepositoryImpl @Inject constructor(
     private val travelApiService: TravelApiService,
 ) : TravelRepository {
 
+    /** @see TravelRepository.createTravelPlan */
     override suspend fun createTravelPlan(request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
             val response = travelApiService.createTravelPlan(request.toTravelPlanDto())
@@ -31,6 +32,7 @@ class TravelRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TravelRepository.getUserTravelPlans */
     override suspend fun getUserTravelPlans(userId: String): Result<List<TravelPlanDto>> {
         return try {
             val uid = userId.toLongOrNull()
@@ -46,6 +48,7 @@ class TravelRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TravelRepository.getTravelPlanById */
     override suspend fun getTravelPlanById(planId: String): Result<TravelPlanDto> {
         return try {
             val id = planId.toLongOrNull()
@@ -61,6 +64,7 @@ class TravelRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TravelRepository.updateTravelPlan */
     override suspend fun updateTravelPlan(planId: String, request: TravelPlanRequest): Result<TravelPlanDto> {
         return try {
             val id = planId.toLongOrNull()
@@ -76,6 +80,7 @@ class TravelRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TravelRepository.deleteTravelPlan */
     override suspend fun deleteTravelPlan(planId: String): Result<Unit> {
         return try {
             val id = planId.toLongOrNull()
@@ -91,6 +96,9 @@ class TravelRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Maps creation requests into a default-draft [TravelPlanDto] used by the REST facade.
+     */
     private fun TravelPlanRequest.toTravelPlanDto(): TravelPlanDto = TravelPlanDto(
         title = title,
         description = description,

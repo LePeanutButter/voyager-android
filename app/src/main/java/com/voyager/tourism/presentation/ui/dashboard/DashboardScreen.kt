@@ -169,6 +169,9 @@ fun DashboardScreen(
     }
 }
 
+/**
+ * Compact card for a trip preview on the dashboard scroll list.
+ */
 @Composable
 private fun TripCard(
     trip: com.voyager.tourism.domain.model.Trip,

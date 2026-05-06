@@ -12,6 +12,17 @@ import javax.inject.Inject
 class TrackInteractionUseCase @Inject constructor(
     private val behaviorAnalysisRepository: BehaviorAnalysisRepository
 ) {
+    /**
+     * Records a user interaction for behavior tracking and analysis.
+     *
+     * @param userId Authenticated user identifier.
+     * @param interactionType Kind of interaction (for example view or click).
+     * @param activityId Optional related activity or catalog id.
+     * @param activityCategory Optional semantic category for grouping.
+     * @param sessionDuration Optional session length in seconds.
+     * @param context Arbitrary context map; a timestamp entry is added when absent.
+     * @return Result from the behavior analysis API.
+     */
     suspend operator fun invoke(
         userId: String,
         interactionType: InteractionType,

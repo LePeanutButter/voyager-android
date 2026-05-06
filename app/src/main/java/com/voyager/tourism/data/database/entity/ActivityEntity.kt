@@ -4,6 +4,9 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * Locally cached activity row linked to a travel plan id for timeline display.
+ */
 @Entity(
     tableName = "activities",
     indices = [Index(value = ["travelPlanId"]), Index(value = ["startTime"])]

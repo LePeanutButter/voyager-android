@@ -18,6 +18,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) : BehaviorAnalysisRepository {
     
+    /** @see BehaviorAnalysisRepository.trackInteraction */
     override suspend fun trackInteraction(
         userId: String,
         interactionType: InteractionType,
@@ -50,6 +51,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
+    /** @see BehaviorAnalysisRepository.analyzeUserBehavior */
     override suspend fun analyzeUserBehavior(
         userId: String,
         analysisPeriodDays: Int,
@@ -78,6 +80,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
+    /** @see BehaviorAnalysisRepository.getBehaviorSummary */
     override suspend fun getBehaviorSummary(
         userId: String,
         days: Int
@@ -97,6 +100,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
+    /** @see BehaviorAnalysisRepository.batchTrackInteractions */
     override suspend fun batchTrackInteractions(
         requests: List<BehaviorTrackingRequest>
     ): Result<BehaviorAnalysisSimpleResponse> {
@@ -115,6 +119,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
+    /** @see BehaviorAnalysisRepository.getDetectedPatterns */
     override suspend fun getDetectedPatterns(
         userId: String,
         days: Int
@@ -134,6 +139,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         }
     }
     
+    /** @see BehaviorAnalysisRepository.clearUserBehaviorData */
     override suspend fun clearUserBehaviorData(userId: String): Result<BehaviorAnalysisSimpleResponse> {
         return try {
             val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")

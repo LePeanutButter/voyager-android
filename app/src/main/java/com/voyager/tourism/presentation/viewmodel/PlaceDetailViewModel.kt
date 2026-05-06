@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Loads catalog or AI-backed place detail payloads for a selected destination or place id.
+ */
 @HiltViewModel
 class PlaceDetailViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
@@ -24,6 +27,9 @@ class PlaceDetailViewModel @Inject constructor(
     private val _payload = MutableStateFlow<String?>(null)
     val payload: StateFlow<String?> = _payload.asStateFlow()
 
+    /**
+     * Fetches popular-activities JSON for [placeId] and exposes it as a raw preview string.
+     */
     fun loadPlace(placeId: String) {
         viewModelScope.launch {
             _isLoading.value = true

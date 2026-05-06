@@ -4,7 +4,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * Respuesta de actividad en plan (`TravelPlanActivityDto` del backend).
+ * Activity line item within a travel plan, aligned with backend `TravelPlanActivityDto`.
  */
 @JsonClass(generateAdapter = true)
 data class TravelPlanActivityDto(
@@ -24,6 +24,9 @@ data class TravelPlanActivityDto(
     @Json(name = "updatedAt") val updatedAt: String? = null,
 )
 
+/**
+ * Request body for updating an existing activity on a travel plan.
+ */
 @JsonClass(generateAdapter = true)
 data class UpdateActivityRequest(
     @Json(name = "name") val name: String,
@@ -33,6 +36,9 @@ data class UpdateActivityRequest(
     @Json(name = "location") val location: String? = null,
 )
 
+/**
+ * Request body for creating a new activity on a travel plan.
+ */
 @JsonClass(generateAdapter = true)
 data class CreateActivityRequest(
     @Json(name = "name") val name: String,

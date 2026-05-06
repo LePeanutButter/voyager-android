@@ -13,8 +13,14 @@ import com.voyager.tourism.domain.model.QuestionnaireStepResult
 import com.voyager.tourism.domain.model.QuestionnaireSubmitResult
 import com.voyager.tourism.domain.model.QuestionOption
 
+/**
+ * Maps AI questionnaire DTOs to richer domain questionnaire types.
+ */
 object PreferenceQuestionnaireMapper {
 
+    /**
+     * Converts a step response payload into a domain [QuestionnaireStepResult].
+     */
     fun toDomain(dto: QuestionnaireStepResponseDto): QuestionnaireStepResult {
         return QuestionnaireStepResult(
             sessionId = dto.sessionId,
@@ -26,6 +32,9 @@ object PreferenceQuestionnaireMapper {
         )
     }
 
+    /**
+     * Maps a question definition DTO to [QuestionnaireQuestion].
+     */
     private fun toDomain(dto: QuestionnaireQuestionDto): QuestionnaireQuestion {
         return QuestionnaireQuestion(
             id = dto.id,
@@ -35,10 +44,16 @@ object PreferenceQuestionnaireMapper {
         )
     }
 
+    /**
+     * Maps a selectable option row into [QuestionOption].
+     */
     private fun toDomain(dto: QuestionOptionDto): QuestionOption {
         return QuestionOption(id = dto.id, label = dto.label)
     }
 
+    /**
+     * Serializes [QuestionnaireAnswer] selections for outbound questionnaire POST bodies.
+     */
     fun toDto(answers: List<QuestionnaireAnswer>): List<AnswerItemDto> {
         return answers.map {
             AnswerItemDto(
@@ -48,6 +63,9 @@ object PreferenceQuestionnaireMapper {
         }
     }
 
+    /**
+     * Converts the questionnaire submission response into [QuestionnaireSubmitResult].
+     */
     fun toDomain(dto: QuestionnaireSubmitResponseDto): QuestionnaireSubmitResult {
         return QuestionnaireSubmitResult(
             userId = dto.userId,
@@ -58,6 +76,9 @@ object PreferenceQuestionnaireMapper {
         )
     }
 
+    /**
+     * Maps embedded preference profile JSON to the domain [PreferenceProfile] aggregate.
+     */
     private fun toProfile(dto: PreferenceProfilePayloadDto): PreferenceProfile {
         return PreferenceProfile(
             travelCategories = dto.travelCategories,

@@ -11,11 +11,15 @@ import com.voyager.tourism.domain.repository.TravelPreferencesRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Bridges [AiTravelPreferencesApi] responses into domain questionnaire models.
+ */
 @Singleton
 class TravelPreferencesRepositoryImpl @Inject constructor(
     private val api: AiTravelPreferencesApi
 ) : TravelPreferencesRepository {
 
+    /** @see TravelPreferencesRepository.postQuestionnaireStep */
     override suspend fun postQuestionnaireStep(
         userId: String,
         sessionId: String?,
@@ -44,6 +48,7 @@ class TravelPreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TravelPreferencesRepository.submitQuestionnaire */
     override suspend fun submitQuestionnaire(
         userId: String,
         sessionId: String,

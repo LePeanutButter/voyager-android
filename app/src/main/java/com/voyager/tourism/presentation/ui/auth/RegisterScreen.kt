@@ -27,6 +27,12 @@ import androidx.navigation.NavController
 import com.voyager.tourism.presentation.viewmodel.RegisterViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterUiState
 
+/**
+ * Account registration screen collecting profile fields and submitting them to the backend.
+ *
+ * @param navController Used to return to the login route after successful signup.
+ * @param viewModel Owns registration state and API call.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
@@ -290,6 +296,12 @@ fun RegisterScreen(
     }
 }
 
+/**
+ * Validates all registration fields (username, email, passwords, names).
+ *
+ * @param onError Invoked with a field key and message for the first invalid value per field batch.
+ * @return `true` if any field is invalid, `false` if the form may be submitted.
+ */
 private fun validateFields(
     username: String,
     email: String,

@@ -4,7 +4,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * Alineado con `com.tourism.platform.dto.TravelPlanDto` (Jackson camelCase).
+ * Travel plan aggregate returned by the platform API, aligned with backend `TravelPlanDto` (Jackson camelCase).
  */
 @JsonClass(generateAdapter = true)
 data class TravelPlanDto(

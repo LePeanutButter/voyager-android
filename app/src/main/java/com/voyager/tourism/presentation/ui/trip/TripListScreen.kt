@@ -121,6 +121,9 @@ fun TripListScreen(
     }
 }
 
+/**
+ * Single-row summary for one trip inside the trip list.
+ */
 @Composable
 private fun TripListItem(
     trip: com.voyager.tourism.domain.model.Trip,

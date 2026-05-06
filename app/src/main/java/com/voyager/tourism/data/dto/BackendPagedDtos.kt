@@ -3,6 +3,9 @@ package com.voyager.tourism.data.dto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * Paginated list of users returned by admin or search endpoints.
+ */
 @JsonClass(generateAdapter = true)
 data class PagedResponseUserDto(
     @Json(name = "timestamp") val timestamp: String? = null,
@@ -18,6 +21,9 @@ data class PagedResponseUserDto(
     @Json(name = "path") val path: String? = null,
 )
 
+/**
+ * Paginated list of travel plans.
+ */
 @JsonClass(generateAdapter = true)
 data class PagedResponseTravelPlanDto(
     @Json(name = "timestamp") val timestamp: String? = null,
@@ -33,6 +39,9 @@ data class PagedResponseTravelPlanDto(
     @Json(name = "path") val path: String? = null,
 )
 
+/**
+ * Paginated inbox or thread messages between connected travelers.
+ */
 @JsonClass(generateAdapter = true)
 data class PagedResponseMessageDto(
     @Json(name = "timestamp") val timestamp: String? = null,
@@ -48,12 +57,18 @@ data class PagedResponseMessageDto(
     @Json(name = "path") val path: String? = null,
 )
 
+/**
+ * High-level user counts for dashboards or analytics.
+ */
 @JsonClass(generateAdapter = true)
 data class UserStatisticsDto(
     @Json(name = "totalUsers") val totalUsers: Long = 0,
     @Json(name = "activeUsers") val activeUsers: Long = 0,
 )
 
+/**
+ * Single message in a traveler-to-traveler conversation.
+ */
 @JsonClass(generateAdapter = true)
 data class MessageDto(
     @Json(name = "id") val id: Long? = null,
@@ -66,6 +81,9 @@ data class MessageDto(
     @Json(name = "updatedAt") val updatedAt: String? = null,
 )
 
+/**
+ * Request body for posting a new chat message on an existing connection.
+ */
 @JsonClass(generateAdapter = true)
 data class SendMessageRequestDto(
     @Json(name = "connectionId") val connectionId: Long,
@@ -73,6 +91,9 @@ data class SendMessageRequestDto(
     @Json(name = "content") val content: String,
 )
 
+/**
+ * Lightweight traveler match row including score components for UI display.
+ */
 @JsonClass(generateAdapter = true)
 data class MatchResponseDto(
     @Json(name = "userId") val userId: Long,
@@ -84,6 +105,9 @@ data class MatchResponseDto(
     @Json(name = "interestPoints") val interestPoints: Int? = null,
 )
 
+/**
+ * Booking or reservation snapshot attached to a travel plan.
+ */
 @JsonClass(generateAdapter = true)
 data class ReservationDto(
     @Json(name = "id") val id: Long? = null,

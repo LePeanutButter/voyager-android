@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Coordinates social experiments: connections, plan activities, sharing, and compatibility lists for the collaboration UI.
+ */
 @HiltViewModel
 class SocialCollaborationViewModel @Inject constructor(
     private val socialRepository: SocialRepository
@@ -24,6 +27,7 @@ class SocialCollaborationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SocialCollaborationUiState())
     val uiState: StateFlow<SocialCollaborationUiState> = _uiState.asStateFlow()
 
+    /** Loads accepted connections for [userId]. */
     fun loadConnections(userId: Long) = viewModelScope.launch {
         _uiState.update { it.copy(isLoadingConnections = true, errorMessage = null) }
         socialRepository.getConnections(userId)
@@ -31,6 +35,7 @@ class SocialCollaborationViewModel @Inject constructor(
             .onFailure { error -> _uiState.update { it.copy(isLoadingConnections = false, errorMessage = error.message) } }
     }
 
+    /** Loads activities listed on the given travel plan. */
     fun loadActivities(travelPlanId: Long) = viewModelScope.launch {
         _uiState.update { it.copy(isLoadingActivities = true, errorMessage = null) }
         socialRepository.getTravelPlanActivities(travelPlanId)
@@ -38,6 +43,7 @@ class SocialCollaborationViewModel @Inject constructor(
             .onFailure { error -> _uiState.update { it.copy(isLoadingActivities = false, errorMessage = error.message) } }
     }
 
+    /** Shares [activityId] with [receiverId] and records the returned [SharedActivity] in state. */
     fun shareActivity(activityId: Long, receiverId: Long) = viewModelScope.launch {
         _uiState.update { it.copy(isSubmittingShare = true, errorMessage = null, successMessage = null) }
         socialRepository.shareActivity(activityId, receiverId)
@@ -55,6 +61,7 @@ class SocialCollaborationViewModel @Inject constructor(
             }
     }
 
+    /** Accepts or rejects a pending shared activity and merges the server row into [SocialCollaborationUiState.sharedActivities]. */
     fun resolveSharedActivity(sharedActivityId: Long, decision: SharedActivityDecision) = viewModelScope.launch {
         _uiState.update { it.copy(isResolvingSharedActivity = true, errorMessage = null, successMessage = null) }
         socialRepository.resolveSharedActivity(sharedActivityId, decision)
@@ -77,6 +84,7 @@ class SocialCollaborationViewModel @Inject constructor(
             }
     }
 
+    /** Loads scored compatibility matches for a destination window and optional interest tags. */
     fun loadCompatibilityMatches(
         destination: String,
         startDate: String,
@@ -99,6 +107,7 @@ class SocialCollaborationViewModel @Inject constructor(
             }
     }
 
+    /** Restricts visible matches to those overlapping the selected interest labels. */
     fun applyInterestsFilter(interests: Set<String>) {
         _uiState.update {
             it.copy(
@@ -108,6 +117,7 @@ class SocialCollaborationViewModel @Inject constructor(
         }
     }
 
+    /** Prepends or replaces a shared activity row used for optimistic UI highlights. */
     fun trackSharedActivity(sharedActivity: SharedActivity) {
         _uiState.update { state ->
             state.copy(
@@ -116,10 +126,14 @@ class SocialCollaborationViewModel @Inject constructor(
         }
     }
 
+    /** Clears transient [SocialCollaborationUiState.errorMessage] and success banner text. */
     fun clearFeedback() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
+    /**
+     * Filters [matches] to those whose [CompatibilityMatch.matchedInterests] intersect [interests]; returns all when empty.
+     */
     private fun applyInterestFilter(matches: List<CompatibilityMatch>, interests: Set<String>): List<CompatibilityMatch> {
         if (interests.isEmpty()) return matches
         return matches.filter { match ->
@@ -128,6 +142,9 @@ class SocialCollaborationViewModel @Inject constructor(
     }
 }
 
+/**
+ * Mutable UI snapshot for the social collaboration hub: lists, loading flags, and user feedback.
+ */
 data class SocialCollaborationUiState(
     val connections: List<TravelerConnection> = emptyList(),
     val activities: List<TravelActivity> = emptyList(),

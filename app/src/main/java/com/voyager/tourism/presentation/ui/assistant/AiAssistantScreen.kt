@@ -34,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.viewmodel.AiAssistantViewModel
 
+/**
+ * Chat-style AI assistant: message history, input field, send action, and loading/error display.
+ *
+ * @param onBack Invoked when the user leaves the screen (e.g. toolbar back).
+ * @param viewModel Supplies messages and send orchestration.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiAssistantScreen(

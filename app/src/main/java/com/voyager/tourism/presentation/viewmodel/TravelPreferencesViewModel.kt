@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Drives the multi-step AI travel preference questionnaire: session id, questions, and final submission.
+ */
 @HiltViewModel
 class TravelPreferencesViewModel @Inject constructor(
     private val repository: TravelPreferencesRepository
@@ -42,10 +45,14 @@ class TravelPreferencesViewModel @Inject constructor(
     private val _submitResult = MutableStateFlow<QuestionnaireSubmitResult?>(null)
     val submitResult: StateFlow<QuestionnaireSubmitResult?> = _submitResult.asStateFlow()
 
+    /** Clears the last questionnaire error without resetting progress. */
     fun clearError() {
         _error.value = null
     }
 
+    /**
+     * Starts or restarts the questionnaire for [userId] with an empty answer batch to obtain the first step.
+     */
     fun startOrRefresh(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -70,7 +77,10 @@ class TravelPreferencesViewModel @Inject constructor(
     }
 
     /**
-     * @param answers One entry per current question, single-select option id.
+     * Submits [answers] for the current session step and replaces [questions] with the next server payload.
+     *
+     * @param userId Authenticated user running the questionnaire.
+     * @param answers One entry per active question with selected option ids.
      */
     fun sendStep(userId: String, answers: List<QuestionnaireAnswer>) {
         val sid = _sessionId.value ?: return
@@ -94,6 +104,9 @@ class TravelPreferencesViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Posts the final questionnaire submission for the active [sessionId] and exposes [submitResult] on success.
+     */
     fun finalize(userId: String) {
         val sid = _sessionId.value ?: return
         viewModelScope.launch {

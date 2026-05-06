@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Application-wide authentication coordinator: credentials login, registration, Google OAuth deep links, and session expiry.
+ */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
@@ -53,6 +56,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Signs in with email (or username) and password, updating [currentUser] and [authState] on success.
+     */
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -70,6 +76,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Creates a new account and mirrors a successful [login] outcome on the same flows.
+     */
     fun register(
         email: String,
         password: String,
@@ -93,6 +102,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Clears local session via [UserRepository] and sets state to unauthenticated.
+     */
     fun logout() {
         viewModelScope.launch {
             userRepository.logout()
@@ -101,6 +113,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Called when tokens are invalid or revoked; clears the user and navigates to the login route.
+     */
     fun onSessionExpired() {
         viewModelScope.launch {
             _currentUser.value = null
@@ -110,7 +125,7 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
-     * Intercambio de código OAuth2 (deep link smartrip://auth?code=...).
+     * Completes Google OAuth2 using query parameters on a `smartrip://auth` deep link (`code`, optional `state`).
      */
     fun handleGoogleOAuthUri(uri: Uri?) {
         if (uri == null) return
@@ -142,10 +157,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /** Clears [oauthError] after the user dismisses an OAuth failure message. */
     fun clearOAuthError() {
         _oauthError.value = null
     }
 
+    /**
+     * Restores [authState] and [currentUser] from [UserRepository] on cold start.
+     */
     private fun checkAuthenticationStatus() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -166,11 +185,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /** Clears credential login or registration error messages. */
     fun clearError() {
         _errorMessage.value = null
     }
 
-    /** Tras login/registro desde pantallas que usan otro ViewModel pero ya persisten sesión. */
+    /**
+     * Adopts a user already persisted by another flow (for example a dedicated login screen) into this ViewModel state.
+     */
     fun adoptAuthenticatedUser(user: User) {
         _currentUser.value = user
         _authState.value = AuthState.Authenticated
@@ -182,6 +204,9 @@ class AuthViewModel @Inject constructor(
     }
 }
 
+/**
+ * Root-level auth status exposed to navigation: loading bootstrap, signed-in user, or explicit sign-out.
+ */
 sealed class AuthState {
     object Loading : AuthState()
     object Idle : AuthState()

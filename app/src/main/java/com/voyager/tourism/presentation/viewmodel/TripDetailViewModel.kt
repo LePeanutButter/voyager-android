@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Presents one trip from the domain layer plus server activities for the same numeric travel plan id.
+ */
 @HiltViewModel
 class TripDetailViewModel @Inject constructor(
     private val tripRepository: TripRepository,
@@ -31,6 +34,9 @@ class TripDetailViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    /**
+     * Loads the trip by string id and, when numeric, hydrates [activities] from the travel-plan API.
+     */
     fun loadTrip(tripId: String) {
         viewModelScope.launch {
             _isLoading.value = true

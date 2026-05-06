@@ -9,7 +9,10 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class TourismApplication : Application() {
-    
+
+    /**
+     * Hilt entry hook; extend here for app-wide initialization (logging, crash handlers, etc.).
+     */
     override fun onCreate() {
         super.onCreate()
         // Initialize any app-wide components here

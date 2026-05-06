@@ -46,14 +46,32 @@ interface SocialRepository {
      */
     suspend fun getSentRequests(token: String): List<ConnectionRequestDto>
 
+    /**
+     * Loads accepted traveler connections for the provided profile id.
+     */
     suspend fun getConnections(userId: Long): Result<List<TravelerConnection>>
+
+    /**
+     * Fetches itinerary activities that belong to a remote travel plan.
+     */
     suspend fun getTravelPlanActivities(travelPlanId: Long): Result<List<TravelActivity>>
+
+    /**
+     * Shares an activity with another traveler and returns the server-side shared record.
+     */
     suspend fun shareActivity(activityId: Long, receiverId: Long): Result<SharedActivity>
+
+    /**
+     * Accepts or declines a pending shared activity invitation.
+     */
     suspend fun resolveSharedActivity(
         sharedActivityId: Long,
         decision: SharedActivityDecision
     ): Result<SharedActivity>
 
+    /**
+     * Retrieves backend-calculated compatibility matches for overlapping trips.
+     */
     suspend fun getCompatibilityMatches(
         destination: String,
         startDate: String,

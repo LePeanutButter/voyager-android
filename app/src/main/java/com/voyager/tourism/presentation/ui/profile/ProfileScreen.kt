@@ -307,6 +307,9 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Horizontally scrolling chips representing interests that can be removed when editing the profile.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun InterestChips(
@@ -329,6 +332,11 @@ private fun InterestChips(
     }
 }
 
+/**
+ * Validates required profile text fields before a save attempt.
+ *
+ * @return `true` when validation failed and [onError] was invoked at least once.
+ */
 private fun validateProfileFields(
     firstName: String,
     lastName: String,

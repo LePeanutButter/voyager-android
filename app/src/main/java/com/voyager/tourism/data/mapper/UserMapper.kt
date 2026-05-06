@@ -20,6 +20,9 @@ import javax.inject.Singleton
 @Singleton
 class UserMapper @Inject constructor() {
 
+    /**
+     * Converts a wire-format [UserDto] into the rich domain [User] model.
+     */
     fun toDomain(userDto: UserDto): User {
         return User(
             id = userDto.id.toString(),
@@ -40,6 +43,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Serializes a domain [User] back into transport DTO form for API calls.
+     */
     fun toDto(user: User): UserDto {
         return UserDto(
             id = user.id.toLongOrNull() ?: 0L,
@@ -60,6 +66,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Maps a network [UserDto] into a Room [UserEntity] row for offline caching.
+     */
     fun toEntity(userDto: UserDto): UserEntity {
         return UserEntity(
             id = userDto.id.toString(),
@@ -75,6 +84,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Maps a domain [User] into a Room [UserEntity] snapshot.
+     */
     fun toEntity(user: User): UserEntity {
         return UserEntity(
             id = user.id,
@@ -90,6 +102,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Builds an update payload for PATCH/PUT endpoints from editable profile fields.
+     */
     fun toUserUpdateDto(user: User): UserUpdateDto {
         return UserUpdateDto(
             firstName = user.firstName,
@@ -102,6 +117,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Converts a cached [UserEntity] into a domain [User], synthesizing ISO timestamps from millis.
+     */
     fun entityToDomain(userEntity: UserEntity): User {
         val created = Instant.ofEpochMilli(userEntity.createdAt).toString()
         val updated = Instant.ofEpochMilli(userEntity.updatedAt).toString()
@@ -124,6 +142,9 @@ class UserMapper @Inject constructor() {
         )
     }
 
+    /**
+     * Parses backend ISO-8601 timestamps into epoch millis, falling back to "now" when malformed.
+     */
     private fun parseBackendInstantToMillis(iso: String?): Long {
         if (iso.isNullOrBlank()) return System.currentTimeMillis()
         runCatching { Instant.parse(iso) }.getOrNull()?.let { return it.toEpochMilli() }

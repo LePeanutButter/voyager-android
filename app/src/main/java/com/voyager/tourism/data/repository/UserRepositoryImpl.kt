@@ -20,7 +20,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Usuarios vía **voyager-backend-core** y preferencias de viaje vía **voyager-ai-service** (`/users/preferences/{id}`).
+ * User profiles via **voyager-backend-core**; travel preferences are mirrored to **voyager-ai-service** (`/users/preferences/{id}`).
  */
 @Singleton
 class UserRepositoryImpl @Inject constructor(
@@ -32,6 +32,7 @@ class UserRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager,
 ) : UserRepository {
 
+    /** @see UserRepository.getCurrentUser */
     override suspend fun getCurrentUser(): Result<User?> {
         return try {
             val token = preferencesManager.getAuthToken()
@@ -63,6 +64,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.getUserById */
     override suspend fun getUserById(userId: String): Result<User?> {
         return try {
             val id = userId.toLongOrNull()
@@ -85,6 +87,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.authenticate */
     override suspend fun authenticate(email: String, password: String): Result<User> {
         return try {
             val response = userApiService.loginUser(
@@ -104,6 +107,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.register */
     override suspend fun register(
         email: String,
         password: String,
@@ -135,6 +139,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.updateUser */
     override suspend fun updateUser(user: User): Result<User> {
         return try {
             val id = user.id.toLongOrNull()
@@ -152,6 +157,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.updateUserPreferences */
     override suspend fun updateUserPreferences(
         userId: String,
         preferences: com.voyager.tourism.domain.model.UserPreferences,
@@ -185,6 +191,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Maps coarse [BudgetRange] choices to numeric min/max pairs for the AI preference payload.
+     */
     private fun budgetRangeMap(range: BudgetRange): Map<String, Double> = when (range) {
         BudgetRange.LOW -> mapOf("min" to 0.0, "max" to 80.0)
         BudgetRange.MEDIUM -> mapOf("min" to 50.0, "max" to 200.0)
@@ -192,6 +201,7 @@ class UserRepositoryImpl @Inject constructor(
         BudgetRange.LUXURY -> mapOf("min" to 400.0, "max" to 5000.0)
     }
 
+    /** @see UserRepository.logout */
     override suspend fun logout(): Result<Unit> {
         return try {
             val uid = preferencesManager.getCurrentUserId()
@@ -206,12 +216,14 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see UserRepository.isUserAuthenticated */
     override fun isUserAuthenticated(): Flow<Boolean> {
         return preferencesManager.authTokenFlow.map { token ->
             token != null
         }
     }
 
+    /** @see UserRepository.deleteUser */
     override suspend fun deleteUser(userId: String): Result<Unit> {
         return try {
             val id = userId.toLongOrNull()
@@ -230,6 +242,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Applies a partial profile update via [UserUpdateDto] and returns the server payload.
+     */
     override suspend fun updateUser(
         userId: String,
         firstName: String,

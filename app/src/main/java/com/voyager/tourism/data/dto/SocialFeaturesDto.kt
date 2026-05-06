@@ -3,6 +3,9 @@ package com.voyager.tourism.data.dto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * Generic wrapper for API payloads that include HTTP-style status and message fields.
+ */
 @JsonClass(generateAdapter = true)
 data class ApiResponseDto<T>(
     @Json(name = "status") val status: Int? = null,
@@ -10,6 +13,9 @@ data class ApiResponseDto<T>(
     @Json(name = "data") val data: T? = null
 )
 
+/**
+ * Normalized error payload returned alongside non-success HTTP semantics.
+ */
 @JsonClass(generateAdapter = true)
 data class ApiErrorDto(
     @Json(name = "status") val status: Int? = null,
@@ -17,7 +23,9 @@ data class ApiErrorDto(
     @Json(name = "error") val error: String? = null
 )
 
-/** Conexión aceptada (`TravelConnectionDto` en el backend). */
+/**
+ * Accepted traveler connection as returned by the backend (`TravelConnectionDto`).
+ */
 @JsonClass(generateAdapter = true)
 data class ConnectionDto(
     @Json(name = "userId") val userId: Long,
@@ -27,16 +35,25 @@ data class ConnectionDto(
     @Json(name = "status") val status: String,
 )
 
+/**
+ * Asks the backend to share an activity with another user by recipient id.
+ */
 @JsonClass(generateAdapter = true)
 data class ShareActivityRequestDto(
     @Json(name = "receiverId") val receiverId: Long
 )
 
+/**
+ * User action when accepting or rejecting a shared activity proposal.
+ */
 @JsonClass(generateAdapter = true)
 data class SharedActivityActionRequestDto(
     @Json(name = "action") val action: String
 )
 
+/**
+ * Server state for a shared activity after create or update operations.
+ */
 @JsonClass(generateAdapter = true)
 data class SharedActivityResponseDto(
     @Json(name = "id") val id: Long? = null,
@@ -47,6 +64,9 @@ data class SharedActivityResponseDto(
     @Json(name = "sharedPlan") val sharedPlan: Boolean? = null
 )
 
+/**
+ * Criteria sent when requesting traveler compatibility scoring for a trip window.
+ */
 @JsonClass(generateAdapter = true)
 data class CompatibilityMatchRequestDto(
     @Json(name = "destination") val destination: String,
@@ -55,6 +75,9 @@ data class CompatibilityMatchRequestDto(
     @Json(name = "interests") val interests: List<String>
 )
 
+/**
+ * Breakdown of compatibility scoring returned for a potential match.
+ */
 @JsonClass(generateAdapter = true)
 data class CompatibilityMatchResponseDto(
     @Json(name = "userId") val userId: Long,

@@ -44,7 +44,7 @@ class TripViewModel @Inject constructor(
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
     
     /**
-     * Carga viajes usando el user id guardado en sesión.
+     * Loads trips for the user id stored in preferences, or surfaces an error when the session is missing.
      */
     fun loadTripsForCurrentUser() {
         val userId = preferencesManager.getCurrentUserId()
@@ -55,6 +55,9 @@ class TripViewModel @Inject constructor(
         loadTrips(userId)
     }
 
+    /**
+     * Fetches all trips for [userId] and updates [trips] and [errorMessage] accordingly.
+     */
     fun loadTrips(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true

@@ -5,10 +5,8 @@ import com.squareup.moshi.JsonClass
 import java.time.LocalDateTime
 
 /**
- * Data Transfer Objects for Behavior Analysis feature
- * Matches backend API contracts for implicit user behavior tracking
+ * Payload sent when recording a single implicit user interaction for analysis.
  */
-
 @JsonClass(generateAdapter = true)
 data class BehaviorTrackingRequest(
     @Json(name = "user_id") 
@@ -30,6 +28,9 @@ data class BehaviorTrackingRequest(
     val context: Map<String, Any> = emptyMap()
 )
 
+/**
+ * Request body for running a behavior analysis job over a configurable time window.
+ */
 @JsonClass(generateAdapter = true)
 data class BehaviorAnalysisRequest(
     @Json(name = "user_id")
@@ -45,6 +46,9 @@ data class BehaviorAnalysisRequest(
     val includePreferenceUpdates: Boolean = true
 )
 
+/**
+ * Response describing inferred preference changes, detected patterns, and confidence from an analysis run.
+ */
 @JsonClass(generateAdapter = true)
 data class ImplicitPreferenceUpdate(
     @Json(name = "user_id")
@@ -63,6 +67,9 @@ data class ImplicitPreferenceUpdate(
     val confidenceScore: Double
 )
 
+/**
+ * One recurring behavior pattern identified for the user, with confidence and recency metadata.
+ */
 @JsonClass(generateAdapter = true)
 data class BehaviorPattern(
     @Json(name = "pattern_type")
@@ -81,6 +88,9 @@ data class BehaviorPattern(
     val context: Map<String, Any>
 )
 
+/**
+ * Inclusive analysis window in local date-time coordinates from the backend.
+ */
 @JsonClass(generateAdapter = true)
 data class DateRange(
     @Json(name = "start")
@@ -90,6 +100,9 @@ data class DateRange(
     val end: LocalDateTime
 )
 
+/**
+ * Aggregated counters and recent patterns for dashboard or summary endpoints.
+ */
 @JsonClass(generateAdapter = true)
 data class BehaviorSummary(
     @Json(name = "user_id")
@@ -114,7 +127,9 @@ data class BehaviorSummary(
     val lastAnalysis: LocalDateTime?
 )
 
-/** Respuesta genérica del servicio de análisis de comportamiento (no confundir con [ApiResponse]). */
+/**
+ * Simple success or error envelope returned by the behavior-analysis service (distinct from [ApiResponse]).
+ */
 @JsonClass(generateAdapter = true)
 data class BehaviorAnalysisSimpleResponse(
     @Json(name = "success")
@@ -127,6 +142,9 @@ data class BehaviorAnalysisSimpleResponse(
     val data: Map<String, Any>? = null
 )
 
+/**
+ * Interaction kinds allowed when tracking user behavior for analytics.
+ */
 enum class InteractionType {
     @Json(name = "view")
     VIEW,

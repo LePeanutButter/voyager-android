@@ -26,6 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.viewmodel.PlaceDetailViewModel
 
+/**
+ * Shows AI-backed popular activities or related payload for a place identified by [placeId].
+ *
+ * @param placeId Backend or catalog identifier for the place.
+ * @param onBack Closes or pops this screen.
+ * @param viewModel Loads place detail state.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceDetailScreen(

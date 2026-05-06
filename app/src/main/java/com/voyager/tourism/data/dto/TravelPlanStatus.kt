@@ -3,7 +3,7 @@ package com.voyager.tourism.data.dto
 import com.squareup.moshi.Json
 
 /**
- * Estados de plan de viaje alineados con `com.tourism.platform.model.TravelPlanStatus`.
+ * Travel plan lifecycle states aligned with the backend `com.tourism.platform.model.TravelPlanStatus`.
  */
 enum class TravelPlanStatus {
     @Json(name = "DRAFT")

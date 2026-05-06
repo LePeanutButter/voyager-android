@@ -41,6 +41,9 @@ import com.voyager.tourism.domain.model.SharedActivity
 import com.voyager.tourism.domain.model.SharedActivityDecision
 import com.voyager.tourism.presentation.viewmodel.SocialCollaborationViewModel
 
+/**
+ * Hub for traveler connections, itinerary activities, invites, and simple compatibility exploration.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SocialCollaborationScreen(
@@ -312,6 +315,7 @@ fun SocialCollaborationScreen(
     }
 }
 
+/** Row card for a pending or settled shared activity with optional accept/reject actions. */
 @Composable
 private fun SharedActivityCard(
     sharedActivity: SharedActivity,
@@ -332,6 +336,7 @@ private fun SharedActivityCard(
     }
 }
 
+/** Neutral placeholder when a list section has no rows yet. */
 @Composable
 private fun EmptyStateCard(message: String) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -344,6 +349,7 @@ private fun EmptyStateCard(message: String) {
     }
 }
 
+/** Inline success or error banner used at the bottom of the collaboration feed. */
 @Composable
 private fun StatusCard(message: String, isError: Boolean) {
     Card(

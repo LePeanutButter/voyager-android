@@ -9,8 +9,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Almacenamiento local de sesión (token, usuario actual).
- * Debe usar las mismas claves que [TokenManager] para que el interceptor HTTP reciba el JWT.
+ * SharedPreferences-backed session store (tokens, current user id, user JSON).
+ *
+ * Keys must stay in sync with [TokenManager] so HTTP interceptors see the same JWT.
  */
 @Singleton
 class PreferencesManager @Inject constructor(
@@ -19,15 +20,28 @@ class PreferencesManager @Inject constructor(
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _authTokenFlow = MutableStateFlow(prefs.getString(KEY_AUTH_TOKEN, null))
+
+    /** Observable access token; mirrors [getAuthToken] after writes. */
     val authTokenFlow: StateFlow<String?> = _authTokenFlow.asStateFlow()
 
+    /** Returns the persisted access token, or `null`. */
     fun getAuthToken(): String? = prefs.getString(KEY_AUTH_TOKEN, null)
 
+    /**
+     * Stores the access token and publishes it to [authTokenFlow].
+     *
+     * @param token Non-blank JWT or bearer token string.
+     */
     fun saveAuthToken(token: String) {
         prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
         _authTokenFlow.value = token
     }
 
+    /**
+     * Persists or removes the refresh token.
+     *
+     * @param token Refresh token string, or `null`/blank to delete the key.
+     */
     fun saveRefreshToken(token: String?) {
         if (token.isNullOrBlank()) {
             prefs.edit().remove(KEY_REFRESH_TOKEN).apply()
@@ -36,8 +50,14 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    /** Returns the stored refresh token, or `null`. */
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
+    /**
+     * Persists the backend user id for the active session, or removes it when `null`/blank.
+     *
+     * @param userId String id from the API, or `null` to clear.
+     */
     fun saveCurrentUserId(userId: String?) {
         if (userId.isNullOrBlank()) {
             prefs.edit().remove(KEY_USER_ID).apply()
@@ -46,8 +66,14 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    /** Returns the persisted current user id, or `null`. */
     fun getCurrentUserId(): String? = prefs.getString(KEY_USER_ID, null)
 
+    /**
+     * Persists raw user JSON, or removes the key when `null`/blank.
+     *
+     * @param json Moshi-serialized [com.voyager.tourism.data.dto.UserDto] or compatible payload.
+     */
     fun saveUserJson(json: String?) {
         if (json.isNullOrBlank()) {
             prefs.edit().remove(KEY_USER_JSON).apply()
@@ -56,8 +82,10 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    /** Returns stored user JSON, or `null`. */
     fun getUserJson(): String? = prefs.getString(KEY_USER_JSON, null)
 
+    /** Removes auth token, refresh token, user id, and user JSON; resets [authTokenFlow] to `null`. */
     fun clearAuthData() {
         prefs.edit()
             .remove(KEY_AUTH_TOKEN)

@@ -33,6 +33,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.domain.model.QuestionnaireAnswer
 import com.voyager.tourism.presentation.viewmodel.TravelPreferencesViewModel
 
+/**
+ * Adaptive travel preference questionnaire: loads steps, submits answers, finalizes profile for the AI engine.
+ *
+ * @param userId User whose preferences are being collected.
+ * @param onBack Leaves the flow (cancel or after completion).
+ * @param viewModel Questionnaire load, step submit, and finalize operations.
+ */
 @Composable
 fun TravelPreferencesScreen(
     userId: String,

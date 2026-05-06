@@ -11,6 +11,15 @@ import javax.inject.Inject
 class AnalyzeUserBehaviorUseCase @Inject constructor(
     private val behaviorAnalysisRepository: BehaviorAnalysisRepository
 ) {
+    /**
+     * Runs behavior analysis for a user and returns inferred preference updates and patterns.
+     *
+     * @param userId Authenticated user identifier.
+     * @param analysisPeriodDays Window in days over which interactions are analyzed.
+     * @param includePatterns When true, pattern detection is included in the response.
+     * @param includePreferenceUpdates When true, inferred preference deltas are included.
+     * @return Analysis payload or failure from the repository.
+     */
     suspend operator fun invoke(
         userId: String,
         analysisPeriodDays: Int = 7,

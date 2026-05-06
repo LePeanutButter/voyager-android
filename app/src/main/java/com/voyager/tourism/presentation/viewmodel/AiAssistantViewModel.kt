@@ -12,8 +12,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Single chat bubble shown in the AI assistant transcript.
+ *
+ * @param isUser When true, the bubble represents user input; otherwise the assistant reply.
+ * @param text Message body to render.
+ */
 data class ChatBubble(val isUser: Boolean, val text: String)
 
+/**
+ * ViewModel for the conversational Voyager AI assistant screen.
+ */
 @HiltViewModel
 class AiAssistantViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
@@ -29,6 +38,9 @@ class AiAssistantViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    /**
+     * Sends a user utterance to the AI service and appends the assistant reply to [messages].
+     */
     fun sendMessage(text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
@@ -58,6 +70,7 @@ class AiAssistantViewModel @Inject constructor(
         }
     }
 
+    /** Clears the last error state without modifying the transcript. */
     fun clearError() {
         _error.value = null
     }

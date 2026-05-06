@@ -9,16 +9,22 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 /**
- * Voyager AI service — adaptive travel preference questionnaire.
- * Base URL is the AI microservice root ending with /api/v1/
+ * Voyager AI service client for the adaptive travel preference questionnaire.
+ * The Retrofit base URL is the AI microservice root ending with `/api/v1/`.
  */
 interface AiTravelPreferencesApi {
 
+    /**
+     * Submits one questionnaire step and receives the next step or completion hint.
+     */
     @POST("travel-preferences/questionnaire/step")
     suspend fun postQuestionnaireStep(
         @Body body: QuestionnaireStepRequestDto
     ): Response<QuestionnaireStepResponseDto>
 
+    /**
+     * Submits the full questionnaire answers for persistence and scoring.
+     */
     @POST("travel-preferences/questionnaire/submit")
     suspend fun postQuestionnaireSubmit(
         @Body body: QuestionnaireSubmitRequestDto

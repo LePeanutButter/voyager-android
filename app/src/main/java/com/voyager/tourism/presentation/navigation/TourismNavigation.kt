@@ -38,6 +38,9 @@ import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 
 private const val ROUTE_BOOTSTRAP = "bootstrap"
 
+/**
+ * Root [NavHost] wiring authentication gates, dashboard shell, and feature destinations.
+ */
 @Composable
 fun TourismNavigation(
     navController: NavHostController,

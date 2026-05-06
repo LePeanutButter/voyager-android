@@ -15,7 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Viajes locales + **travel-plans** del backend Spring.
+ * Trips stored locally in Room plus **travel-plans** endpoints from the Spring backend.
  */
 @Singleton
 class TripRepositoryImpl @Inject constructor(
@@ -25,8 +25,12 @@ class TripRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager,
 ) : TripRepository {
 
+    /**
+     * Reads the opaque user id string currently stored after login.
+     */
     private fun currentUserId(): String? = preferencesManager.getCurrentUserId()
 
+    /** @see TripRepository.getUserTrips */
     override suspend fun getUserTrips(userId: String): Result<List<Trip>> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
@@ -49,6 +53,7 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.getTripById */
     override suspend fun getTripById(tripId: String): Result<Trip?> {
         return try {
             val id = tripId.toLongOrNull()
@@ -70,6 +75,7 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.createTrip */
     override suspend fun createTrip(trip: Trip): Result<Trip> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
@@ -93,6 +99,7 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.updateTrip */
     override suspend fun updateTrip(trip: Trip): Result<Trip> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
@@ -114,6 +121,7 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.deleteTrip */
     override suspend fun deleteTrip(tripId: String): Result<Unit> {
         return try {
             if (preferencesManager.getAuthToken().isNullOrEmpty()) {
@@ -134,9 +142,11 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.getActiveTrips */
     override suspend fun getActiveTrips(userId: String): Result<List<Trip>> =
         filterMyPlans(userId) { it.status == TravelPlanStatus.ACTIVE }
 
+    /** @see TripRepository.getUpcomingTrips */
     override suspend fun getUpcomingTrips(userId: String): Result<List<Trip>> {
         val now = OffsetDateTime.now(ZoneOffset.UTC).toInstant().toEpochMilli()
         return filterMyPlans(userId) { plan ->
@@ -145,20 +155,26 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /** @see TripRepository.getCompletedTrips */
     override suspend fun getCompletedTrips(userId: String): Result<List<Trip>> =
         filterMyPlans(userId) { it.status == TravelPlanStatus.COMPLETED }
 
+    /** @see TripRepository.searchTripsByDestination */
     override suspend fun searchTripsByDestination(userId: String, destination: String): Result<List<Trip>> =
         filterMyPlans(userId) {
             it.destinationLocation?.contains(destination, ignoreCase = true) == true
         }
 
+    /** @see TripRepository.streamTripUpdates */
     override fun streamTripUpdates(tripId: String): Flow<Trip?> {
         return tripDao.streamTripById(tripId).map { entity ->
             entity?.let { tripMapper.toDomain(it) }
         }
     }
 
+    /**
+     * Filters the authenticated user's plans returned by [TravelPlanApiService.getMyTravelPlans].
+     */
     private suspend fun filterMyPlans(
         userId: String,
         predicate: (com.voyager.tourism.data.dto.TravelPlanDto) -> Boolean,
@@ -180,6 +196,9 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Parses a plan start timestamp from ISO-8601 text, tolerating date-only values.
+     */
     private fun parseStart(iso: String): Long = try {
         OffsetDateTime.parse(iso).toInstant().toEpochMilli()
     } catch (_: Exception) {

@@ -83,6 +83,7 @@ fun RecommendationsScreen(
     }
 }
 
+/** Single recommendation teaser with rating, price hint, and category chip. */
 @Composable
 private fun RecommendationCard(
     recommendation: RecommendationItem,

@@ -37,6 +37,11 @@ enum class TravelType(val value: String) {
     OTHER("OTHER");
     
     companion object {
+        /**
+         * Returns the [TravelType] whose serialized [value] matches [value], or [LEISURE] if none match.
+         *
+         * @param value Backend string value (e.g. `"LEISURE"`).
+         */
         fun fromValue(value: String): TravelType {
             return values().find { it.value == value } ?: LEISURE
         }
