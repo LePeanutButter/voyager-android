@@ -48,6 +48,13 @@ class ConvertersTest {
     }
 
     @Test
+    fun `toDestinationDto null json uses placeholder`() {
+        val empty = converters.toDestinationDto("null")
+        assertEquals("", empty.id)
+        assertEquals("", empty.name)
+    }
+
+    @Test
     fun userPreferences_roundTrip() {
         val p = UserPreferencesDto(preferredDestinations = listOf("Lima"))
         val s = converters.fromUserPreferencesDto(p)

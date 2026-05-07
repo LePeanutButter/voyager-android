@@ -6,7 +6,9 @@ import com.voyager.tourism.data.api.RetrofitMockWebServerRule
 import com.voyager.tourism.data.api.SocialApiService
 import com.voyager.tourism.data.api.TravelPlanApiService
 import com.voyager.tourism.data.dto.CompatibilityMatchResponseDto
+import com.voyager.tourism.data.dto.ConnectionDto
 import com.voyager.tourism.data.dto.ConnectionRequestDto
+import com.voyager.tourism.data.dto.SharedActivityResponseDto
 import com.voyager.tourism.data.dto.SendConnectionRequestDto
 import com.voyager.tourism.data.dto.TravelPlanActivityDto
 import com.voyager.tourism.data.dto.TravelerMatchDto
@@ -139,5 +141,52 @@ class SocialRepositoryImplWireTest {
         assertTrue(r.isSuccess)
         assertEquals(9L, r.getOrThrow().first().id)
         assertEquals("City tour", r.getOrThrow().first().name)
+    }
+
+    @Test
+    fun `getConnections maps to domain`() = runTest {
+        val row = ConnectionDto(userId = 8L, username = "pal", firstName = null, lastName = null, status = "ACTIVE")
+        serverRule.server.enqueue(
+            MockResponse()
+                .setBody(
+                    ApiResponseEnvelope.successList(
+                        serverRule.moshi,
+                        listOf(row),
+                        ConnectionDto::class.java,
+                    ),
+                ),
+        )
+        val r = repository.getConnections(1L)
+        assertTrue(r.isSuccess)
+        assertEquals(8L, r.getOrThrow().first().id)
+        assertEquals("pal", r.getOrThrow().first().username)
+    }
+
+    @Test
+    fun `shareActivity and resolveSharedActivity use misc api`() = runTest {
+        val shared = SharedActivityResponseDto(
+            id = 1L,
+            activityId = 2L,
+            senderId = 3L,
+            receiverId = 4L,
+            status = "PENDING",
+            sharedPlan = false,
+        )
+        serverRule.server.enqueue(
+            MockResponse()
+                .setBody(ApiResponseEnvelope.success(serverRule.moshi, shared, SharedActivityResponseDto::class.java)),
+        )
+        val shareResult = repository.shareActivity(10L, 99L)
+        assertTrue(shareResult.isSuccess)
+        assertEquals(1L, shareResult.getOrThrow().id)
+
+        val updated = shared.copy(status = "ACCEPTED")
+        serverRule.server.enqueue(
+            MockResponse()
+                .setBody(ApiResponseEnvelope.success(serverRule.moshi, updated, SharedActivityResponseDto::class.java)),
+        )
+        val resolve = repository.resolveSharedActivity(1L, com.voyager.tourism.domain.model.SharedActivityDecision.ACCEPT)
+        assertTrue(resolve.isSuccess)
+        assertEquals("ACCEPTED", resolve.getOrThrow().status)
     }
 }

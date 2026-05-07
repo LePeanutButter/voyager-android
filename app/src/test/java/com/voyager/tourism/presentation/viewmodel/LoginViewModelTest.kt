@@ -97,6 +97,14 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun `handleGoogleCallback unexpected exception sets error`() {
+        coEvery { loginUseCase.loginWithGoogle(any(), any()) } throws RuntimeException("boom")
+        val uri = Uri.parse("https://app/callback?code=c&state=s")
+        vm.handleGoogleCallback(uri)
+        assertTrue(vm.uiState.value is LoginUiState.Error)
+    }
+
+    @Test
     fun `loginWithGoogle startActivity failure sets error`() {
         coEvery { authRepository.initiateGoogleLogin() } returns Result.success("https://oauth.example/authorize")
         val context = mockk<Context>(relaxed = true)

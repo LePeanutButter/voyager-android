@@ -1,6 +1,7 @@
 package com.voyager.tourism.data.mapper
 
 import com.voyager.tourism.data.database.entity.TripEntity
+import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanStatus
 import com.voyager.tourism.domain.model.TripStatus
 import com.voyager.tourism.util.TestFixtures
@@ -87,5 +88,37 @@ class TripMapperTest {
         val trip = TestFixtures.domainTrip().copy(status = TripStatus.ACTIVE)
         val plan = mapper.toTravelPlanDto(trip)
         assertEquals(TravelPlanStatus.ACTIVE, plan.status)
+    }
+
+    @Test
+    fun `toTravelPlanDto maps all trip statuses to plan enums`() {
+        val pairs = listOf(
+            TripStatus.PLANNING to TravelPlanStatus.DRAFT,
+            TripStatus.CONFIRMED to TravelPlanStatus.ON_HOLD,
+            TripStatus.ACTIVE to TravelPlanStatus.ACTIVE,
+            TripStatus.COMPLETED to TravelPlanStatus.COMPLETED,
+            TripStatus.CANCELLED to TravelPlanStatus.CANCELLED,
+        )
+        for ((dom, wire) in pairs) {
+            val plan = mapper.toTravelPlanDto(TestFixtures.domainTrip().copy(status = dom))
+            assertEquals(wire, plan.status)
+        }
+    }
+
+    @Test
+    fun `fromTravelPlanDto parses offset and local date strings`() {
+        val withOffset = TravelPlanDto(
+            startDate = "2027-03-01T10:15:30Z",
+            endDate = "2027-03-05T10:15:30Z",
+        )
+        val t1 = mapper.fromTravelPlanDto(withOffset, "u")
+        assertTrue(t1.startDate > 0L)
+
+        val localOnly = TravelPlanDto(
+            startDate = "2027-04-01T08:00:00",
+            endDate = "2027-04-10T08:00:00",
+        )
+        val t2 = mapper.fromTravelPlanDto(localOnly, "u")
+        assertTrue(t2.endDate >= t2.startDate)
     }
 }
