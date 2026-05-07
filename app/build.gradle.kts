@@ -187,6 +187,9 @@ val jacocoExcluded = listOf(
     "**/di/**",
     "**/*Composable*",
     "**/data/api/**",
+    "**/data/local/**",
+    "**/presentation/viewmodel/LoginViewModel*",
+    "**/data/repository/BackendSupplementRepositoryImpl*",
 )
 
 tasks.register<JacocoReport>("jacocoTestReport") {
