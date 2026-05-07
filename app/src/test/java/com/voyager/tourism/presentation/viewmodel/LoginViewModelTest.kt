@@ -9,6 +9,7 @@ import com.voyager.tourism.domain.usecase.auth.LoginUseCase
 import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -84,6 +85,24 @@ class LoginViewModelTest {
         val uri = Uri.parse("https://app/callback?code=c&state=s")
         vm.handleGoogleCallback(uri)
         assertTrue(vm.uiState.value is LoginUiState.Success)
+    }
+
+    @Test
+    fun `handleGoogleCallback login failure`() {
+        coEvery { loginUseCase.loginWithGoogle("c", null) } returns Result.failure(RuntimeException("oauth"))
+        val uri = Uri.parse("https://app/callback?code=c")
+        vm.handleGoogleCallback(uri)
+        assertTrue(vm.uiState.value is LoginUiState.Error)
+        assertEquals("oauth", (vm.uiState.value as LoginUiState.Error).message)
+    }
+
+    @Test
+    fun `loginWithGoogle startActivity failure sets error`() {
+        coEvery { authRepository.initiateGoogleLogin() } returns Result.success("https://oauth.example/authorize")
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } throws SecurityException("no activity")
+        vm.loginWithGoogle(context)
+        assertTrue(vm.uiState.value is LoginUiState.Error)
     }
 
     @Test

@@ -68,4 +68,9 @@ class CreateTravelPlanViewModelTest {
             vm.validateDateRange("2027-02-10", "2027-02-01"),
         )
     }
+
+    @Test
+    fun `validateDateRange unparseable dates returns null`() {
+        assertNull(vm.validateDateRange("not-a-date", "2027-01-01"))
+    }
 }

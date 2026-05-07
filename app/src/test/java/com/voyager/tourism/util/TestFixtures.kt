@@ -1,7 +1,9 @@
 package com.voyager.tourism.util
 
+import com.voyager.tourism.data.dto.ConnectionRequestDto
 import com.voyager.tourism.data.dto.CoordinatesDto
 import com.voyager.tourism.data.dto.DestinationDto
+import com.voyager.tourism.data.dto.TravelerMatchDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanStatus
 import com.voyager.tourism.data.dto.TripDto
@@ -132,5 +134,37 @@ object TestFixtures {
         destinationLocation = destination,
         createdAt = start,
         updatedAt = end,
+    )
+
+    fun connectionRequest(
+        id: Long = 1L,
+        recipientId: Long = 2L,
+        requesterId: Long = 3L,
+        status: String = "PENDING",
+    ) = ConnectionRequestDto(
+        id = id,
+        recipientId = recipientId,
+        requesterId = requesterId,
+        status = status,
+        message = null,
+        createdAt = "2026-01-01T00:00:00Z",
+        updatedAt = "2026-01-01T00:00:00Z",
+    )
+
+    fun travelerMatch(userId: Long = 10L) = TravelerMatchDto(
+        userId = userId,
+        username = "match",
+        firstName = "M",
+        lastName = "T",
+        profileImageUrl = null,
+        bio = null,
+        travelPlanId = 1L,
+        travelPlanTitle = "Trip",
+        destinationLocation = "Lima",
+        travelStartDate = "2027-06-01",
+        travelEndDate = "2027-06-10",
+        numberOfTravelers = 2,
+        daysOverlap = 3,
+        compatibilityScore = 0.85,
     )
 }
