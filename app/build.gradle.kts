@@ -63,6 +63,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -77,9 +78,19 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Compose runtime lint + UAST en headless/CI: NPE en varios detectores al analizar AiAssistantScreen.kt.
+    lint {
+        disable += setOf(
+            "MutableCollectionMutableState",
+            "AutoboxingStateCreation",
+        )
+    }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     // Core Android
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")

@@ -83,9 +83,9 @@ jobs:
       - name: Ensure Gradle wrapper executable
         run: chmod +x gradlew
 
-      # Step 4: Build classes for analysis
-      - name: Gradle assemble
-        run: ./gradlew :app:assembleDebug --stacktrace
+      # Step 4: Compilar, tests unitarios debug y XML JaCoCo (sonar.coverage.jacoco.xmlReportPaths en sonar-project.properties)
+      - name: Assemble, unit tests y JaCoCo (Sonar)
+        run: ./gradlew :app:assembleDebug :app:jacocoTestReport --stacktrace
 
       # Step 5: Run SonarCloud scan
       - name: SonarCloud Scan

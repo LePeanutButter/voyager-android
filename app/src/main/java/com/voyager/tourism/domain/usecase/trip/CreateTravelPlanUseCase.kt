@@ -8,37 +8,43 @@ import java.util.*
 import javax.inject.Inject
 
 /**
+ * Parámetros para crear un plan de viaje (agrupa campos para cumplir límites de aridad en análisis estático).
+ */
+data class CreateTravelPlanParams(
+    val title: String,
+    val destination: String,
+    val origin: String?,
+    val startDate: String,
+    val endDate: String,
+    val budget: Double?,
+    val travelers: Int,
+    val description: String?,
+)
+
+/**
  * Use case for creating travel plans
  * Encapsulates the business logic for travel plan creation
  */
 class CreateTravelPlanUseCase @Inject constructor(
     private val travelRepository: TravelRepository
 ) {
-    
+
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    
+
     /**
      * Create a new travel plan with validation
-     * @param title Travel plan title
-     * @param destination Destination location
-     * @param origin Origin location (optional)
-     * @param startDate Start date (yyyy-MM-dd format)
-     * @param endDate End date (yyyy-MM-dd format)
-     * @param budget Estimated budget (optional)
-     * @param travelers Number of travelers
-     * @param description Travel plan description (optional)
      * @return Result containing created TravelPlanDto or error
      */
-    suspend operator fun invoke(
-        title: String,
-        destination: String,
-        origin: String?,
-        startDate: String,
-        endDate: String,
-        budget: Double?,
-        travelers: Int,
-        description: String?
-    ): Result<TravelPlanDto> {
+    suspend operator fun invoke(params: CreateTravelPlanParams): Result<TravelPlanDto> {
+        val title = params.title
+        val destination = params.destination
+        val origin = params.origin
+        val startDate = params.startDate
+        val endDate = params.endDate
+        val budget = params.budget
+        val travelers = params.travelers
+        val description = params.description
+
         validateRequired(title = title, destination = destination, startDate = startDate, endDate = endDate)
             ?.let { return Result.failure(it) }
 
@@ -52,7 +58,7 @@ class CreateTravelPlanUseCase @Inject constructor(
 
         validateTravelers(travelers)?.let { return Result.failure(it) }
         validateBudget(budget)?.let { return Result.failure(it) }
-        
+
         return try {
             val request = TravelPlanRequest(
                 title = title.trim(),
@@ -64,7 +70,7 @@ class CreateTravelPlanUseCase @Inject constructor(
                 numberOfTravelers = travelers,
                 description = description?.trim()?.takeIf { it.isNotBlank() }
             )
-            
+
             travelRepository.createTravelPlan(request)
         } catch (e: Exception) {
             Result.failure(e)

@@ -57,7 +57,7 @@ class UserRepositoryImpl @Inject constructor(
                     } else {
                         val localUser = userDao.getCurrentUser()
                         localUser?.let { Result.success(userMapper.entityToDomain(it)) }
-                            ?: Result.failure(Exception(response.message ?: "No user data available"))
+                            ?: Result.failure(Exception(response.message))
                     }
                 }
             }
@@ -104,7 +104,7 @@ class UserRepositoryImpl @Inject constructor(
                 userDao.insertUser(userMapper.toEntity(dto))
                 Result.success(userMapper.toDomain(dto))
             } else {
-                Result.failure(Exception(response.message ?: "Authentication failed"))
+                Result.failure(Exception(response.message))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -136,7 +136,7 @@ class UserRepositoryImpl @Inject constructor(
                 preferencesManager.saveCurrentUserId(dto.id.toString())
                 Result.success(userMapper.toDomain(dto))
             } else {
-                Result.failure(Exception(response.message ?: "Registration failed"))
+                Result.failure(Exception(response.message))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -154,7 +154,7 @@ class UserRepositoryImpl @Inject constructor(
                 userDao.updateUser(userMapper.toEntity(updated))
                 Result.success(userMapper.toDomain(updated))
             } else {
-                Result.failure(Exception(response.message ?: "Update failed"))
+                Result.failure(Exception(response.message))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -274,7 +274,7 @@ class UserRepositoryImpl @Inject constructor(
                 if (response.status == 200 && response.data != null) {
                     Result.success(response.data)
                 } else {
-                    Result.failure(Exception(response.message ?: "Failed to update user"))
+                    Result.failure(Exception(response.message))
                 }
             }
         } catch (e: Exception) {

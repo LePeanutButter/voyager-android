@@ -109,7 +109,7 @@ fun ProfileScreen(
         }
         
         when (uiState) {
-            is ProfileUiState.Loading -> {
+            is ProfileUiState.Loading, is ProfileUiState.Saving -> {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -312,16 +312,6 @@ fun ProfileScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-            
-            is ProfileUiState.Saving -> {
-                // Show loading state while saving
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
             }
         }
     }

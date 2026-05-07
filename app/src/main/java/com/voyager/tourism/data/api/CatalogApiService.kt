@@ -3,7 +3,37 @@ package com.voyager.tourism.data.api
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
+import retrofit2.http.QueryMap
 import okhttp3.ResponseBody
+
+/**
+ * Parámetros de búsqueda de vuelos para [CatalogApiService.flightOffers] (mapa de query sin romper Retrofit).
+ */
+data class FlightOffersQuery(
+    val originLocationCode: String,
+    val destinationLocationCode: String,
+    val departureDate: String,
+    val adults: Int = 1,
+    val returnDate: String? = null,
+    val children: Int? = null,
+    val max: Int? = null,
+    val travelClass: String? = null,
+    val nonStop: Boolean? = null,
+    val currencyCode: String? = null,
+) {
+    fun toQueryMap(): Map<String, String> = buildMap {
+        put("originLocationCode", originLocationCode)
+        put("destinationLocationCode", destinationLocationCode)
+        put("departureDate", departureDate)
+        put("adults", adults.toString())
+        returnDate?.takeIf { it.isNotBlank() }?.let { put("returnDate", it) }
+        children?.let { put("children", it.toString()) }
+        max?.let { put("max", it.toString()) }
+        travelClass?.takeIf { it.isNotBlank() }?.let { put("travelClass", it) }
+        nonStop?.let { put("nonStop", it.toString()) }
+        currencyCode?.takeIf { it.isNotBlank() }?.let { put("currencyCode", it) }
+    }
+}
 
 /**
  * Amadeus-backed catalog proxy ([com.tourism.platform.controller.TravelCatalogController]).
@@ -15,18 +45,7 @@ interface CatalogApiService {
      * Searches flight offers between an origin and destination IATA code on a departure date.
      */
     @GET("catalog/flights")
-    suspend fun flightOffers(
-        @Query("originLocationCode") originLocationCode: String,
-        @Query("destinationLocationCode") destinationLocationCode: String,
-        @Query("departureDate") departureDate: String,
-        @Query("adults") adults: Int = 1,
-        @Query("returnDate") returnDate: String? = null,
-        @Query("children") children: Int? = null,
-        @Query("max") max: Int? = null,
-        @Query("travelClass") travelClass: String? = null,
-        @Query("nonStop") nonStop: Boolean? = null,
-        @Query("currencyCode") currencyCode: String? = null,
-    ): Response<ResponseBody>
+    suspend fun flightOffers(@QueryMap queries: Map<String, String>): Response<ResponseBody>
 
     /**
      * Lists candidate hotels for a given IATA city code.

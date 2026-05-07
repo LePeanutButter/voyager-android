@@ -3,6 +3,7 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.TravelPlanDto
+import com.voyager.tourism.domain.usecase.trip.CreateTravelPlanParams
 import com.voyager.tourism.domain.usecase.trip.CreateTravelPlanUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,14 +42,16 @@ class CreateTravelPlanViewModel @Inject constructor(
             _uiState.value = CreateTravelPlanUiState.Loading
             
             val result = createTravelPlanUseCase(
-                title = title,
-                destination = destination,
-                origin = origin.ifBlank { null },
-                startDate = startDate,
-                endDate = endDate,
-                budget = budget,
-                travelers = travelers,
-                description = description.ifBlank { null }
+                CreateTravelPlanParams(
+                    title = title,
+                    destination = destination,
+                    origin = origin.ifBlank { null },
+                    startDate = startDate,
+                    endDate = endDate,
+                    budget = budget,
+                    travelers = travelers,
+                    description = description.ifBlank { null },
+                ),
             )
             
             _uiState.value = when {

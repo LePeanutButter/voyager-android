@@ -1,5 +1,6 @@
 package com.voyager.tourism.presentation.ui.social
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -189,10 +190,166 @@ fun ConnectionRequestsScreen(
     }
 }
 
+@Composable
+private fun ConnectionRequestAvatar(profileImage: String?, requesterName: String?) {
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .clip(CircleShape)
+    ) {
+        if (profileImage != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(profileImage)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Profile picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                val name = requesterName ?: "Traveler"
+                Text(
+                    text = name.first().toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ConnectionRequestHeaderRow(request: ConnectionRequestDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ConnectionRequestAvatar(request.requesterProfileImage, request.requesterName)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = request.requesterName ?: "Traveler",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Requested ${formatDate(request.createdAt)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Badge {
+            Text(
+                text = "Pending",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConnectionRequestQuotedMessage(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Text(
+            text = "\"$message\"",
+            style = MaterialTheme.typography.bodySmall,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(12.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ConnectionRequestActionRow(
+    requestId: String,
+    isCurrentlyProcessing: Boolean,
+    isProcessing: Boolean,
+    onAccept: (String) -> Unit,
+    onReject: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = { onAccept(requestId) },
+            enabled = !isProcessing,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            if (isCurrentlyProcessing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Processing...")
+            } else {
+                Text("Accept")
+            }
+        }
+        OutlinedButton(
+            onClick = { onReject(requestId) },
+            enabled = !isProcessing,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            if (isCurrentlyProcessing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.error,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Processing...")
+            } else {
+                Text("Reject")
+            }
+        }
+    }
+}
+
 /**
  * Rich card for one inbound connection request with portrait, note, and decision buttons.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConnectionRequestCard(
     request: ConnectionRequestDto,
@@ -201,167 +358,26 @@ private fun ConnectionRequestCard(
     isProcessing: Boolean
 ) {
     val isCurrentlyProcessing = isProcessing && request.id.toString() in listOf("processing")
+    val requestId = request.id.toString()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header with avatar and info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                    ) {
-                        if (request.requesterProfileImage != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(request.requesterProfileImage)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Profile picture",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary
-                                            )
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val name = request.requesterName ?: "Traveler"
-                                Text(
-                                    text = name.first().toString(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    // Requester Info
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = request.requesterName ?: "Traveler",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Requested ${formatDate(request.createdAt)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Status Badge
-                Badge {
-                    Text(
-                        text = "Pending",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
+        Column(modifier = Modifier.padding(16.dp)) {
+            ConnectionRequestHeaderRow(request)
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Message
             request.message?.let { message ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Text(
-                        text = "\"$message\"",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
+                ConnectionRequestQuotedMessage(message)
                 Spacer(modifier = Modifier.height(12.dp))
             }
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = { onAccept(request.id.toString()) },
-                    enabled = !isProcessing,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    if (isCurrentlyProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Processing...")
-                    } else {
-                        Text("Accept")
-                    }
-                }
-
-                OutlinedButton(
-                    onClick = { onReject(request.id.toString()) },
-                    enabled = !isProcessing,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.error
-                    ),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    if (isCurrentlyProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = MaterialTheme.colorScheme.error,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Processing...")
-                    } else {
-                        Text("Reject")
-                    }
-                }
-            }
+            ConnectionRequestActionRow(
+                requestId = requestId,
+                isCurrentlyProcessing = isCurrentlyProcessing,
+                isProcessing = isProcessing,
+                onAccept = onAccept,
+                onReject = onReject,
+            )
         }
     }
 }

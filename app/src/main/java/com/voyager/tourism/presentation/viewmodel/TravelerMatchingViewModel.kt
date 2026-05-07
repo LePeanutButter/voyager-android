@@ -59,7 +59,7 @@ class TravelerMatchingViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isSendingRequest = true, error = null)
             
             sendConnectionRequestUseCase(recipientId, message, token)
-                .onSuccess { connectionRequest ->
+                .onSuccess { _ ->
                     _uiState.value = _uiState.value.copy(
                         isSendingRequest = false,
                         successMessage = "Connection request sent successfully!",

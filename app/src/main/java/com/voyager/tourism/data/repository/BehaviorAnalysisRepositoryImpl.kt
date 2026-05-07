@@ -133,7 +133,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
         days: Int
     ): Result<Map<String, Any>> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val response = behaviorAnalysisApi.getDetectedPatterns(userId, days, "Bearer $token")
             
@@ -150,7 +150,7 @@ class BehaviorAnalysisRepositoryImpl @Inject constructor(
     /** @see BehaviorAnalysisRepository.clearUserBehaviorData */
     override suspend fun clearUserBehaviorData(userId: String): Result<BehaviorAnalysisSimpleResponse> {
         return try {
-            val token = preferencesManager.getAuthToken() ?: throw Exception("Not authenticated")
+            val token = preferencesManager.getAuthToken() ?: throw Exception(NOT_AUTHENTICATED_MSG)
             
             val response = behaviorAnalysisApi.clearUserBehaviorData(userId, "Bearer $token")
             

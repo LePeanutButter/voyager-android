@@ -189,6 +189,134 @@ fun TravelerMatchingScreen(
     }
 }
 
+@Composable
+private fun TravelerMatchAvatar(profileImageUrl: String?, firstName: String, lastName: String) {
+    Box(
+        modifier = Modifier
+            .size(60.dp)
+            .clip(CircleShape)
+    ) {
+        if (profileImageUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(profileImageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Profile picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${firstName.firstOrNull() ?: '?'}${lastName.firstOrNull() ?: '?'}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TravelerCardHeaderRow(traveler: TravelerMatchDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            TravelerMatchAvatar(traveler.profileImageUrl, traveler.firstName, traveler.lastName)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${traveler.firstName} ${traveler.lastName}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "@${traveler.username}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                traveler.bio?.let { bio ->
+                    Text(
+                        text = bio,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2
+                    )
+                }
+            }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "${traveler.compatibilityScore ?: 0}%",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Match",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun TravelerCardTripSummary(traveler: TravelerMatchDto) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = traveler.travelPlanTitle ?: "",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Destination: ${traveler.destinationLocation ?: "—"}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "Travel dates: ${formatDate(traveler.travelStartDate)} - ${formatDate(traveler.travelEndDate)}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "Overlap: ${traveler.daysOverlap} days",
+                style = MaterialTheme.typography.bodySmall
+            )
+            val n = traveler.numberOfTravelers ?: 0
+            Text(
+                text = "Group size: $n ${if (traveler.numberOfTravelers == 1) "traveler" else "travelers"}",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
 /** Presents one compatible traveler, trip overlap context, and a connection CTA. */
 @Composable
 private fun TravelerCard(
@@ -200,143 +328,11 @@ private fun TravelerCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header with avatar and info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                    ) {
-                        if (traveler.profileImageUrl != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(traveler.profileImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Profile picture",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary
-                                            )
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${traveler.firstName.firstOrNull() ?: '?'}${traveler.lastName.firstOrNull() ?: '?'}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    // Traveler Info
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "${traveler.firstName} ${traveler.lastName}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "@${traveler.username}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        traveler.bio?.let { bio ->
-                            Text(
-                                text = bio,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2
-                            )
-                        }
-                    }
-                }
-
-                // Compatibility Score
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "${traveler.compatibilityScore ?: 0}%",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Match",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
+        Column(modifier = Modifier.padding(16.dp)) {
+            TravelerCardHeaderRow(traveler)
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Trip Details
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp)
-                ) {
-                    Text(
-                        text = traveler.travelPlanTitle ?: "",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Destination: ${traveler.destinationLocation ?: "—"}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "Travel dates: ${formatDate(traveler.travelStartDate)} - ${formatDate(traveler.travelEndDate)}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "Overlap: ${traveler.daysOverlap} days",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "Group size: ${traveler.numberOfTravelers ?: 0} ${if (traveler.numberOfTravelers == 1) "traveler" else "travelers"}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
+            TravelerCardTripSummary(traveler)
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Action Button
             Button(
                 onClick = { onSendRequest(traveler.userId, traveler.firstName) },
                 enabled = !isSending,

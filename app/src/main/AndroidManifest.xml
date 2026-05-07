@@ -40,8 +40,8 @@
             android:name=".presentation.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.VoyagerTourism.NoActionBar">
-            <!-- Deep link for Google OAuth2 callback -->
-            <intent-filter android:autoVerify="true">
+            <!-- Deep link OAuth (custom scheme: no autoVerify; eso es solo para App Links https) -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
