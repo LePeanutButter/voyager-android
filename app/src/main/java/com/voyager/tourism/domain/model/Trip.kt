@@ -70,6 +70,9 @@ data class ItineraryItem(
     val isBooked: Boolean = false
 )
 
+/**
+ * Category of a scheduled itinerary block within a trip plan.
+ */
 enum class ItineraryType {
     FLIGHT, ACCOMMODATION, ACTIVITY, MEAL, TRANSPORTATION, SIGHTSEEING
 }
@@ -105,6 +108,9 @@ data class Activity(
     val images: List<String> = emptyList()
 )
 
+/**
+ * Theme or kind of bookable activity at a destination.
+ */
 enum class ActivityCategory {
     TOUR, ADVENTURE, CULTURAL, ENTERTAINMENT, SPORTS, RELAXATION, FOOD
 }

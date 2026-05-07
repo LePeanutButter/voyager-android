@@ -1,7 +1,9 @@
 # SmarTrip - Kotlin-Based Android App Architecture
 
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9.20-blue.svg)
-![Gradle](https://img.shields.io/badge/Gradle-8.2-green.svg)
+[![Standard Readme](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0.20-blue.svg)
+![Gradle](https://img.shields.io/badge/Gradle-9.5-green.svg)
+![AGP](https://img.shields.io/badge/AGP-8.13.2-green.svg)
 ![Android](https://img.shields.io/badge/Android-API%2024%2B-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Android-lightgrey.svg)
@@ -17,7 +19,8 @@
 - [Features](#features)
 - [API](#api)
 - [Configuration](#configuration)
-- [Contributing](#contributing)
+- [Testing](#testing)
+- [Contributors](#contributors)
 - [License](#license)
 
 ## Background
@@ -35,16 +38,16 @@ Key architectural decisions:
 
 ### Prerequisites
 
-- **Android Studio**: Hedgehog | 2023.1.1 or later
-- **JDK**: Version 8 or higher
+- **Android Studio**: Latest stable (recommended) with Kotlin 2.x and Compose support
+- **JDK**: 17 (matches `compileOptions` / `kotlinOptions` in the app module)
 - **Android SDK**: API level 24+ (Android 7.0)
-- **Gradle**: Version 8.2 or higher
+- **Gradle**: 9.5+ (via the included wrapper)
 
 ### Installation Steps
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/voyager-android.git
+   git clone https://github.com/LePeanutButter/voyager-android.git
    cd voyager-android
    ```
 
@@ -55,10 +58,10 @@ Key architectural decisions:
    ```
 
 3. **Configure API endpoints**
-   ```kotlin
-   // Update in app/src/main/java/com/voyager/tourism/di/NetworkModule.kt
-   .baseUrl("https://api.your-tourism-platform.com/v1/")
-   ```
+   - Set base URLs in `gradle.properties` (project root):
+     - `VOYAGER_BACKEND_BASE_URL` — Spring Boot API (must end with `/api/v1/` or the build will normalize it)
+     - `VOYAGER_AI_BASE_URL` — FastAPI AI service (must end with `/api/v1/` when applicable)
+   - Values are injected at build time as `BuildConfig.BACKEND_BASE_URL` and `BuildConfig.AI_SERVICE_BASE_URL` and wired in `NetworkModule`.
 
 4. **Build the project**
    ```bash
@@ -80,10 +83,16 @@ Key architectural decisions:
 # Build release version
 ./gradlew assembleRelease
 
-# Run tests
-./gradlew test
+# Unit tests (JVM)
+./gradlew :app:testDebugUnitTest
 
-# Run instrumentation tests
+# Unit test coverage (Android Gradle Plugin report)
+./gradlew :app:createDebugUnitTestCoverageReport
+
+# JaCoCo HTML/XML (custom task; excludes UI/DI/generated noise — see app/build.gradle.kts)
+./gradlew :app:jacocoTestReport
+
+# Run instrumentation tests (device/emulator)
 ./gradlew connectedAndroidTest
 
 # Clean build
@@ -169,17 +178,20 @@ app/src/main/java/com/voyager/tourism/
 - **Repository Implementations**: Concrete data access logic
 - **Data Sources**: Remote (Retrofit) and local (Room) sources
 - **DTOs**: Data transfer objects for API communication
+- **Interceptors**: JWT attachment (`AuthInterceptor`), session reset on `401` (`UnauthorizedResponseInterceptor`)
+- **Session**: `SessionInvalidationNotifier` for global sign-out flows
 
 ### Technology Stack
 
-- **Language**: Kotlin 1.9.20
+- **Language**: Kotlin 2.0.20
 - **UI Framework**: Jetpack Compose with Material Design 3
 - **Architecture**: MVVM with Clean Architecture
-- **Dependency Injection**: Hilt 2.48
-- **Networking**: Retrofit 2.9.0 + OkHttp 4.12.0
+- **Dependency Injection**: Hilt 2.51
+- **Networking**: Retrofit 2.9.0 + OkHttp 4.12.0 + Moshi 1.15.0
 - **Database**: Room 2.6.1
 - **Async**: Kotlin Coroutines 1.7.3
 - **Navigation**: Navigation Compose 2.7.5
+- **Quality**: JaCoCo (unit test coverage), JUnit 4, MockK, Robolectric (local prefs), AndroidX Test
 
 ### Project Structure
 
@@ -188,37 +200,38 @@ app/
 src/main/java/com/voyager/tourism/
 |-- data/
 |   |-- api/                    # Retrofit API services
-|   |-- database/              # Room database setup
-|   |   |-- dao/               # Data access objects
-|   |   |-- entity/            # Database entities
-|   |   |-- converter/         # Type converters
-|   |-- dto/                   # Data transfer objects
-|   |-- local/                 # SharedPreferences management
-|   |-- mapper/                # Domain/Data model mappers
-|   |-- repository/            # Repository implementations
+|   |-- database/               # Room database, entities, DAOs, Converters.kt
+|   |-- dto/                    # Data transfer objects
+|   |-- interceptor/            # OkHttp interceptors (auth, unauthorized)
+|   |-- local/                  # PreferencesManager, TokenManager
+|   |-- mapper/                 # Domain/Data model mappers
+|   |-- repository/             # Repository implementations
+|   |-- session/                # Session invalidation signals (e.g. SharedFlow)
 |-- domain/
-|   |-- model/                 # Domain entities
-|   |-- repository/            # Repository interfaces
-|   |-- usecase/               # Business logic use cases
-|   |-- |-- auth/              # Authentication use cases
-|   |-- |-- trip/              # Trip management use cases
-|   |-- |-- recommendation/    # AI recommendation use cases
+|   |-- model/                  # Domain entities
+|   |-- repository/             # Repository interfaces
+|   |-- usecase/                # Business logic use cases
+|   |   |-- auth/
+|   |   |-- trip/
+|   |   |-- behavior/
+|   |   |-- recommendation/
+|   |   |-- social/
 |-- presentation/
-|   |-- MainActivity.kt        # Main activity entry point
-|   |-- viewmodel/             # ViewModels for state management
-|   |-- ui/                    # Compose screens by feature
-|   |   |-- auth/              # Authentication screens
-|   |   |-- dashboard/         # Main dashboard
-|   |   |-- trip/              # Trip management screens
-|   |   |-- profile/           # User profile screen
-|   |   |-- recommendations/   # AI recommendations
-|   |   |-- splash/            # Splash screen
-|   |-- navigation/            # Navigation setup
-|-- di/                        # Hilt dependency injection modules
-|   |-- DatabaseModule.kt      # Database dependencies
-|   |-- NetworkModule.kt       # Network dependencies
-|   |-- RepositoryModule.kt    # Repository bindings
-TourismApplication.kt          # Application class with @HiltAndroidApp
+|   |-- MainActivity.kt
+|   |-- viewmodel/              # ViewModels
+|   |-- ui/                     # Compose screens by feature
+|   |   |-- auth/
+|   |   |-- assistant/
+|   |   |-- dashboard/
+|   |   |-- trip/
+|   |   |-- place/
+|   |   |-- profile/
+|   |   |-- recommendations/
+|   |   |-- social/
+|   |   |-- splash/
+|   |-- navigation/
+|-- di/                         # Hilt modules (Database, Network, Repository)
+TourismApplication.kt           # @HiltAndroidApp
 ```
 
 ## Features
@@ -226,7 +239,7 @@ TourismApplication.kt          # Application class with @HiltAndroidApp
 ### Core Features
 
 - **AI-Powered Travel Assistant**: Personalized recommendations and trip planning
-- **User Authentication**: Secure login/registration with token management
+- **User Authentication**: Secure login/registration, Google OAuth flow, token and session handling
 - **Trip Management**: Complete CRUD operations for travel itineraries
 - **Destination Discovery**: AI-powered destination and activity recommendations
 - **Social Features**: Connect with fellow travelers
@@ -315,22 +328,22 @@ Content-Type: application/json
 
 ### Environment Configuration
 
-Create a `local.properties` file in the project root:
+Prefer **`gradle.properties`** at the project root for service URLs consumed by the Android build:
 
 ```properties
-# API Configuration
-API_BASE_URL=https://api.your-tourism-platform.com/v1/
-API_KEY=your_api_key_here
+# Backend (Spring Boot) — typically .../api/v1/
+VOYAGER_BACKEND_BASE_URL=https://your-host:8080/api/v1/
 
-# Build Configuration
-DEBUG_MODE=true
-LOG_LEVEL=DEBUG
+# AI microservice (FastAPI) — typically .../api/v1/
+VOYAGER_AI_BASE_URL=https://your-host:8000/api/v1/
 ```
+
+Optional `local.properties` (not committed) can hold SDK paths and machine-specific overrides; keep secrets out of version control.
 
 ### Build Variants
 
-- **Debug**: Development build with logging and debugging enabled
-- **Release**: Production build with optimizations and obfuscation
+- **Debug**: Development build with logging, debugging, and **unit test coverage** instrumentation enabled (`enableUnitTestCoverage`)
+- **Release**: Production build with optimizations (minify currently off by default — adjust as needed)
 
 ### Gradle Configuration
 
@@ -345,68 +358,28 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+        // BACKEND_BASE_URL / AI_SERVICE_BASE_URL from gradle.properties
     }
 }
 ```
 
-## Contributing
+## Testing
 
-We welcome contributions! Please follow these guidelines:
+- **Unit tests** live under `app/src/test/java` and cover use cases, mappers, Room type converters, OkHttp interceptors, local session helpers, and ViewModels (with MockK and coroutine-friendly dispatchers).
+- **Robolectric** is used where Android `Context` is required (e.g. `SharedPreferences`-backed managers).
+- **Coverage**
+  - `./gradlew :app:createDebugUnitTestCoverageReport` — full-module report under `app/build/reports/coverage/test/debug/`
+  - `./gradlew :app:jacocoTestReport` — JaCoCo report with package exclusions for Compose UI, `di`, and generated/Hilt glue (see `jacocoTestReport` in `app/build.gradle.kts`)
 
-### Development Setup
+Overall coverage percentage is dominated by Compose UI and untested integration paths; interpret reports by package when gating quality on domain/data logic.
 
-1. **Fork the repository**
-   ```bash
-   git clone https://github.com/LePeanutButter/voyager-android.git
-   cd voyager-android
-   ```
+## Contributors
 
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-3. **Make your changes**
-   - Follow Kotlin coding conventions
-   - Add tests for new functionality
-   - Update documentation as needed
-
-4. **Run tests**
-   ```bash
-   ./gradlew test
-   ./gradlew connectedAndroidTest
-   ```
-
-5. **Submit a pull request**
-   - Provide clear description of changes
-   - Include relevant test coverage
-   - Ensure CI checks pass
-
-### Code Style Guidelines
-
-- Follow [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html)
-- Use meaningful variable and function names
-- Add comprehensive comments for complex logic
-- Keep functions small and focused (single responsibility)
-- Use dependency injection consistently
-
-### Architecture Rules
-
-- **Domain Layer**: No Android framework dependencies
-- **Data Layer**: Can depend on Android frameworks (Room, Retrofit)
-- **Presentation Layer**: Only depends on Domain Layer
-- **Dependency Injection**: Use Hilt for all dependencies
-
-### Testing Strategy
-
-- **Unit Tests**: Test business logic in use cases
-- **Integration Tests**: Test repository implementations
-- **UI Tests**: Test user interactions with Compose
-- **Test Coverage**: Maintain >80% coverage for critical components
-
-## License
-
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
+- Andrés Felipe Calderón Ramírez - [AndresFelipeCalderonRamirez](https://github.com/AndresFelipeCalderonRamirez)
+- Laura Natalia Perilla Quintero - [Lanapequin](https://github.com/Lanapequin)
+- Ricardo Andres Ayala Garzon - [lRicardol](https://github.com/lRicardol)
+- Santiago Amaya Zapata - [SantiagoAmaya21](https://github.com/SantiagoAmaya21)
+- Santiago Botero Garcia - [LePeanutButter](https://github.com/LePeanutButter)
 
 ## License
 
@@ -423,4 +396,4 @@ This project is licensed under the GNU General Public License v3.0. See the [LIC
 
 ### Copyright
 
-© 2024 Voyager Team. All rights reserved.
+© 2026 Voyager Team. All rights reserved.

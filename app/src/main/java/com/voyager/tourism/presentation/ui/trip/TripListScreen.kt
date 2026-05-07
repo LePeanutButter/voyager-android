@@ -3,12 +3,16 @@ package com.voyager.tourism.presentation.ui.trip
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
 
 /**
@@ -17,16 +21,21 @@ import com.voyager.tourism.presentation.viewmodel.TripViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripListScreen(
+    authViewModel: AuthViewModel,
     onTripClick: (String) -> Unit,
     onAddTrip: () -> Unit,
-    viewModel: TripViewModel = hiltViewModel()
+    viewModel: TripViewModel = hiltViewModel(),
 ) {
     val trips by viewModel.trips.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    
-    LaunchedEffect(Unit) {
-        viewModel.loadTrips("current_user_id")
+    val currentUser by authViewModel.currentUser.collectAsState()
+
+    LaunchedEffect(currentUser?.id) {
+        val uid = currentUser?.id
+        if (!uid.isNullOrBlank()) {
+            viewModel.loadTrips(uid)
+        }
     }
     
     Column(
@@ -49,7 +58,7 @@ fun TripListScreen(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Add,
+                    imageVector = Icons.Filled.Add,
                     contentDescription = "Add Trip"
                 )
             }
@@ -112,14 +121,18 @@ fun TripListScreen(
     }
 }
 
+/**
+ * Single-row summary for one trip inside the trip list.
+ */
 @Composable
 private fun TripListItem(
     trip: com.voyager.tourism.domain.model.Trip,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
