@@ -131,7 +131,7 @@ class UserMapper @Inject constructor() {
             firstName = userEntity.firstName,
             lastName = userEntity.lastName,
             phoneNumber = null,
-            role = UserRole.USER.value,
+            role = UserRole.TRAVELER.value,
             status = if (userEntity.isVerified) UserStatus.ACTIVE.value else UserStatus.PENDING.value,
             profileImageUrl = userEntity.avatar,
             bio = null,

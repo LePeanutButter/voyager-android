@@ -18,7 +18,7 @@ class UserMapperTest {
         val dto = TestFixtures.userDto()
         val u = mapper.toDomain(dto)
         assertEquals("42", u.id)
-        assertEquals(UserRole.USER.value, u.role)
+        assertEquals(UserRole.TRAVELER.value, u.role)
         assertEquals(UserStatus.ACTIVE.value, u.status)
         assertEquals(setOf("museums"), u.interests)
     }

@@ -3,26 +3,32 @@ package com.voyager.tourism.data.dto
 import com.squareup.moshi.Json
 
 /**
- * Enum matching backend UserRole
+ * Valores serializados igual que [com.tourism.platform.model.UserRole] en voyager-backend-core.
  */
 enum class UserRole(val value: String) {
-    @Json(name = "USER")
-    USER("USER"),
-    
+    @Json(name = "TRAVELER")
+    TRAVELER("TRAVELER"),
+
+    @Json(name = "SERVICE_PROVIDER")
+    SERVICE_PROVIDER("SERVICE_PROVIDER"),
+
+    @Json(name = "GUIDE")
+    GUIDE("GUIDE"),
+
     @Json(name = "ADMIN")
     ADMIN("ADMIN"),
-    
+
     @Json(name = "SUPER_ADMIN")
     SUPER_ADMIN("SUPER_ADMIN");
-    
+
     companion object {
         /**
-         * Returns the [UserRole] whose serialized [value] matches [value], or [USER] if none match.
-         *
-         * @param value Backend string value (e.g. `"ADMIN"`).
+         * Resuelve el rol a partir del string del backend o dominio almacenado.
+         * `"USER"` se trata como alias legado de [TRAVELER].
          */
         fun fromValue(value: String): UserRole {
-            return values().find { it.value == value } ?: USER
+            if (value == "USER") return TRAVELER
+            return UserRole.entries.find { it.value == value } ?: TRAVELER
         }
     }
 }

@@ -68,5 +68,5 @@ CMD ["sh", "-c", "java $JAVA_OPTS -jar app.apk $APP_OPTS"]
 LABEL maintainer="Voyager Team" \
       version="1.0.0" \
       description="SmarTrip - Kotlin-based Android App Architecture" \
-      org.opencontainers.image.source="https://github.com/your-org/voyager-android" \
+      org.opencontainers.image.source="https://github.com/LePeanutButter/voyager-android" \
       org.opencontainers.image.licenses="GPL-3.0"

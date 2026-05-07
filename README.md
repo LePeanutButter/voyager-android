@@ -47,7 +47,7 @@ Key architectural decisions:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/voyager-android.git
+   git clone https://github.com/LePeanutButter/voyager-android.git
    cd voyager-android
    ```
 
