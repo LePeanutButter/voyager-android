@@ -1,6 +1,7 @@
 package com.voyager.tourism.domain.usecase.auth
 
 import com.squareup.moshi.Moshi
+import com.voyager.tourism.data.mapper.UserMapper
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.local.TokenManager
@@ -17,6 +18,7 @@ class RegisterUseCase @Inject constructor(
     private val tokenManager: TokenManager,
     private val preferencesManager: PreferencesManager,
     private val moshi: Moshi,
+    private val userMapper: UserMapper,
 ) {
     
     /**
@@ -43,24 +45,7 @@ class RegisterUseCase @Inject constructor(
                 userDto.token?.let { tokenManager.saveToken(it) }
                 preferencesManager.saveCurrentUserId(userDto.id.toString())
                 tokenManager.saveUser(moshi.adapter(UserDto::class.java).toJson(userDto))
-                val user = com.voyager.tourism.domain.model.User(
-                    id = userDto.id.toString(),
-                    email = userDto.email,
-                    username = userDto.username,
-                    firstName = userDto.firstName,
-                    lastName = userDto.lastName,
-                    phoneNumber = userDto.phoneNumber,
-                    role = userDto.role.value,
-                    status = userDto.status.value,
-                    profileImageUrl = userDto.profileImageUrl,
-                    bio = userDto.bio,
-                    interests = userDto.interests ?: emptySet(),
-                    dateOfBirth = userDto.dateOfBirth,
-                    createdAt = userDto.createdAt,
-                    updatedAt = userDto.updatedAt,
-                    token = userDto.token
-                )
-                Result.success(user)
+                Result.success(userMapper.toDomain(userDto))
             } else {
                 Result.failure(userDtoResult.exceptionOrNull() ?: Exception("Registration failed"))
             }

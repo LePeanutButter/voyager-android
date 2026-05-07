@@ -27,7 +27,7 @@ import androidx.navigation.NavController
 import com.voyager.tourism.presentation.viewmodel.RegisterViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterUiState
 
-private const val PASSWORDS_MISMATCH_MSG = "Las contraseñas no coinciden"
+private const val MSG_CONFIRM_MISMATCH = "Las contraseñas no coinciden"
 
 /**
  * Account registration screen collecting profile fields and submitting them to the backend.
@@ -184,7 +184,7 @@ fun RegisterScreen(
                 // Revalidate confirm password if it has content
                 if (confirmPassword.isNotBlank()) {
                     confirmPasswordError = if (it != confirmPassword) {
-                        PASSWORDS_MISMATCH_MSG
+                        MSG_CONFIRM_MISMATCH
                     } else null
                 }
             },
@@ -215,7 +215,7 @@ fun RegisterScreen(
                 confirmPassword = it
                 confirmPasswordError = when {
                     it.isBlank() -> "Confirmar la contraseña es requerido"
-                    it != password -> PASSWORDS_MISMATCH_MSG
+                    it != password -> MSG_CONFIRM_MISMATCH
                     else -> null
                 }
             },
@@ -341,7 +341,7 @@ private fun validateFields(
         onError("confirmPassword", "Confirmar la contraseña es requerido")
         hasError = true
     } else if (password != confirmPassword) {
-        onError("confirmPassword", PASSWORDS_MISMATCH_MSG)
+        onError("confirmPassword", MSG_CONFIRM_MISMATCH)
         hasError = true
     }
     

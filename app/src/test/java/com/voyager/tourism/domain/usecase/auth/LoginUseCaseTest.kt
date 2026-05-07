@@ -2,6 +2,7 @@ package com.voyager.tourism.domain.usecase.auth
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.voyager.tourism.data.mapper.UserMapper
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.local.TokenManager
 import com.voyager.tourism.domain.repository.AuthRepository
@@ -28,7 +29,7 @@ class LoginUseCaseTest {
 
     @Before
     fun setup() {
-        useCase = LoginUseCase(authRepository, tokenManager, preferencesManager, moshi)
+        useCase = LoginUseCase(authRepository, tokenManager, preferencesManager, moshi, UserMapper())
     }
 
     @Test

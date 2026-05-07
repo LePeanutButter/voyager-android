@@ -70,38 +70,55 @@ class UserMapper @Inject constructor() {
     /**
      * Maps a network [UserDto] into a Room [UserEntity] row for offline caching.
      */
-    fun toEntity(userDto: UserDto): UserEntity {
-        return UserEntity(
-            id = userDto.id.toString(),
-            username = userDto.username,
-            email = userDto.email,
-            firstName = userDto.firstName,
-            lastName = userDto.lastName,
-            avatar = userDto.profileImageUrl,
-            preferences = null,
-            isVerified = userDto.status == UserStatus.ACTIVE,
-            createdAt = parseBackendInstantToMillis(userDto.createdAt),
-            updatedAt = parseBackendInstantToMillis(userDto.updatedAt),
-        )
-    }
+    fun toEntity(userDto: UserDto): UserEntity = userEntityFrom(
+        id = userDto.id.toString(),
+        username = userDto.username,
+        email = userDto.email,
+        firstName = userDto.firstName,
+        lastName = userDto.lastName,
+        avatar = userDto.profileImageUrl,
+        isVerified = userDto.status == UserStatus.ACTIVE,
+        createdAt = parseBackendInstantToMillis(userDto.createdAt),
+        updatedAt = parseBackendInstantToMillis(userDto.updatedAt),
+    )
 
     /**
      * Maps a domain [User] into a Room [UserEntity] snapshot.
      */
-    fun toEntity(user: User): UserEntity {
-        return UserEntity(
-            id = user.id,
-            username = user.username,
-            email = user.email,
-            firstName = user.firstName,
-            lastName = user.lastName,
-            avatar = user.profileImageUrl,
-            preferences = null,
-            isVerified = user.status.uppercase(Locale.ROOT) == UserStatus.ACTIVE.value,
-            createdAt = parseBackendInstantToMillis(user.createdAt),
-            updatedAt = parseBackendInstantToMillis(user.updatedAt),
-        )
-    }
+    fun toEntity(user: User): UserEntity = userEntityFrom(
+        id = user.id,
+        username = user.username,
+        email = user.email,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        avatar = user.profileImageUrl,
+        isVerified = user.status.uppercase(Locale.ROOT) == UserStatus.ACTIVE.value,
+        createdAt = parseBackendInstantToMillis(user.createdAt),
+        updatedAt = parseBackendInstantToMillis(user.updatedAt),
+    )
+
+    private fun userEntityFrom(
+        id: String,
+        username: String,
+        email: String,
+        firstName: String,
+        lastName: String,
+        avatar: String?,
+        isVerified: Boolean,
+        createdAt: Long,
+        updatedAt: Long,
+    ): UserEntity = UserEntity(
+        id = id,
+        username = username,
+        email = email,
+        firstName = firstName,
+        lastName = lastName,
+        avatar = avatar,
+        preferences = null,
+        isVerified = isVerified,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
 
     /**
      * Builds an update payload for PATCH/PUT endpoints from editable profile fields.

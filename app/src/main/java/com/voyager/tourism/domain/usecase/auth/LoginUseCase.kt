@@ -1,5 +1,6 @@
 package com.voyager.tourism.domain.usecase.auth
 
+import com.voyager.tourism.data.mapper.UserMapper
 import com.voyager.tourism.domain.model.User
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.data.dto.UserDto
@@ -17,6 +18,7 @@ class LoginUseCase @Inject constructor(
     private val tokenManager: TokenManager,
     private val preferencesManager: PreferencesManager,
     private val moshi: Moshi,
+    private val userMapper: UserMapper,
 ) {
     
     /**
@@ -45,9 +47,7 @@ class LoginUseCase @Inject constructor(
                 val userJson = moshi.adapter(com.voyager.tourism.data.dto.UserDto::class.java).toJson(userDto)
                 tokenManager.saveUser(userJson)
                 
-                // Convert to domain model
-                val user = mapToDomainModel(userDto)
-                Result.success(user)
+                Result.success(userMapper.toDomain(userDto))
             } else {
                 Result.failure(userDtoResult.exceptionOrNull() ?: Exception("Login failed"))
             }
@@ -71,42 +71,12 @@ class LoginUseCase @Inject constructor(
                 preferencesManager.saveCurrentUserId(userDto.id.toString())
                 val userJson = moshi.adapter(UserDto::class.java).toJson(userDto)
                 tokenManager.saveUser(userJson)
-                Result.success(mapToDomainModel(userDto))
+                Result.success(userMapper.toDomain(userDto))
             } else {
                 Result.failure(result.exceptionOrNull() ?: Exception("Google OAuth2 failed"))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-    
-    /**
-     * Convert UserDto to domain User model
-     */
-    private fun mapToDomainModel(userDto: UserDto): User {
-        return User(
-            id = userDto.id.toString(),
-            email = userDto.email,
-            username = userDto.username,
-            firstName = userDto.firstName,
-            lastName = userDto.lastName,
-            phoneNumber = userDto.phoneNumber,
-            role = userDto.role.value,
-            status = userDto.status.value,
-            profileImageUrl = userDto.profileImageUrl,
-            bio = userDto.bio,
-            interests = userDto.interests ?: emptySet(),
-            dateOfBirth = userDto.dateOfBirth,
-            createdAt = userDto.createdAt,
-            updatedAt = userDto.updatedAt,
-            token = userDto.token
-        )
-    }
-    
-    /**
-     * Basic email validation
-     */
-    private fun isValidEmail(email: String): Boolean {
-        return email.contains("@") && email.contains(".")
     }
 }

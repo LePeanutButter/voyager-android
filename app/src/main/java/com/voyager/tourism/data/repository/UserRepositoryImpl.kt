@@ -239,7 +239,7 @@ class UserRepositoryImpl @Inject constructor(
                 preferencesManager.clearAuthData()
                 Result.success(Unit)
             } else {
-                Result.failure(Exception(response.message ?: "Delete failed"))
+                Result.failure(Exception(response.message))
             }
         } catch (e: Exception) {
             Result.failure(e)
