@@ -35,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.voyager.tourism.data.dto.ConnectionRequestDto
 import com.voyager.tourism.presentation.viewmodel.ConnectionRequestsViewModel
+import com.voyager.tourism.util.formatBackendLocalDateTime
 
 /**
  * Screen for managing connection requests

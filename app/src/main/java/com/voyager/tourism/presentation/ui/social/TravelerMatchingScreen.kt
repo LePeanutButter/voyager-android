@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.voyager.tourism.data.dto.TravelerMatchDto
 import com.voyager.tourism.presentation.viewmodel.TravelerMatchingViewModel
+import com.voyager.tourism.util.formatBackendLocalDateTime
 
 /**
  * Screen for finding and connecting with compatible travelers

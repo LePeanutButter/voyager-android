@@ -36,8 +36,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun SocialScreenHeader(
@@ -199,13 +197,5 @@ fun SocialEmptyState(emoji: String, title: String, body: String) {
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-fun formatBackendLocalDateTime(dateString: String, pattern: String): String {
-    return try {
-        LocalDateTime.parse(dateString).format(DateTimeFormatter.ofPattern(pattern))
-    } catch (_: Exception) {
-        dateString
     }
 }
