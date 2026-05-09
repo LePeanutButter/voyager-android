@@ -13,6 +13,23 @@ data class ParsedTrendingDestination(
     val country: String,
 )
 
+/** Fila del digest semanal (micro-tendencias), alineada con [Dashboard.jsx] trendsDigest. */
+data class ParsedDigestRow(
+    val title: String,
+    val subtitle: String,
+    /** Texto para búsqueda / recomendaciones cuando no hay destId de catálogo. */
+    val exploreQuery: String,
+    val country: String?,
+    val destId: String?,
+)
+
+/** Fila de panorama estacional, alineada con [Dashboard.jsx] seasonalityHighlights. */
+data class ParsedSeasonalityRow(
+    val id: String?,
+    val title: String,
+    val subtitle: String,
+)
+
 object AiDashboardParsers {
 
     fun unwrapDataObject(root: JSONObject): JSONObject {
@@ -43,7 +60,12 @@ object AiDashboardParsers {
         }
     }
 
-    fun parseWeeklyDigestLines(json: String): List<String> {
+    fun parseWeeklyDigestLines(json: String): List<String> =
+        parseWeeklyDigestRows(json).map { row ->
+            if (row.subtitle.isNotBlank()) "${row.title} — ${row.subtitle}" else row.title
+        }
+
+    fun parseWeeklyDigestRows(json: String): List<ParsedDigestRow> {
         val raw = json.trim()
         if (raw.isEmpty()) return emptyList()
         return try {
@@ -58,8 +80,8 @@ object AiDashboardParsers {
             ) ?: return emptyList()
             buildList {
                 for (i in 0 until minOf(arr.length(), 8)) {
-                    val line = lineFromDigestItem(arr.opt(i))
-                    if (line != null) add(line)
+                    val row = digestRowFromItem(arr.opt(i))
+                    if (row != null) add(row)
                 }
             }.take(3)
         } catch (_: Exception) {
@@ -67,7 +89,10 @@ object AiDashboardParsers {
         }
     }
 
-    fun parseSeasonalityLines(json: String): List<String> {
+    fun parseSeasonalityLines(json: String): List<String> =
+        parseSeasonalityRows(json).map { it.title }
+
+    fun parseSeasonalityRows(json: String): List<ParsedSeasonalityRow> {
         val raw = json.trim()
         if (raw.isEmpty()) return emptyList()
         return try {
@@ -82,8 +107,8 @@ object AiDashboardParsers {
             ) ?: return emptyList()
             buildList {
                 for (i in 0 until minOf(arr.length(), 8)) {
-                    val line = lineFromSeasonalityItem(arr.opt(i))
-                    if (line != null) add(line)
+                    val row = seasonalityRowFromItem(arr.opt(i))
+                    if (row != null) add(row)
                 }
             }.take(3)
         } catch (_: Exception) {
@@ -99,28 +124,64 @@ object AiDashboardParsers {
         return null
     }
 
-    private fun lineFromDigestItem(v: Any?): String? {
-        if (v is JSONObject) {
-            val t = v.optString("title").ifBlank { v.optString("headline") }
-                .ifBlank { v.optString("name") }
-                .ifBlank { v.optString("summary") }
-            if (t.isNotBlank()) return t
-            val geo = v.optJSONObject("geo")
-            if (geo != null) {
-                val n = geo.optString("name").ifBlank { geo.optString("destination_id") }
-                if (n.isNotBlank()) return n
-            }
-        }
-        return null
+    private fun digestRowFromItem(v: Any?): ParsedDigestRow? {
+        if (v !is JSONObject) return null
+        val g = v.optJSONObject("geo")
+        val locFromGeo = g?.optString("name")?.trim().orEmpty()
+        val slugFromDigestId = (g?.optString("destination_id") ?: "").ifBlank { g?.optString("destinationId") ?: "" }.trim()
+        val geo = listOf(
+            locFromGeo,
+            slugFromDigestId,
+            v.optString("destination").trim(),
+            v.optString("city").trim(),
+            v.optString("region").trim(),
+            v.optString("primaryDestination").trim(),
+            v.optString("primary_destination").trim(),
+            v.optString("affectedDestination").trim(),
+            v.optString("affected_destination").trim(),
+        ).firstOrNull { it.isNotBlank() }
+        val country = g?.optString("country")?.trim()?.takeIf { it.isNotBlank() }
+            ?: v.optString("country").trim().takeIf { it.isNotBlank() }
+        val destId = (g?.optString("destination_id") ?: "").ifBlank { g?.optString("destinationId") ?: "" }.trim()
+            .ifBlank { v.optString("trendId").trim() }
+            .ifBlank { v.optString("trend_id").trim() }
+            .ifBlank { v.optString("id").trim() }
+            .takeIf { it.isNotBlank() }
+        val title = v.optString("title").ifBlank { v.optString("headline") }
+            .ifBlank { v.optString("name") }
+            .ifBlank { v.optString("destination") }
+            .ifBlank { geo.orEmpty() }
+            .ifBlank { return null }
+        val subtitle = v.optString("summary").ifBlank { v.optString("description") }
+            .ifBlank { v.optString("signal").trim() }
+            .ifBlank { v.optString("type").trim() }
+        val exploreQuery = geo?.takeIf { it.isNotBlank() } ?: title
+        return ParsedDigestRow(
+            title = title,
+            subtitle = subtitle,
+            exploreQuery = exploreQuery,
+            country = country,
+            destId = destId,
+        )
     }
 
-    private fun lineFromSeasonalityItem(v: Any?): String? {
-        if (v is JSONObject) {
-            val name = v.optString("name").ifBlank { v.optString("destination_name") }
-                .ifBlank { v.optString("destinationName") }
-                .ifBlank { v.optString("label") }
-            if (name.isNotBlank()) return name
-        }
-        return null
+    private fun seasonalityRowFromItem(v: Any?): ParsedSeasonalityRow? {
+        if (v !is JSONObject) return null
+        val rawDest = v.optString("destination").ifBlank { v.optString("destinationId") }
+            .ifBlank { v.optString("destination_id") }
+            .ifBlank { v.optString("name") }
+            .ifBlank { v.optString("destination_name") }
+            .ifBlank { v.optString("destinationName") }
+            .ifBlank { v.optString("label") }
+            .trim()
+        if (rawDest.isBlank()) return null
+        val title = v.optString("destination").ifBlank { rawDest }
+        val subtitle = v.optString("note").ifBlank { v.optString("summary") }
+            .ifBlank { v.optString("label") }
+            .ifBlank { "Perfil estacional disponible" }
+        val id = v.optString("destinationId").ifBlank { v.optString("destination_id") }
+            .ifBlank { v.optString("id") }
+            .takeIf { it.isNotBlank() }
+        return ParsedSeasonalityRow(id = id, title = title.trim(), subtitle = subtitle.trim())
     }
 }

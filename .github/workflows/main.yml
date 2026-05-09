@@ -152,7 +152,13 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test --stacktrace
 
-      # Step 5: Build APK and Bundle
+      # Step 5: Huellas de firma (útil si assembleRelease falla por keystore; el bloque Variant: debug siempre aparece)
+      - name: signingReport (SHA-1 para Google OAuth en dispositivos)
+        run: |
+          echo "Paquete de aplicación: com.voyager.tourism"
+          echo "Copia el SHA1 de la variante con la que firmas el APK (debug en CI, o release si está configurado) y añádelo en Google Cloud Console."
+          ./gradlew :app:signingReport --no-daemon --console=plain --stacktrace
+
       - name: Build APK and Bundle
         run: ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
 

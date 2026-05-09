@@ -104,30 +104,7 @@ class ProfileViewModel @Inject constructor(
      * Get current user ID from token manager
      */
     fun getCurrentUserId(): String? {
-        return try {
-            val userJson = tokenManager.getUser()
-            if (!userJson.isNullOrBlank()) {
-                // Parse user JSON to get ID (simplified approach)
-                // In a real implementation, you'd use Moshi to parse properly
-                extractUserIdFromJson(userJson)
-            } else null
-        } catch (e: Exception) {
-            null
-        }
-    }
-    
-    /**
-     * Extract user ID from JSON string (simplified implementation)
-     */
-    private fun extractUserIdFromJson(userJson: String): String? {
-        // This is a simplified approach - in production, use proper JSON parsing
-        return try {
-            val idRegex = "\"id\":\"([^\"]+)\"".toRegex()
-            val matchResult = idRegex.find(userJson)
-            matchResult?.groupValues?.get(1)
-        } catch (e: Exception) {
-            null
-        }
+        return tokenManager.getCurrentUserId()
     }
 }
 

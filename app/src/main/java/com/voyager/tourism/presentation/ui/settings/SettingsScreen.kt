@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.voyager.tourism.presentation.ui.theme.SmarTripColors
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.SettingsViewModel
 
 private data class VisibilityOption(val value: String, val label: String)
@@ -102,7 +103,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            navController.navigate("travel_preferences") { launchSingleTop = true }
+                            navController.navigate(AuthViewModel.ROUTE_TRAVEL_PREFERENCES) { launchSingleTop = true }
                         }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -124,7 +125,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            navController.navigate("behavior_analysis") { launchSingleTop = true }
+                            navController.navigate(AuthViewModel.ROUTE_BEHAVIOR_ANALYSIS) { launchSingleTop = true }
                         }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,

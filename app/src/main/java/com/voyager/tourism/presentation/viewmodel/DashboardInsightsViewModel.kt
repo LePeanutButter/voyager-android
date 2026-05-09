@@ -3,6 +3,8 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dashboard.AiDashboardParsers
+import com.voyager.tourism.data.dashboard.ParsedDigestRow
+import com.voyager.tourism.data.dashboard.ParsedSeasonalityRow
 import com.voyager.tourism.data.dashboard.ParsedTrendingDestination
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,13 +31,13 @@ class DashboardInsightsViewModel @Inject constructor(
     private val _trendingLoading = MutableStateFlow(false)
     val trendingLoading: StateFlow<Boolean> = _trendingLoading.asStateFlow()
 
-    private val _weeklyLines = MutableStateFlow<List<String>>(emptyList())
-    val weeklyLines: StateFlow<List<String>> = _weeklyLines.asStateFlow()
+    private val _weeklyRows = MutableStateFlow<List<ParsedDigestRow>>(emptyList())
+    val weeklyRows: StateFlow<List<ParsedDigestRow>> = _weeklyRows.asStateFlow()
     private val _weeklyError = MutableStateFlow<String?>(null)
     val weeklyError: StateFlow<String?> = _weeklyError.asStateFlow()
 
-    private val _seasonalityLines = MutableStateFlow<List<String>>(emptyList())
-    val seasonalityLines: StateFlow<List<String>> = _seasonalityLines.asStateFlow()
+    private val _seasonalityRows = MutableStateFlow<List<ParsedSeasonalityRow>>(emptyList())
+    val seasonalityRows: StateFlow<List<ParsedSeasonalityRow>> = _seasonalityRows.asStateFlow()
     private val _seasonalityError = MutableStateFlow<String?>(null)
     val seasonalityError: StateFlow<String?> = _seasonalityError.asStateFlow()
 
@@ -73,14 +75,14 @@ class DashboardInsightsViewModel @Inject constructor(
             val res = withContext(Dispatchers.IO) { voyagerAi.getWeeklyDigest() }
             if (!res.isSuccessful) {
                 _weeklyError.value = "Digest semanal no disponible."
-                _weeklyLines.value = emptyList()
+                _weeklyRows.value = emptyList()
                 return
             }
             val body = res.body()?.string().orEmpty()
-            _weeklyLines.value = AiDashboardParsers.parseWeeklyDigestLines(body)
+            _weeklyRows.value = AiDashboardParsers.parseWeeklyDigestRows(body)
         } catch (e: Exception) {
             _weeklyError.value = e.message ?: "Digest no disponible"
-            _weeklyLines.value = emptyList()
+            _weeklyRows.value = emptyList()
         }
     }
 
@@ -90,14 +92,14 @@ class DashboardInsightsViewModel @Inject constructor(
             val res = withContext(Dispatchers.IO) { voyagerAi.getSeasonalityOverview(null) }
             if (!res.isSuccessful) {
                 _seasonalityError.value = "Panorama estacional no disponible."
-                _seasonalityLines.value = emptyList()
+                _seasonalityRows.value = emptyList()
                 return
             }
             val body = res.body()?.string().orEmpty()
-            _seasonalityLines.value = AiDashboardParsers.parseSeasonalityLines(body)
+            _seasonalityRows.value = AiDashboardParsers.parseSeasonalityRows(body)
         } catch (e: Exception) {
             _seasonalityError.value = e.message ?: "Estacionalidad no disponible"
-            _seasonalityLines.value = emptyList()
+            _seasonalityRows.value = emptyList()
         }
     }
 }

@@ -131,6 +131,50 @@ object NetworkModule {
     }
 
     /**
+     * Cliente HTTP que NO sigue redirecciones (302), necesario para capturar el Location de Google OAuth.
+     */
+    @Provides
+    @Singleton
+    @Named("no_redirects_client")
+    fun provideNoRedirectOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        unauthorizedResponseInterceptor: UnauthorizedResponseInterceptor,
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.HEADERS
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
+                },
+            )
+            .addInterceptor(authInterceptor)
+            .addInterceptor(unauthorizedResponseInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    /**
+     * Provides a [Retrofit] client for Google Auth that doesn't follow redirects.
+     */
+    @Provides
+    @Singleton
+    @Named("google_auth_retrofit")
+    fun provideGoogleAuthRetrofit(@Named("no_redirects_client") okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BACKEND_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    /**
      * Provides the backend user API service.
      */
     @Provides
@@ -139,11 +183,11 @@ object NetworkModule {
         retrofit.create(UserApiService::class.java)
 
     /**
-     * Provides the Google OAuth API service for the backend retrofit instance.
+     * Provides the Google OAuth API service using a non-redirecting Retrofit instance.
      */
     @Provides
     @Singleton
-    fun provideGoogleAuthApiService(retrofit: Retrofit): GoogleAuthApiService =
+    fun provideGoogleAuthApiService(@Named("google_auth_retrofit") retrofit: Retrofit): GoogleAuthApiService =
         retrofit.create(GoogleAuthApiService::class.java)
 
     /**

@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
+import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ data class RecommendationListRow(
 class RecommendationsViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val travelRepository: TravelRepository,
 ) : ViewModel() {
 
     private val _rows = MutableStateFlow<List<RecommendationListRow>>(emptyList())
@@ -57,11 +60,25 @@ class RecommendationsViewModel @Inject constructor(
             runCatching {
                 val userId = preferencesManager.getCurrentUserId()?.takeIf { it.isNotBlank() }
                     ?: "anonymous"
+                val plans = if (userId != "anonymous") {
+                    travelRepository.getUserTravelPlans(userId).getOrNull().orEmpty()
+                } else {
+                    emptyList()
+                }
+                val candidates = buildCandidatesFromPlans(plans).ifEmpty { defaultCandidates() }
+                val footprint = plans.mapNotNull { p ->
+                    p.destinationLocation?.trim()?.takeIf { it.isNotEmpty() }
+                }.distinct().take(5)
+                val query = if (footprint.isNotEmpty()) {
+                    "Qué hacer y qué priorizar para tus destinos: ${footprint.joinToString(", ")}"
+                } else {
+                    "Destinos y experiencias recomendadas para el viajero"
+                }
                 val body = LocalRecommendationRequestBody(
                     userId = userId,
-                    query = "Destinos y experiencias recomendadas para el viajero",
-                    limit = 8,
-                    candidates = defaultCandidates(),
+                    query = query,
+                    limit = 5,
+                    candidates = candidates,
                 )
                 val response = voyagerAi.postLocalRecommendations(body)
                 if (!response.isSuccessful) {
@@ -118,6 +135,29 @@ class RecommendationsViewModel @Inject constructor(
             }
         }
     }
+
+    private fun buildCandidatesFromPlans(plans: List<TravelPlanDto>): List<LocalRecommendationCandidateBody> =
+        plans.mapNotNull { plan ->
+            val id = plan.id ?: return@mapNotNull null
+            val name = plan.destinationLocation?.trim()?.takeIf { it.isNotEmpty() }
+                ?: plan.title?.trim()?.takeIf { it.isNotEmpty() }
+                ?: "Plan $id"
+            val category = plan.travelType?.value?.lowercase() ?: "travel"
+            val price = plan.estimatedBudget ?: 0.0
+            val content = listOfNotNull(
+                plan.description?.trim()?.takeIf { it.isNotEmpty() },
+                plan.title?.trim()?.takeIf { it.isNotEmpty() && it != name },
+                plan.startDate?.let { "Inicio: $it" },
+                plan.endDate?.let { "Fin: $it" },
+            ).joinToString(". ")
+            LocalRecommendationCandidateBody(
+                id = "user-plan-$id",
+                name = name,
+                category = category,
+                price = price,
+                contentText = content,
+            )
+        }
 
     private fun defaultCandidates(): List<LocalRecommendationCandidateBody> = listOf(
         LocalRecommendationCandidateBody(

@@ -12,13 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
@@ -28,17 +30,35 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Divider
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import com.voyager.tourism.data.dashboard.ParsedDigestRow
+import com.voyager.tourism.data.dashboard.ParsedSeasonalityRow
+import com.voyager.tourism.data.dashboard.ParsedTrendingDestination
+import com.voyager.tourism.data.destination.buildDestinationExploreLabel
+import com.voyager.tourism.domain.trip.tripMatchesDestinationLabel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +67,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.domain.model.Trip
 import com.voyager.tourism.domain.model.TripStatus
 import com.voyager.tourism.presentation.ui.trip.spanishLabel
+import com.voyager.tourism.presentation.navigation.DestinationExploreParams
 import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.DashboardInsightsViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
@@ -67,7 +88,9 @@ fun DashboardScreen(
     onSettingsClick: () -> Unit,
     onPlanTripClick: () -> Unit,
     onAiAssistantClick: () -> Unit,
-    onTrendingDestinationClick: (destinationId: String?) -> Unit,
+    onOpenCalendar: () -> Unit = {},
+    onCreatePlanWithDestinationHint: (String) -> Unit = {},
+    onDestinationExplore: (DestinationExploreParams) -> Unit,
     onViewAllTrips: () -> Unit = {},
     viewModel: TripViewModel = hiltViewModel(),
     insightsViewModel: DashboardInsightsViewModel = hiltViewModel(),
@@ -89,11 +112,27 @@ fun DashboardScreen(
         ?: currentUser?.username?.takeIf { it.isNotBlank() }
         ?: "Viajero"
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
+    val scroll = rememberScrollState()
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            DashboardBottomNavigationBar(
+                onRecommendationsClick = onRecommendationsClick,
+                onCommunityClick = onSharedActivitiesClick,
+                onCreatePlanClick = onPlanTripClick,
+                onProfileClick = onProfileClick,
+                onAiAssistantClick = onAiAssistantClick,
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(scroll)
+                .padding(16.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -117,23 +156,12 @@ fun DashboardScreen(
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            Row {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Configuración")
-                }
-                IconButton(onClick = onProfileClick) {
-                    Icon(Icons.Filled.AccountCircle, contentDescription = "Perfil")
-                }
+            IconButton(onClick = onOpenCalendar) {
+                Icon(Icons.Filled.CalendarMonth, contentDescription = "Calendario / cronograma")
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = onPlanTripClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Nuevo plan")
+            IconButton(onClick = onSettingsClick) {
+                Icon(Icons.Filled.Settings, contentDescription = "Ajustes")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -157,45 +185,15 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Quick Actions (alineado con chips del header web: recomendaciones, comunidad, crear plan)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = onRecommendationsClick,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Recomendaciones")
-            }
-            Button(
-                onClick = onSharedActivitiesClick,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Comunidad")
-            }
-            Button(
-                onClick = onPlanTripClick,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Crear plan")
-            }
-        }
         Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = onAiAssistantClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Asistente IA")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         DashboardAiInsightsSection(
             insightsViewModel = insightsViewModel,
-            onTrendingDestinationClick = onTrendingDestinationClick,
+            trips = trips,
+            onDestinationExplore = onDestinationExplore,
+            onCreatePlanWithDestinationHint = onCreatePlanWithDestinationHint,
+            onOpenTripDetail = onTripClick,
+            onOpenAssistant = onAiAssistantClick,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -251,62 +249,237 @@ fun DashboardScreen(
                 }
             }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(trips.take(5)) { trip ->
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                trips.take(5).forEach { trip ->
                     TripCard(
                         trip = trip,
-                        onClick = { onTripClick(trip.id) }
+                        onClick = { onTripClick(trip.id) },
                     )
                 }
             }
+        }
         }
     }
 }
 
 @Composable
+private fun DashboardBottomNavigationBar(
+    onRecommendationsClick: () -> Unit,
+    onCommunityClick: () -> Unit,
+    onCreatePlanClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAiAssistantClick: () -> Unit,
+) {
+    val colors = NavigationBarItemDefaults.colors(
+        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+    )
+    NavigationBar {
+        NavigationBarItem(
+            selected = false,
+            onClick = onRecommendationsClick,
+            icon = { Icon(Icons.Filled.Star, contentDescription = "Recomendaciones") },
+            label = { },
+            alwaysShowLabel = false,
+            colors = colors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onCommunityClick,
+            icon = { Icon(Icons.Filled.Groups, contentDescription = "Comunidad") },
+            label = { },
+            alwaysShowLabel = false,
+            colors = colors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onCreatePlanClick,
+            icon = { Icon(Icons.Filled.Add, contentDescription = "Crear plan") },
+            label = { },
+            alwaysShowLabel = false,
+            colors = colors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onProfileClick,
+            icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Perfil") },
+            label = { },
+            alwaysShowLabel = false,
+            colors = colors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onAiAssistantClick,
+            icon = { Icon(Icons.Filled.SmartToy, contentDescription = "Asistente IA") },
+            label = { },
+            alwaysShowLabel = false,
+            colors = colors,
+        )
+    }
+}
+
+private sealed class InsightSheet {
+    data class WeeklyDigest(val rows: List<ParsedDigestRow>) : InsightSheet()
+    data class Seasonal(val rows: List<ParsedSeasonalityRow>) : InsightSheet()
+}
+
+private fun tripsMatchingDigest(trips: List<Trip>, row: ParsedDigestRow): List<Trip> {
+    val id = row.destId?.trim().orEmpty()
+    if (id.isNotBlank()) {
+        val byId = trips.filter { it.destination.id.equals(id, ignoreCase = true) }
+        if (byId.isNotEmpty()) return byId
+    }
+    val label = buildDestinationExploreLabel(row.exploreQuery, row.country.orEmpty())
+    return trips.filter { tripMatchesDestinationLabel(it, label) }
+}
+
+private fun tripsMatchingSeasonality(trips: List<Trip>, row: ParsedSeasonalityRow): List<Trip> {
+    val id = row.id?.trim().orEmpty()
+    if (id.isNotBlank()) {
+        val byId = trips.filter { it.destination.id.equals(id, ignoreCase = true) }
+        if (byId.isNotEmpty()) return byId
+    }
+    val label = buildDestinationExploreLabel(row.title, "")
+    return trips.filter { tripMatchesDestinationLabel(it, label) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun DashboardAiInsightsSection(
     insightsViewModel: DashboardInsightsViewModel,
-    onTrendingDestinationClick: (String?) -> Unit,
+    trips: List<Trip>,
+    onDestinationExplore: (DestinationExploreParams) -> Unit,
+    onCreatePlanWithDestinationHint: (String) -> Unit,
+    onOpenTripDetail: (String) -> Unit,
+    onOpenAssistant: () -> Unit,
 ) {
     val trending by insightsViewModel.trending.collectAsState()
     val trendingErr by insightsViewModel.trendingError.collectAsState()
     val trendingLoad by insightsViewModel.trendingLoading.collectAsState()
-    val weekly by insightsViewModel.weeklyLines.collectAsState()
+    val weeklyRows by insightsViewModel.weeklyRows.collectAsState()
     val weeklyErr by insightsViewModel.weeklyError.collectAsState()
-    val season by insightsViewModel.seasonalityLines.collectAsState()
+    val seasonRows by insightsViewModel.seasonalityRows.collectAsState()
     val seasonErr by insightsViewModel.seasonalityError.collectAsState()
+
+    fun openExploreFromDigest(row: ParsedDigestRow) {
+        if (digestRowHasGeo(row)) {
+            onDestinationExplore(
+                DestinationExploreParams(
+                    loc = row.exploreQuery,
+                    country = row.country,
+                    destId = row.destId,
+                ),
+            )
+        } else {
+            onOpenAssistant()
+        }
+    }
+
+    fun openExploreFromSeasonality(row: ParsedSeasonalityRow) {
+        onDestinationExplore(
+            DestinationExploreParams(
+                loc = row.title,
+                country = null,
+                destId = row.id,
+            ),
+        )
+    }
+
+    var sheet by remember { mutableStateOf<InsightSheet?>(null) }
+    if (sheet != null) {
+        val sheetContent = sheet!!
+        ModalBottomSheet(onDismissRequest = { sheet = null }) {
+            when (sheetContent) {
+                is InsightSheet.WeeklyDigest -> WeeklyDigestFullSheet(
+                    rows = sheetContent.rows,
+                    trips = trips,
+                    onDismiss = { sheet = null },
+                    onExplore = { row ->
+                        openExploreFromDigest(row)
+                        sheet = null
+                    },
+                    onCreatePlan = { hint ->
+                        onCreatePlanWithDestinationHint(hint)
+                        sheet = null
+                    },
+                    onOpenTrip = { id ->
+                        onOpenTripDetail(id)
+                        sheet = null
+                    },
+                )
+                is InsightSheet.Seasonal -> SeasonalityFullSheet(
+                    rows = sheetContent.rows,
+                    trips = trips,
+                    onDismiss = { sheet = null },
+                    onExploreIdeas = { row ->
+                        openExploreFromSeasonality(row)
+                        sheet = null
+                    },
+                    onCreatePlan = { hint ->
+                        onCreatePlanWithDestinationHint(hint)
+                        sheet = null
+                    },
+                    onOpenTrip = { id ->
+                        onOpenTripDetail(id)
+                        sheet = null
+                    },
+                )
+            }
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Resumen inteligente",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Tendencias, digest semanal y estacionalidad (IA).",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Resumen inteligente",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Tendencias, digest y estacionalidad (mismo flujo que el panel web).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
-            Text(
-                text = "Tendencias",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+            Spacer(modifier = Modifier.height(16.dp))
+
+            InsightSubsectionHeader(
+                icon = { Icon(Icons.Filled.Public, contentDescription = null) },
+                title = "Tendencias",
+                subtitle = "Destinos emergentes",
             )
             when {
                 trendingLoad -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(28.dp),
@@ -330,33 +503,27 @@ private fun DashboardAiInsightsSection(
                 }
                 else -> {
                     trending.forEach { dest ->
-                        val line = buildString {
-                            append(dest.name)
-                            if (dest.country.isNotBlank()) {
-                                append(" · ")
-                                append(dest.country)
-                            }
-                        }
-                        Text(
-                            text = "· $line",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(vertical = 4.dp)
-                                .clickable { onTrendingDestinationClick(dest.id) },
+                        TrendingDestinationRow(
+                            dest = dest,
+                            onOpen = {
+                                onDestinationExplore(
+                                    DestinationExploreParams(
+                                        loc = dest.name,
+                                        country = dest.country.takeIf { it.isNotBlank() },
+                                        destId = dest.id,
+                                    ),
+                                )
+                            },
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Digest semanal",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+            Spacer(modifier = Modifier.height(16.dp))
+            InsightSubsectionHeader(
+                icon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) },
+                title = "Digest semanal",
+                subtitle = "Micro-tendencias",
             )
             when {
                 weeklyErr != null -> {
@@ -366,7 +533,7 @@ private fun DashboardAiInsightsSection(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
-                weekly.isEmpty() -> {
+                weeklyRows.isEmpty() -> {
                     Text(
                         text = "Sin highlights esta semana.",
                         style = MaterialTheme.typography.bodySmall,
@@ -374,24 +541,23 @@ private fun DashboardAiInsightsSection(
                     )
                 }
                 else -> {
-                    weekly.forEach { line ->
-                        Text(
-                            text = "· $line",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 2.dp),
+                    weeklyRows.take(2).forEach { row ->
+                        DigestPreviewRow(
+                            row = row,
+                            onClick = { openExploreFromDigest(row) },
                         )
+                    }
+                    TextButton(onClick = { sheet = InsightSheet.WeeklyDigest(weeklyRows) }) {
+                        Text("Ver digest completo")
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Estacionalidad",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+            Spacer(modifier = Modifier.height(16.dp))
+            InsightSubsectionHeader(
+                icon = { Icon(Icons.Filled.WbSunny, contentDescription = null) },
+                title = "Estacionalidad",
+                subtitle = "Patrones por destino",
             )
             when {
                 seasonErr != null -> {
@@ -401,7 +567,7 @@ private fun DashboardAiInsightsSection(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
-                season.isEmpty() -> {
+                seasonRows.isEmpty() -> {
                     Text(
                         text = "Sin panorama estacional por ahora.",
                         style = MaterialTheme.typography.bodySmall,
@@ -409,17 +575,245 @@ private fun DashboardAiInsightsSection(
                     )
                 }
                 else -> {
-                    season.forEach { line ->
-                        Text(
-                            text = "· $line",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 2.dp),
+                    seasonRows.take(2).forEach { row ->
+                        SeasonalityPreviewRow(
+                            row = row,
+                            onExploreIdeas = { openExploreFromSeasonality(row) },
                         )
+                    }
+                    TextButton(onClick = { sheet = InsightSheet.Seasonal(seasonRows) }) {
+                        Text("Ver panorama completo")
                     }
                 }
             }
         }
     }
+}
+
+private fun digestRowHasGeo(row: ParsedDigestRow): Boolean =
+    row.exploreQuery.isNotBlank() || !row.country.isNullOrBlank()
+
+@Composable
+private fun DigestPreviewRow(
+    row: ParsedDigestRow,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(row.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = {
+            if (row.subtitle.isNotBlank()) {
+                Text(row.subtitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        },
+        trailingContent = {
+            TextButton(onClick = onClick) {
+                Text("Abrir")
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+    )
+}
+
+@Composable
+private fun SeasonalityPreviewRow(
+    row: ParsedSeasonalityRow,
+    onExploreIdeas: () -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = {
+            Text(row.subtitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        },
+        trailingContent = {
+            FilledTonalButton(onClick = onExploreIdeas) {
+                Text("Ideas")
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onExploreIdeas),
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+    )
+}
+
+@Composable
+private fun WeeklyDigestFullSheet(
+    rows: List<ParsedDigestRow>,
+    trips: List<Trip>,
+    onDismiss: () -> Unit,
+    onExplore: (ParsedDigestRow) -> Unit,
+    onCreatePlan: (String) -> Unit,
+    onOpenTrip: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text("Digest semanal", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        rows.forEach { row ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(row.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                    if (row.subtitle.isNotBlank()) {
+                        Text(row.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(onClick = { onExplore(row) }) {
+                            Text("Ver ideas")
+                        }
+                        TextButton(onClick = { onCreatePlan(row.exploreQuery.ifBlank { row.title }) }) {
+                            Text("Crear plan")
+                        }
+                    }
+                    val matches = tripsMatchingDigest(trips, row)
+                    matches.take(2).forEach { trip ->
+                        TextButton(onClick = { onOpenTrip(trip.id) }) {
+                            Text("Ver plan: ${trip.title}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+        }
+        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text("Cerrar")
+        }
+    }
+}
+
+@Composable
+private fun SeasonalityFullSheet(
+    rows: List<ParsedSeasonalityRow>,
+    trips: List<Trip>,
+    onDismiss: () -> Unit,
+    onExploreIdeas: (ParsedSeasonalityRow) -> Unit,
+    onCreatePlan: (String) -> Unit,
+    onOpenTrip: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text("Estacionalidad", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        rows.forEach { row ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(row.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                    Text(row.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilledTonalButton(onClick = { onExploreIdeas(row) }) {
+                            Text("Ver ideas para viajar")
+                        }
+                        TextButton(onClick = { onCreatePlan(row.title) }) {
+                            Text("Crear plan")
+                        }
+                    }
+                    val matches = tripsMatchingSeasonality(trips, row)
+                    matches.take(2).forEach { trip ->
+                        TextButton(onClick = { onOpenTrip(trip.id) }) {
+                            Text("Ver mi plan: ${trip.title}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+        }
+        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text("Cerrar")
+        }
+    }
+}
+
+@Composable
+private fun InsightSubsectionHeader(
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+) {
+    ListItem(
+        headlineContent = { Text(title, style = MaterialTheme.typography.titleSmall) },
+        supportingContent = { Text(subtitle, style = MaterialTheme.typography.labelSmall) },
+        leadingContent = icon,
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun TrendingDestinationRow(
+    dest: ParsedTrendingDestination,
+    onOpen: () -> Unit,
+) {
+    val initial = dest.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    ListItem(
+        headlineContent = {
+            Text(
+                dest.name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            if (dest.country.isNotBlank()) {
+                Text(dest.country, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        },
+        leadingContent = {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        initial,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        },
+        trailingContent = {
+            TextButton(onClick = onOpen) {
+                Text("Ver")
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen),
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+    )
 }
 
 /**

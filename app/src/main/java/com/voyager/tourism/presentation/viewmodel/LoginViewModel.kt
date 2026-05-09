@@ -1,10 +1,17 @@
 package com.voyager.tourism.presentation.viewmodel
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.domain.usecase.auth.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,13 +23,18 @@ import javax.inject.Inject
 
 /**
  * ViewModel for login screen
- * Handles login state and business logic including Google OAuth2
+ * Handles login state and business logic including Native Google Sign-In
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
+
+    private var googleSignInClient: GoogleSignInClient? = null
+    
+    // El Client ID del Backend (tipo Web Application) obtenido del .env del backend
+    private val WEB_CLIENT_ID = "141800747513-e8sriq2r4dk7fq0909ga56f47i9e7llg.apps.googleusercontent.com"
     
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -51,26 +63,44 @@ class LoginViewModel @Inject constructor(
     }
     
     /**
-     * Initiate Google OAuth2 login flow
-     * Opens browser with Google login URL
+     * Get Google Sign-In Intent to launch the account picker
      */
-    fun loginWithGoogle(context: Context) {
+    fun getGoogleSignInIntent(context: Context): android.content.Intent {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestServerAuthCode(WEB_CLIENT_ID) // Esto genera el 'code' para el backend
+            .build()
+        
+        googleSignInClient = GoogleSignIn.getClient(context, gso)
+        return googleSignInClient!!.signInIntent
+    }
+
+    /**
+     * Handle the result from Google Sign-In activity
+     */
+    fun handleGoogleSignInResult(completedTask: Task<GoogleSignInAccount>) {
         viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
             try {
-                val urlResult = authRepository.initiateGoogleLogin()
-                if (urlResult.isFailure) {
-                    _uiState.value = LoginUiState.Error(
-                        urlResult.exceptionOrNull()?.message ?: "No se pudo obtener la URL de Google",
-                    )
+                val account = completedTask.getResult(ApiException::class.java)
+                val code = account.serverAuthCode
+                
+                if (code == null) {
+                    _uiState.value = LoginUiState.Error("No se pudo obtener el código del servidor")
                     return@launch
                 }
-                val url = urlResult.getOrThrow()
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-                _uiState.value = LoginUiState.GoogleLoginInitiated
+
+                val result = loginUseCase.loginWithGoogle(code, null)
+                
+                _uiState.value = when {
+                    result.isSuccess -> LoginUiState.Success(result.getOrThrow())
+                    result.isFailure -> LoginUiState.Error(result.exceptionOrNull()?.message ?: "Error en el login")
+                    else -> LoginUiState.Error("Error desconocido")
+                }
+            } catch (e: ApiException) {
+                _uiState.value = LoginUiState.Error(apiExceptionToUserMessage(e))
             } catch (e: Exception) {
-                _uiState.value = LoginUiState.Error("No se pudo iniciar el login con Google: ${e.message}")
+                _uiState.value = LoginUiState.Error(e.message ?: "Error inesperado")
             }
         }
     }
@@ -115,6 +145,18 @@ class LoginViewModel @Inject constructor(
      */
     fun resetState() {
         _uiState.value = LoginUiState.Idle
+    }
+
+    private fun apiExceptionToUserMessage(e: ApiException): String = when (e.statusCode) {
+        ConnectionResult.DEVELOPER_ERROR ->
+            "Google no reconoce esta compilación de la app (código 10). En Google Cloud Console, " +
+                "en el mismo proyecto que el cliente Web del backend, crea un ID de cliente OAuth " +
+                "tipo Android: nombre de paquete com.voyager.tourism y SHA-1 del keystore con el que " +
+                "firmas la APK (en debug: ./gradlew signingReport). Los cambios pueden tardar unos minutos."
+        GoogleSignInStatusCodes.SIGN_IN_CANCELLED ->
+            "Inicio de sesión con Google cancelado"
+        else ->
+            "Error de Google (${e.statusCode})${e.message?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""}"
     }
 }
 

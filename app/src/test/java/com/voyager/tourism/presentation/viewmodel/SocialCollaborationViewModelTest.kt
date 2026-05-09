@@ -32,7 +32,16 @@ class SocialCollaborationViewModelTest {
     @Test
     fun `loadConnections success and failure`() {
         coEvery { repository.getConnections(1L) } returns Result.success(
-            listOf(TravelerConnection(1L, "u", "ACTIVE")),
+            listOf(
+                TravelerConnection(
+                    connectionId = 1L,
+                    peerUserId = 2L,
+                    username = "u",
+                    firstName = null,
+                    lastName = null,
+                    status = "ACTIVE",
+                ),
+            ),
         )
         vm.loadConnections(1L)
         assertEquals(1, vm.uiState.value.connections.size)

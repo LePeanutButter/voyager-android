@@ -132,7 +132,13 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test --stacktrace
 
-      # Step 5: Build APK and Bundle
+      # Step 5: Huellas de firma (CI usa el debug.keystore del runner; registrar su SHA-1 en Google Cloud además del de tu PC)
+      - name: signingReport (SHA-1 para Google OAuth en dispositivos)
+        run: |
+          echo "Paquete de aplicación: com.voyager.tourism"
+          echo "Copia el SHA1 de la variante debug y añádelo en Google Cloud Console junto al SHA-1 de tu máquina local (./gradlew signingReport)."
+          ./gradlew :app:signingReport --no-daemon --console=plain --stacktrace
+
       - name: Build APK and Bundle
         run: ./gradlew :app:assembleDebug :app:bundleDebug --stacktrace
 

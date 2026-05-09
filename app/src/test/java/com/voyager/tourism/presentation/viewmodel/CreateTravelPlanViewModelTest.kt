@@ -31,7 +31,7 @@ class CreateTravelPlanViewModelTest {
         val plan = TestFixtures.travelPlanDto()
         coEvery { useCase(any()) } returns Result.success(plan)
 
-        vm.createPlan("T", "D", "", "2027-01-10", "2027-01-20", 100.0, 2, "")
+        vm.createPlan("T", "D", "", "2027-01-10", "2027-01-20", 500_000.0, 2, "")
 
         val state = vm.uiState.value
         assertTrue(state is CreateTravelPlanUiState.Success)
@@ -42,7 +42,7 @@ class CreateTravelPlanViewModelTest {
     fun `createPlan failure emits Error`() = runTest {
         coEvery { useCase(any()) } returns Result.failure(IllegalArgumentException("bad"))
 
-        vm.createPlan("T", "D", "O", "2027-02-01", "2027-02-10", null, 1, "x")
+        vm.createPlan("T", "D", "O", "2027-02-01", "2027-02-10", 500_000.0, 1, "x")
 
         val state = vm.uiState.value
         assertTrue(state is CreateTravelPlanUiState.Error)

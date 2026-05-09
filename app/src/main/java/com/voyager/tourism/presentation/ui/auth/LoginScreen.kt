@@ -1,5 +1,7 @@
 package com.voyager.tourism.presentation.ui.auth
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.voyager.tourism.presentation.ui.theme.SmarTripColors
 import com.voyager.tourism.presentation.ui.theme.SmarTripLogo
 import com.voyager.tourism.presentation.ui.theme.SmarTripLogoVariant
@@ -85,14 +88,28 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    // Igual que el flujo clásico onActivityResult: si hay Intent con datos, se resuelve la Task;
+    // no depender solo de RESULT_OK (en algunos dispositivos el código no coincide y nunca se llama al VM).
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        if (data == null) {
+            viewModel.resetState()
+            return@rememberLauncherForActivityResult
+        }
+        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+        viewModel.handleGoogleSignInResult(task)
+    }
+
     LaunchedEffect(uiState) {
         when (uiState) {
             is LoginUiState.Success -> {
                 val user = (uiState as LoginUiState.Success).user
                 authViewModel.adoptAuthenticatedUser(user)
-                navController.navigate("dashboard") {
+                navController.navigate(AuthViewModel.ROUTE_DASHBOARD) {
                     launchSingleTop = true
-                    popUpTo("login") { inclusive = true }
+                    popUpTo(AuthViewModel.ROUTE_LOGIN) { inclusive = true }
                 }
             }
             is LoginUiState.GoogleLoginInitiated -> Unit
@@ -328,7 +345,10 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedButton(
-                    onClick = { viewModel.loginWithGoogle(context) },
+                    onClick = { 
+                        val signInIntent = viewModel.getGoogleSignInIntent(context)
+                        googleSignInLauncher.launch(signInIntent)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !loading,
                     shape = fieldShape,
@@ -340,7 +360,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
                 TextButton(
-                    onClick = { navController.navigate("register") },
+                    onClick = { navController.navigate(AuthViewModel.ROUTE_REGISTER) },
                     enabled = !loading,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {

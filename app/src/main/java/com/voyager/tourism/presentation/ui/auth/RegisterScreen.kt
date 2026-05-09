@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.voyager.tourism.presentation.ui.theme.SmarTripLogo
 import com.voyager.tourism.presentation.ui.theme.SmarTripLogoVariant
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterUiState
 
@@ -81,8 +82,8 @@ fun RegisterScreen(
                     "Cuenta creada exitosamente",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
-                navController.navigate("login") {
-                    popUpTo("register") { inclusive = true }
+                navController.navigate(AuthViewModel.ROUTE_LOGIN) {
+                    popUpTo(AuthViewModel.ROUTE_REGISTER) { inclusive = true }
                 }
             }
             is RegisterUiState.Error -> {
@@ -307,7 +308,7 @@ fun RegisterScreen(
         
         // Login link
         TextButton(
-            onClick = { navController.navigate("login") },
+            onClick = { navController.navigate(AuthViewModel.ROUTE_LOGIN) },
             enabled = uiState !is RegisterUiState.Loading
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")

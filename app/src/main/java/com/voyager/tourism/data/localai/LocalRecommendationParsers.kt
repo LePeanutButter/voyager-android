@@ -22,37 +22,45 @@ object LocalRecommendationParsers {
         if (raw.isEmpty()) return emptyList()
         return try {
             val root = JSONObject(raw)
-            val arr = root.optJSONArray("items") ?: return emptyList()
-            buildList {
-                for (i in 0 until arr.length()) {
-                    val o = arr.optJSONObject(i) ?: continue
-                    val id = o.optString("id")
-                    if (id.isBlank()) continue
-                    val name = o.optString("name").ifBlank { id }
-                    val category = o.optString("category").ifBlank { "general" }
-                    val desc = o.optString("content_text")
-                        .ifBlank { o.optString("description").ifBlank { name } }
-                    val score = when {
-                        o.has("score") -> o.optDouble("score", 0.0).toFloat().coerceIn(0f, 1f)
-                        o.has("similarity") -> o.optDouble("similarity", 0.0).toFloat().coerceIn(0f, 1f)
-                        else -> 0f
-                    }
-                    val rating = (score * 5f).coerceIn(0f, 5f)
-                    val priceLabel = priceTierFromScore(score)
-                    add(
-                        ParsedLocalRecommendationItem(
-                            id = id,
-                            name = name,
-                            description = desc,
-                            category = category,
-                            rating = rating,
-                            priceLabel = priceLabel,
-                        ),
-                    )
-                }
+            parseItemsFromObject(root).ifEmpty {
+                root.optJSONObject("data")?.let { parseItemsFromObject(it) }.orEmpty()
             }
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    private fun parseItemsFromObject(root: JSONObject): List<ParsedLocalRecommendationItem> {
+        val arr = root.optJSONArray("items")
+            ?: root.optJSONArray("recommendations")
+            ?: return emptyList()
+        return buildList {
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val id = o.optString("id")
+                if (id.isBlank()) continue
+                val name = o.optString("name").ifBlank { id }
+                val category = o.optString("category").ifBlank { "general" }
+                val desc = o.optString("content_text")
+                    .ifBlank { o.optString("description").ifBlank { name } }
+                val score = when {
+                    o.has("score") -> o.optDouble("score", 0.0).toFloat().coerceIn(0f, 1f)
+                    o.has("similarity") -> o.optDouble("similarity", 0.0).toFloat().coerceIn(0f, 1f)
+                    else -> 0f
+                }
+                val rating = (score * 5f).coerceIn(0f, 5f)
+                val priceLabel = priceTierFromScore(score)
+                add(
+                    ParsedLocalRecommendationItem(
+                        id = id,
+                        name = name,
+                        description = desc,
+                        category = category,
+                        rating = rating,
+                        priceLabel = priceLabel,
+                    ),
+                )
+            }
         }
     }
 

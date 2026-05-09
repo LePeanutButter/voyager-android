@@ -37,7 +37,7 @@ fun ProfileScreen(
     onBack: () -> Unit = {},
     onSettings: () -> Unit = {},
     onTravelPreferences: () -> Unit = {},
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -113,7 +113,7 @@ fun ProfileScreen(
                 }
             }
         }
-        
+
         when (uiState) {
             is ProfileUiState.Loading, is ProfileUiState.Saving -> {
                 Box(

@@ -72,7 +72,14 @@ class SocialRepositoryImpl @Inject constructor(
     override suspend fun getConnections(userId: Long): Result<List<TravelerConnection>> = runCatching {
         val resp = socialApi.getUserConnections(userId)
         val list = requireList(resp).map {
-            TravelerConnection(id = it.userId, username = it.username, status = it.status)
+            TravelerConnection(
+                connectionId = it.id ?: it.userId,
+                peerUserId = it.userId,
+                username = it.username,
+                firstName = it.firstName,
+                lastName = it.lastName,
+                status = it.status,
+            )
         }
         list
     }

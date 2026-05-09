@@ -45,6 +45,7 @@ import com.voyager.tourism.presentation.viewmodel.RecommendationsViewModel
 @Composable
 fun RecommendationsScreen(
     onPlaceClick: (String) -> Unit,
+    onOpenAssistant: () -> Unit = {},
     viewModel: RecommendationsViewModel = hiltViewModel(),
 ) {
     val rows by viewModel.rows.collectAsState()
@@ -80,7 +81,7 @@ fun RecommendationsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Ranking local con candidatos (servicio FastAPI /local/recommendations).",
+                text = "Ranking local (/local/recommendations): mismos candidatos desde tus planes que en el web, prioridad tipo “explorar destino”.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -89,8 +90,12 @@ fun RecommendationsScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                TextButton(onClick = onOpenAssistant) {
+                    Text("Abrir asistente IA")
+                }
                 TextButton(
                     onClick = { viewModel.load() },
                     enabled = !loading,
@@ -99,7 +104,7 @@ fun RecommendationsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             when {
                 loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))

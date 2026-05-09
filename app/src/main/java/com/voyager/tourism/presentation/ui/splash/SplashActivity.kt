@@ -4,11 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,8 +24,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.voyager.tourism.R
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.presentation.MainActivity
 import com.voyager.tourism.presentation.ui.theme.SmarTripLogo
@@ -34,7 +40,7 @@ import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 /**
- * Pantalla de arranque alineada con la marca **SmarTrip** del cliente web.
+ * Pantalla de arranque: logo original sobre blanco por defecto; variante oscura solo si el usuario ya activó modo oscuro.
  */
 @AndroidEntryPoint
 class SplashActivity : ComponentActivity() {
@@ -49,9 +55,10 @@ class SplashActivity : ComponentActivity() {
             SmarTripTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (darkTheme) MaterialTheme.colorScheme.background else Color.White,
                 ) {
                     SplashContent(
+                        darkTheme = darkTheme,
                         onFinished = {
                             startActivity(Intent(this@SplashActivity, MainActivity::class.java))
                             finish()
@@ -64,7 +71,10 @@ class SplashActivity : ComponentActivity() {
 }
 
 @Composable
-private fun SplashContent(onFinished: () -> Unit) {
+private fun SplashContent(
+    darkTheme: Boolean,
+    onFinished: () -> Unit,
+) {
     LaunchedEffect(Unit) {
         delay(2000)
         onFinished()
@@ -76,23 +86,38 @@ private fun SplashContent(onFinished: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        SmarTripLogo(
-            variant = SmarTripLogoVariant.OnDarkBackground,
-            modifier = Modifier
-                .height(52.dp)
-                .fillMaxWidth(0.85f),
-        )
+        if (darkTheme) {
+            SmarTripLogo(
+                variant = SmarTripLogoVariant.OnDarkBackground,
+                modifier = Modifier
+                    .height(52.dp)
+                    .fillMaxWidth(0.85f),
+            )
+        } else {
+            Image(
+                painter = painterResource(R.drawable.voyager_splash_logo),
+                contentDescription = null,
+                modifier = Modifier
+                    .height(120.dp)
+                    .fillMaxWidth(0.9f),
+                contentScale = ContentScale.Fit,
+            )
+        }
         Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = "Plan smarter trips with AI",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f),
+            color = if (darkTheme) {
+                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.92f)
+            } else {
+                Color(0xFF1C1B1F).copy(alpha = 0.85f)
+            },
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(32.dp))
         CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = if (darkTheme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )
     }

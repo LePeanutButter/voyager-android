@@ -24,6 +24,9 @@ class TokenManager @Inject constructor(
     /** Returns the stored user JSON string, or `null`. */
     fun getUser(): String? = preferencesManager.getUserJson()
 
+    /** Returns the current user ID, or `null`. */
+    fun getCurrentUserId(): String? = preferencesManager.getCurrentUserId()
+
     /** Clears token, refresh token, user id, and user JSON from preferences. */
     fun clear() = preferencesManager.clearAuthData()
 }

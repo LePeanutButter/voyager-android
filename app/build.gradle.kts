@@ -139,6 +139,12 @@ dependencies {
     // Image Loading (placeholder for future use)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Custom Tabs for In-App Browser (Google Auth)
+    implementation("androidx.browser:browser:1.7.0")
+
+    // Google Sign-In Native SDK
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")

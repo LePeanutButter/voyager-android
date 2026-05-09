@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import com.voyager.tourism.data.localai.LocalRecommendationParsers
+import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +33,9 @@ class PlaceDetailViewModel @Inject constructor(
     private val _payload = MutableStateFlow<String?>(null)
     val payload: StateFlow<String?> = _payload.asStateFlow()
 
+    private val _rankedItems = MutableStateFlow<List<ParsedLocalRecommendationItem>>(emptyList())
+    val rankedItems: StateFlow<List<ParsedLocalRecommendationItem>> = _rankedItems.asStateFlow()
+
     /**
      * Obtiene ranking local de candidatos asociados al lugar ([placeId]) vía [postLocalRecommendations].
      */
@@ -39,24 +44,26 @@ class PlaceDetailViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             _payload.value = null
+            _rankedItems.value = emptyList()
             runCatching {
                 val userId = preferencesManager.getCurrentUserId()?.takeIf { it.isNotBlank() }
                     ?: "anonymous"
+                val display = placeId.replace('_', ' ').replace('-', ' ').trim().ifBlank { placeId }
                 val body = LocalRecommendationRequestBody(
                     userId = userId,
-                    query = "Actividades e ideas destacadas en $placeId",
+                    query = "Qué hacer en $display: actividades e ideas destacadas",
                     limit = 10,
                     candidates = listOf(
                         LocalRecommendationCandidateBody(
                             id = placeId,
-                            name = placeId,
+                            name = display,
                             category = "destination",
                             price = 0.0,
-                            contentText = placeId,
+                            contentText = display,
                         ),
                         LocalRecommendationCandidateBody(
                             id = "${placeId}_explore",
-                            name = "Explorar cerca de $placeId",
+                            name = "Explorar cerca de $display",
                             category = "cultural",
                             price = 0.0,
                             contentText = "ideas de viaje y experiencias",
@@ -65,8 +72,9 @@ class PlaceDetailViewModel @Inject constructor(
                 )
                 val response = voyagerAiRepository.postLocalRecommendations(body)
                 if (response.isSuccessful) {
-                    _payload.value = response.body()?.string()?.take(12_000)
-                        ?: "(Respuesta vacía)"
+                    val text = response.body()?.string().orEmpty()
+                    _payload.value = text
+                    _rankedItems.value = LocalRecommendationParsers.parseItems(text)
                 } else {
                     _error.value = response.errorBody()?.string()?.take(2_000)
                         ?: "HTTP ${response.code()}"

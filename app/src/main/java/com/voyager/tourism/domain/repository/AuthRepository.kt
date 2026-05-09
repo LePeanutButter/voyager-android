@@ -36,9 +36,12 @@ interface AuthRepository {
     ): Result<UserDto>
     
     /**
-     * Handle Google OAuth2 callback
+     * Exchanges a Google authorization code (from native SDK or redirect) for a session token.
+     * @param code The server authorization code
+     * @param state Optional state for CSRF protection (mainly for web/redirect flow)
+     * @return Result containing the authenticated UserDto or error
      */
-    suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto>
+    suspend fun exchangeGoogleCode(code: String, state: String? = null): Result<UserDto>
 
     /**
      * Starts the Google OAuth2 flow and returns an authorization URL or intermediate token from the backend.
