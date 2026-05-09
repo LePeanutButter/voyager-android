@@ -24,11 +24,13 @@ import androidx.navigation.navArgument
 import com.voyager.tourism.presentation.ui.assistant.AiAssistantScreen
 import com.voyager.tourism.presentation.ui.auth.LoginScreen
 import com.voyager.tourism.presentation.ui.auth.RegisterScreen
+import com.voyager.tourism.presentation.ui.behavior.BehaviorAnalysisScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.ui.place.PlaceDetailScreen
 import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
 import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
+import com.voyager.tourism.presentation.ui.settings.SettingsScreen
 import com.voyager.tourism.presentation.ui.social.SocialCollaborationScreen
 import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
 import com.voyager.tourism.presentation.ui.trip.TripDetailScreen
@@ -112,6 +114,11 @@ fun TourismNavigation(
                                 launchSingleTop = true
                             }
                         },
+                        onSettingsClick = {
+                            navController.navigate("settings") {
+                                launchSingleTop = true
+                            }
+                        },
                         onPlanTripClick = {
                             navController.navigate("create_travel_plan") {
                                 launchSingleTop = true
@@ -119,6 +126,22 @@ fun TourismNavigation(
                         },
                         onAiAssistantClick = {
                             navController.navigate("ai_assistant") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onTrendingDestinationClick = { destinationId ->
+                            if (!destinationId.isNullOrBlank()) {
+                                navController.navigate("place_detail/$destinationId") {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                navController.navigate("recommendations") {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        onViewAllTrips = {
+                            navController.navigate("trips") {
                                 launchSingleTop = true
                             }
                         },
@@ -185,12 +208,38 @@ fun TourismNavigation(
                             }
                         },
                         onBack = { navController.navigateUp() },
+                        onSettings = {
+                            navController.navigate("settings") {
+                                launchSingleTop = true
+                            }
+                        },
                         onTravelPreferences = {
                             navController.navigate("travel_preferences") {
                                 launchSingleTop = true
                             }
                         },
                     )
+                }
+                composable("settings") {
+                    SettingsScreen(
+                        navController = navController,
+                        onBack = { navController.navigateUp() },
+                    )
+                }
+                composable("behavior_analysis") {
+                    val currentUser by authViewModel.currentUser.collectAsState()
+                    val user = currentUser
+                    if (user != null) {
+                        BehaviorAnalysisScreen(
+                            userId = user.id,
+                            onBack = { navController.navigateUp() },
+                        )
+                    } else {
+                        Text(
+                            "Inicia sesión para acceder al análisis de comportamiento.",
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
                 }
                 composable("travel_preferences") {
                     val currentUser by authViewModel.currentUser.collectAsState()

@@ -21,8 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,8 +50,13 @@ fun AiAssistantScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val sending by viewModel.isSending.collectAsState()
+    val loadingHistory by viewModel.loadingHistory.collectAsState()
     val err by viewModel.error.collectAsState()
     var input by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.ensureInitialized()
+    }
 
     Scaffold(
         topBar = {
@@ -58,6 +65,14 @@ fun AiAssistantScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás")
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { viewModel.clearConversation() },
+                        enabled = !sending && !loadingHistory,
+                    ) {
+                        Text("Nueva conversación")
                     }
                 },
             )
@@ -71,6 +86,9 @@ fun AiAssistantScreen(
         ) {
             err?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp))
+            }
+            if (loadingHistory) {
+                CircularProgressIndicator(modifier = Modifier.padding(bottom = 8.dp))
             }
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -105,7 +123,7 @@ fun AiAssistantScreen(
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Escribe tu mensaje…") },
-                    enabled = !sending,
+                    enabled = !sending && !loadingHistory,
                 )
                 if (sending) {
                     CircularProgressIndicator(modifier = Modifier.padding(8.dp))

@@ -1,8 +1,10 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -19,24 +21,26 @@ class PlaceDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repo = mockk<VoyagerAiRepository>()
+    private val prefs = mockk<PreferencesManager>()
     private lateinit var vm: PlaceDetailViewModel
 
     @Before
     fun setup() {
-        vm = PlaceDetailViewModel(repo)
+        every { prefs.getCurrentUserId() } returns "user1"
+        vm = PlaceDetailViewModel(repo, prefs)
     }
 
     @Test
     fun `success stores payload`() {
         val body = """{"items":[]}""".toResponseBody("application/json".toMediaType())
-        coEvery { repo.getPopularActivities("Paris", 10) } returns Response.success(body)
+        coEvery { repo.postLocalRecommendations(any()) } returns Response.success(body)
         vm.loadPlace("Paris")
         assertTrue(vm.payload.value?.contains("items") == true)
     }
 
     @Test
     fun `error response sets error`() {
-        coEvery { repo.getPopularActivities(any(), any()) } returns Response.error(
+        coEvery { repo.postLocalRecommendations(any()) } returns Response.error(
             400,
             "bad".toResponseBody(null),
         )

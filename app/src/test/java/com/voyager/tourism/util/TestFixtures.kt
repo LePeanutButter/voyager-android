@@ -7,6 +7,7 @@ import com.voyager.tourism.data.dto.TravelerMatchDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanStatus
 import com.voyager.tourism.data.dto.TripDto
+import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserRole
 import com.voyager.tourism.data.dto.UserStatus
@@ -37,6 +38,16 @@ object TestFixtures {
         createdAt = "2024-01-01T10:00:00Z",
         updatedAt = "2024-01-02T10:00:00Z",
         token = token,
+    )
+
+    fun loginResponseDto(
+        user: UserDto = userDto(token = null),
+        token: String = "jwt-token",
+    ) = LoginResponseDto(
+        token = token,
+        tokenType = "Bearer",
+        expiresIn = 7200L,
+        user = user,
     )
 
     fun domainUser() = User(

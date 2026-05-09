@@ -65,9 +65,11 @@ class AuthRepositoryImpl @Inject constructor(
             )
             
             val response = userApiService.loginUser(request)
-            
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+            val payload = response.data
+
+            if (response.status == 200 && payload != null) {
+                val merged = payload.user.copy(token = payload.token)
+                Result.success(merged)
             } else {
                 Result.failure(Exception(response.message.ifBlank { "Login failed" }))
             }

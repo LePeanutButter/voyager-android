@@ -1,171 +1,215 @@
 package com.voyager.tourism.presentation.ui.recommendations
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.voyager.tourism.presentation.viewmodel.RecommendationListRow
+import com.voyager.tourism.presentation.viewmodel.RecommendationsViewModel
 
 /**
- * Screen showing AI-powered destination recommendations
+ * Recomendaciones rankeadas por el voyager-ai-service (`POST /local/recommendations`), mismo patrón que el web.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecommendationsScreen(
-    onPlaceClick: (String) -> Unit
+    onPlaceClick: (String) -> Unit,
+    viewModel: RecommendationsViewModel = hiltViewModel(),
 ) {
-    // Placeholder data - in real app, this would come from ViewModel
-    val recommendations = remember {
-        listOf(
-            RecommendationItem(
-                id = "1",
-                name = "Paris, France",
-                description = "City of lights with amazing cuisine and art",
-                rating = 4.8f,
-                price = "$$$",
-                category = "Cultural"
-            ),
-            RecommendationItem(
-                id = "2", 
-                name = "Bali, Indonesia",
-                description = "Tropical paradise with beautiful beaches",
-                rating = 4.6f,
-                price = "$$",
-                category = "Beach"
-            ),
-            RecommendationItem(
-                id = "3",
-                name = "Tokyo, Japan",
-                description = "Modern metropolis with rich traditions",
-                rating = 4.9f,
-                price = "$$$$",
-                category = "Urban"
-            )
-        )
+    val rows by viewModel.rows.collectAsState()
+    val loading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val feedback by viewModel.feedbackMessage.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.load()
     }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "AI Recommendations",
-            style = MaterialTheme.typography.headlineMedium
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "Personalized destinations based on your preferences",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+    LaunchedEffect(feedback) {
+        val msg = feedback ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearFeedbackMessage()
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
         ) {
-            items(recommendations) { recommendation ->
-                RecommendationCard(
-                    recommendation = recommendation,
-                    onClick = { onPlaceClick(recommendation.id) }
-                )
+            Text(
+                text = "Recomendaciones IA",
+                style = MaterialTheme.typography.headlineMedium,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Ranking local con candidatos (servicio FastAPI /local/recommendations).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    onClick = { viewModel.load() },
+                    enabled = !loading,
+                ) {
+                    Text("Actualizar")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when {
+                loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                error != null -> Text(error!!, color = MaterialTheme.colorScheme.error)
+                else -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(rows, key = { it.id }) { row ->
+                        RecommendationCard(
+                            row = row,
+                            onPlaceClick = { onPlaceClick(row.id) },
+                            onRate = { rating -> viewModel.submitFeedback(row.id, rating) },
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-/** Single recommendation teaser with rating, price hint, and category chip. */
 @Composable
 private fun RecommendationCard(
-    recommendation: RecommendationItem,
-    onClick: () -> Unit
+    row: RecommendationListRow,
+    onPlaceClick: () -> Unit,
+    onRate: (Int) -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable { onPlaceClick() },
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = recommendation.name,
-                    style = MaterialTheme.typography.titleMedium
+                    text = row.name,
+                    style = MaterialTheme.typography.titleMedium,
                 )
-                
+
                 Text(
-                    text = recommendation.price,
+                    text = row.priceLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
-                text = recommendation.description,
+                text = row.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Star,
-                        contentDescription = "Rating",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = recommendation.rating.toString(),
-                        style = MaterialTheme.typography.bodySmall
+                        text = row.rating.toString(),
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                
+
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    )
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
                 ) {
                     Text(
-                        text = recommendation.category,
+                        text = row.category,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Valorar (1–5)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (r in 1..5) {
+                    TextButton(
+                        onClick = { onRate(r) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("$r")
+                    }
                 }
             }
         }
     }
 }
-
-data class RecommendationItem(
-    val id: String,
-    val name: String,
-    val description: String,
-    val rating: Float,
-    val price: String,
-    val category: String
-)

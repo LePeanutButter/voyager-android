@@ -19,7 +19,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.VoyagerTourism"
+        android:theme="@style/Theme.SmarTrip"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
@@ -28,7 +28,7 @@
         <activity
             android:name=".presentation.ui.splash.SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.VoyagerTourism.Splash">
+            android:theme="@style/Theme.SmarTrip.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -39,7 +39,7 @@
         <activity
             android:name=".presentation.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.VoyagerTourism.NoActionBar">
+            android:theme="@style/Theme.SmarTrip.NoActionBar">
             <!-- Deep link OAuth (custom scheme: no autoVerify; eso es solo para App Links https) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

@@ -2,14 +2,21 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.voyager.tourism.data.dto.AiChatRequestDto
+import com.voyager.tourism.data.dashboard.AiDashboardParsers
+import com.voyager.tourism.data.dto.LocalChatRequestBody
+import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
+import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.local.PreferencesManager
+import com.voyager.tourism.data.localai.LocalChatHistoryParsers
+import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -21,7 +28,9 @@ import javax.inject.Inject
 data class ChatBubble(val isUser: Boolean, val text: String)
 
 /**
- * ViewModel for the conversational Voyager AI assistant screen.
+ * Asistente alineado con el web: hook useAIChat — POST /local/chat/message, historial por sesión
+ * (PreferencesManager + GET /local/chat/history), candidatos desde tendencias y ranking opcional
+ * con postLocalRecommendations si el texto contiene palabras clave como en el web.
  */
 @HiltViewModel
 class AiAssistantViewModel @Inject constructor(
@@ -35,11 +44,42 @@ class AiAssistantViewModel @Inject constructor(
     private val _isSending = MutableStateFlow(false)
     val isSending: StateFlow<Boolean> = _isSending.asStateFlow()
 
+    private val _loadingHistory = MutableStateFlow(false)
+    val loadingHistory: StateFlow<Boolean> = _loadingHistory.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private var recommendationPool: List<LocalRecommendationCandidateBody> = emptyList()
+
     /**
-     * Sends a user utterance to the AI service and appends the assistant reply to [messages].
+     * Carga sesión, historial local y candidatos de tendencias (como el web al montar el hook).
+     */
+    fun ensureInitialized() {
+        if (_loadingHistory.value) return
+        val userId = preferencesManager.getCurrentUserId()?.takeIf { it.isNotBlank() } ?: run {
+            _messages.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            _loadingHistory.value = true
+            _error.value = null
+            runCatching {
+                val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
+                withContext(Dispatchers.IO) { refreshRecommendationPool() }
+                loadHistoryIntoMessages(userId, sessionId)
+            }.onFailure {
+                _error.value = it.message ?: "Error al cargar el asistente"
+                _messages.value = listOf(
+                    ChatBubble(isUser = false, text = welcomeFallback()),
+                )
+            }
+            _loadingHistory.value = false
+        }
+    }
+
+    /**
+     * Envía un turno a [postLocalChatMessage] y, si aplica, enriquece con ranking local (misma heurística que el web).
      */
     fun sendMessage(text: String) {
         val trimmed = text.trim()
@@ -53,25 +93,120 @@ class AiAssistantViewModel @Inject constructor(
             _error.value = null
             _isSending.value = true
             _messages.value = _messages.value + ChatBubble(isUser = true, text = trimmed)
+            val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
             runCatching {
-                val response = voyagerAiRepository.postChat(AiChatRequestDto(userId = userId, message = trimmed))
-                if (response.isSuccessful) {
-                    val reply = response.body()?.reply?.take(8_000) ?: "(Sin respuesta)"
-                    _messages.value = _messages.value + ChatBubble(isUser = false, text = reply)
-                } else {
-                    val err = response.errorBody()?.string()?.take(2_000) ?: "HTTP ${response.code()}"
+                val chatRes = voyagerAiRepository.postLocalChatMessage(
+                    LocalChatRequestBody(userId = userId, sessionId = sessionId, message = trimmed),
+                )
+                if (!chatRes.isSuccessful) {
+                    val err = chatRes.errorBody()?.string()?.take(2_000) ?: "HTTP ${chatRes.code()}"
                     _messages.value = _messages.value + ChatBubble(isUser = false, text = "Error: $err")
+                    return@runCatching
                 }
+                var reply = chatRes.body()?.reply?.take(8_000)?.ifBlank { "(Sin respuesta)" } ?: "(Sin respuesta)"
+                if (wantsLocalRanking(trimmed) && recommendationPool.isNotEmpty()) {
+                    runCatching {
+                        val rankRes = withContext(Dispatchers.IO) {
+                            voyagerAiRepository.postLocalRecommendations(
+                                LocalRecommendationRequestBody(
+                                    userId = userId,
+                                    query = trimmed,
+                                    limit = 5,
+                                    candidates = recommendationPool,
+                                ),
+                            )
+                        }
+                        if (rankRes.isSuccessful) {
+                            val ranked = LocalRecommendationParsers.parseItems(
+                                rankRes.body()?.string().orEmpty(),
+                            )
+                            val names = ranked.map { it.name }.filter { it.isNotBlank() }.take(5)
+                            if (names.isNotEmpty()) {
+                                reply += "\n\nSugerencias: ${names.joinToString(", ")}"
+                            }
+                        }
+                    }
+                }
+                _messages.value = _messages.value + ChatBubble(isUser = false, text = reply)
             }.onFailure {
                 _error.value = it.message ?: "Error de red"
-                _messages.value = _messages.value + ChatBubble(isUser = false, text = "Error: ${_error.value}")
+                _messages.value = _messages.value + ChatBubble(
+                    isUser = false,
+                    text = "Error: ${_error.value}",
+                )
             }
             _isSending.value = false
         }
     }
 
-    /** Clears the last error state without modifying the transcript. */
+    /** Nueva conversación: rota sesión como `rotateLocalChatSessionId` en el web. */
+    fun clearConversation() {
+        val userId = preferencesManager.getCurrentUserId()?.takeIf { it.isNotBlank() } ?: return
+        viewModelScope.launch {
+            preferencesManager.rotateLocalChatSessionId(userId)
+            _messages.value = listOf(ChatBubble(isUser = false, text = welcomeNewSession()))
+            _error.value = null
+        }
+    }
+
     fun clearError() {
         _error.value = null
+    }
+
+    private suspend fun refreshRecommendationPool() {
+        runCatching {
+            val res = voyagerAiRepository.getTrendsDashboard()
+            if (!res.isSuccessful) {
+                recommendationPool = emptyList()
+                return
+            }
+            val body = res.body()?.string().orEmpty()
+            recommendationPool = AiDashboardParsers.parseTrendsDashboard(body).map { d ->
+                LocalRecommendationCandidateBody(
+                    id = d.id ?: d.name,
+                    name = d.name,
+                    category = "destination",
+                    price = 0.0,
+                    contentText = listOf(d.name, d.country).filter { it.isNotBlank() }.joinToString(" · "),
+                )
+            }.take(25)
+        }.onFailure {
+            recommendationPool = emptyList()
+        }
+    }
+
+    private suspend fun loadHistoryIntoMessages(userId: String, sessionId: String) {
+        val histRes = withContext(Dispatchers.IO) {
+            voyagerAiRepository.getLocalChatHistory(sessionId = sessionId, limit = 50)
+        }
+        if (!histRes.isSuccessful) {
+            _messages.value = listOf(ChatBubble(isUser = false, text = welcomeFallback()))
+            return
+        }
+        val lines = LocalChatHistoryParsers.parseMessages(histRes.body()?.string().orEmpty())
+        if (lines.isEmpty()) {
+            _messages.value = listOf(ChatBubble(isUser = false, text = welcomeEmptyHistory()))
+            return
+        }
+        _messages.value = lines.map { (isUser, t) -> ChatBubble(isUser = isUser, text = t) }
+    }
+
+    private fun wantsLocalRanking(message: String): Boolean {
+        val t = message.lowercase()
+        return RANK_TRIGGER_SUBSTRINGS.any { t.contains(it) }
+    }
+
+    private fun welcomeEmptyHistory(): String =
+        "Hola. Soy Voyager IA (modo local). Pregunta por destinos, itinerarios o presupuestos."
+
+    private fun welcomeFallback(): String =
+        "Hola. Soy Voyager IA. Pregunta lo que quieras sobre destinos, itinerarios o presupuestos."
+
+    private fun welcomeNewSession(): String =
+        "Conversación nueva. ¿En qué puedo ayudarte?"
+
+    private companion object {
+        /** Mismas palabras clave que [useAIChat.js] en el web. */
+        val RANK_TRIGGER_SUBSTRINGS = listOf("recom", "suger", "producto", "comprar")
     }
 }

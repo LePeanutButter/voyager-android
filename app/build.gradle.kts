@@ -147,6 +147,8 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    // JSONObject en unit tests JVM: el android.jar stub no implementa org.json de forma fiable.
+    testImplementation("org.json:json:20240303")
 
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

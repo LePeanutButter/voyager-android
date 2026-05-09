@@ -31,45 +31,41 @@ data class AiLocationBody(
 )
 
 /**
- * Body for nearby or context-aware destination and activity recommendations.
+ * Candidato enviado al ranking [POST /local/recommendations] (snake_case, mismo contrato que Postman / web).
  */
 @JsonClass(generateAdapter = true)
-data class AiRecommendationRequestBody(
-    @Json(name = "user_id") val userId: String,
-    @Json(name = "location") val location: AiLocationBody,
-    @Json(name = "preferences") val preferences: List<String>? = null,
-    @Json(name = "max_results") val maxResults: Int = 10,
-    @Json(name = "date_range") val dateRange: Map<String, String>? = null,
-    @Json(name = "group_size") val groupSize: Int? = null,
-    @Json(name = "budget_limit") val budgetLimit: Double? = null,
+data class LocalRecommendationCandidateBody(
+    @Json(name = "id") val id: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "category") val category: String,
+    @Json(name = "price") val price: Double = 0.0,
+    @Json(name = "content_text") val contentText: String = "",
 )
 
 /**
- * Body for AI-driven destination suggestions with optional trend and seasonality controls.
+ * Cuerpo [POST /local/recommendations] — el servicio rankea candidatos del cliente (no catálogo legacy HTTP).
  */
 @JsonClass(generateAdapter = true)
-data class AiDestinationRecommendationRequestBody(
+data class LocalRecommendationRequestBody(
     @Json(name = "user_id") val userId: String,
-    @Json(name = "max_results") val maxResults: Int = 8,
-    @Json(name = "prefer_successful_patterns") val preferSuccessfulPatterns: Boolean = true,
-    @Json(name = "include_emerging_trends") val includeEmergingTrends: Boolean = true,
-    @Json(name = "theme_weights") val themeWeights: Map<String, Double>? = null,
-    @Json(name = "travel_month") val travelMonth: Int? = null,
-    @Json(name = "apply_seasonality_mitigation") val applySeasonalityMitigation: Boolean = true,
+    @Json(name = "query") val query: String,
+    @Json(name = "limit") val limit: Int = 8,
+    @Json(name = "candidates") val candidates: List<LocalRecommendationCandidateBody>,
 )
 
-/**
- * Body for activities suggested from current GPS, optional weather, and search radius.
- */
+/** Cuerpo [POST /local/chat/message] (mismo contrato que `useAIChat` en el web). */
 @JsonClass(generateAdapter = true)
-data class AiContextualActivityRequestBody(
+data class LocalChatRequestBody(
     @Json(name = "user_id") val userId: String,
-    @Json(name = "latitude") val latitude: Double,
-    @Json(name = "longitude") val longitude: Double,
-    @Json(name = "city_hint") val cityHint: String? = null,
-    @Json(name = "weather") val weather: String = "UNKNOWN",
-    @Json(name = "max_results") val maxResults: Int = 8,
-    @Json(name = "radius_km") val radiusKm: Double = 25.0,
+    @Json(name = "session_id") val sessionId: String,
+    @Json(name = "message") val message: String,
+)
+
+/** Respuesta mínima del chatbot local FastAPI. */
+@JsonClass(generateAdapter = true)
+data class LocalChatResponseDto(
+    @Json(name = "session_id") val sessionId: String = "",
+    @Json(name = "reply") val reply: String = "",
 )
 
 /**

@@ -3,9 +3,6 @@ package com.voyager.tourism.data.api
 import com.voyager.tourism.data.dto.AiChatRequestDto
 import com.voyager.tourism.data.dto.AiChatReplyDto
 import com.voyager.tourism.data.dto.AiConnectionOutcomeRequestBody
-import com.voyager.tourism.data.dto.AiContextualActivityRequestBody
-import com.voyager.tourism.data.dto.AiDestinationRecommendationRequestBody
-import com.voyager.tourism.data.dto.AiRecommendationRequestBody
 import com.voyager.tourism.data.dto.AiSeasonalForecastRequestBody
 import com.voyager.tourism.data.dto.AiTravelerMatchRequestBody
 import com.voyager.tourism.data.dto.AiUserInteractionBody
@@ -13,6 +10,10 @@ import com.voyager.tourism.data.dto.AiUserPreferencesBody
 import com.voyager.tourism.data.dto.AiUserProfileBody
 import com.voyager.tourism.data.dto.AiUserProfileUpdateBody
 import com.voyager.tourism.data.dto.AiVisibilityAdjustmentsRequestBody
+import com.voyager.tourism.data.dto.LocalChatRequestBody
+import com.voyager.tourism.data.dto.LocalChatResponseDto
+import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -21,63 +22,41 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
-import okhttp3.ResponseBody
 
 /**
- * FastAPI microservice surface under `/api/v1` for AI recommendations, traveler matching, trends, seasonality, and chat.
- * Questionnaire and behavior flows stay on [AiTravelPreferencesApi] and [BehaviorAnalysisApi].
- * Dynamic JSON shapes are exposed as [ResponseBody] to keep cloud deployments tolerant of schema drift.
+ * FastAPI microservice bajo `/api/v1`: matching, tendencias, estacionalidad, chat, **local** (ranking con candidatos),
+ * perfil IA y UI adaptativa.
+ *
+ * Los endpoints históricos bajo el prefijo recommendations (p. ej. personalized, trending) fueron retirados del servicio;
+ * el flujo equivalente es postLocalRecommendations y postLocalRecommendationFeedback (ver Postman y aiService del cliente web).
  */
 interface VoyagerAiApi {
 
-    // --- recommendations ---
-    /** Returns personalized destination ideas tailored to the provided context. */
-    @POST("recommendations/destinations/personalized")
-    suspend fun postDestinationsPersonalized(
-        @Body body: AiDestinationRecommendationRequestBody,
+    // --- local (ranking con candidatos del cliente; alineado con web) ---
+    /** Rankea candidatos reales enviados por el cliente (sustituye el antiguo router HTTP bajo recommendations). */
+    @POST("local/recommendations")
+    suspend fun postLocalRecommendations(
+        @Body body: LocalRecommendationRequestBody,
     ): Response<ResponseBody>
 
-    /** Suggests contextual activities based on trip cues and preferences. */
-    @POST("recommendations/activities/contextual")
-    suspend fun postActivitiesContextual(@Body body: AiContextualActivityRequestBody): Response<ResponseBody>
-
-    /** Computes a mixed recommendation bundle for dashboard modules. */
-    @POST("recommendations/personalized")
-    suspend fun postPersonalizedRecommendations(@Body body: AiRecommendationRequestBody): Response<ResponseBody>
-
-    /** Lists popular activities near a human-readable location label. */
-    @GET("recommendations/popular/{location}")
-    suspend fun getPopularActivities(
-        @Path("location") location: String,
-        @Query("limit") limit: Int = 10,
-    ): Response<ResponseBody>
-
-    /** Returns trending experiences with optional category filtering. */
-    @GET("recommendations/trending")
-    suspend fun getTrendingActivities(
-        @Query("category") category: String? = null,
-        @Query("limit") limit: Int = 10,
-    ): Response<ResponseBody>
-
-    /** Finds items similar to a reference activity identifier. */
-    @GET("recommendations/similar/{activity_id}")
-    suspend fun getSimilarActivities(
-        @Path("activity_id") activityId: String,
-        @Query("limit") limit: Int = 5,
-    ): Response<ResponseBody>
-
-    /** Records thumbs up/down style feedback to refine future rankings. */
-    @POST("recommendations/feedback")
-    suspend fun postRecommendationFeedback(
+    /** Feedback 1–5 para ítems rankeados por [postLocalRecommendations]. */
+    @POST("local/recommendations/feedback")
+    suspend fun postLocalRecommendationFeedback(
         @Query("user_id") userId: String,
-        @Query("activity_id") activityId: String,
+        @Query("item_id") itemId: String,
         @Query("rating") rating: Int,
-        @Query("feedback_text") feedbackText: String? = null,
     ): Response<ResponseBody>
 
-    /** Lists canonical activity category identifiers from the recommender. */
-    @GET("recommendations/categories")
-    suspend fun getActivityCategories(): Response<ResponseBody>
+    /** Turno de chat local (Ollama / SQLite) alineado con `aiService.sendLocalChatMessage`. */
+    @POST("local/chat/message")
+    suspend fun postLocalChatMessage(@Body body: LocalChatRequestBody): Response<LocalChatResponseDto>
+
+    /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web). */
+    @GET("local/chat/history/{session_id}")
+    suspend fun getLocalChatHistory(
+        @Path("session_id") sessionId: String,
+        @Query("limit") limit: Int = 50,
+    ): Response<ResponseBody>
 
     // --- users (perfil IA) ---
     /** Bootstraps an AI-side user profile mirror. */
@@ -156,12 +135,16 @@ interface VoyagerAiApi {
         @Query("message") message: String? = null,
     ): Response<ResponseBody>
 
-    /** Suggests additional buddies near an optional geo hint. */
+    /**
+     * Sugiere compañeros de viaje; [seekerFootprint] es opcional (coma-separado, mismo query que el web:
+     * `seeker_footprint` en FastAPI).
+     */
     @GET("matching/recommendations/{user_id}")
     suspend fun getTravelBuddyRecommendations(
         @Path("user_id") userId: String,
         @Query("location") location: String? = null,
         @Query("limit") limit: Int = 10,
+        @Query("seeker_footprint") seekerFootprint: String? = null,
     ): Response<ResponseBody>
 
     /** Logs whether a suggestion converted to a real-world meetup. */

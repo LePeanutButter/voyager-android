@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -15,28 +16,37 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.presentation.MainActivity
+import com.voyager.tourism.presentation.ui.theme.SmarTripLogo
+import com.voyager.tourism.presentation.ui.theme.SmarTripLogoVariant
+import com.voyager.tourism.presentation.ui.theme.SmarTripTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import javax.inject.Inject
 
 /**
- * Brief branded splash gate before handing off to [MainActivity].
+ * Pantalla de arranque alineada con la marca **SmarTrip** del cliente web.
  */
+@AndroidEntryPoint
 class SplashActivity : ComponentActivity() {
 
-    /** Shows [SplashContent] then launches the main task. */
+    @Inject
+    lateinit var preferencesManager: PreferencesManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TourismTheme {
+            val darkTheme by preferencesManager.darkThemeFlow.collectAsState()
+            SmarTripTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.primary,
@@ -53,9 +63,6 @@ class SplashActivity : ComponentActivity() {
     }
 }
 
-/**
- * Centered Voyager branding with a short delay until [onFinished] runs.
- */
 @Composable
 private fun SplashContent(onFinished: () -> Unit) {
     LaunchedEffect(Unit) {
@@ -69,17 +76,19 @@ private fun SplashContent(onFinished: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = "Voyager Tourism",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimary,
+        SmarTripLogo(
+            variant = SmarTripLogoVariant.OnDarkBackground,
+            modifier = Modifier
+                .height(52.dp)
+                .fillMaxWidth(0.85f),
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "Your AI-Powered Travel Assistant",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+            text = "Plan smarter trips with AI",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(32.dp))
         CircularProgressIndicator(
@@ -87,14 +96,4 @@ private fun SplashContent(onFinished: () -> Unit) {
             modifier = Modifier.size(24.dp),
         )
     }
-}
-
-/** Minimal light Material theme wrapper for the splash surface. */
-@Composable
-private fun TourismTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(),
-        typography = Typography(),
-        content = content,
-    )
 }

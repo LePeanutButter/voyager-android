@@ -69,7 +69,7 @@ fun PlaceDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                "Actividades populares (IA)",
+                "Ranking IA (local)",
                 style = MaterialTheme.typography.titleMedium,
             )
             when {
