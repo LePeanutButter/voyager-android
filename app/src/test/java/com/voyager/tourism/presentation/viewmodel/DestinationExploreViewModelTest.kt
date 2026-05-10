@@ -116,4 +116,64 @@ class DestinationExploreViewModelTest {
         coVerify(atLeast = 1) { voyagerAi.postLocalRecommendations(any()) }
         assertTrue(vm.ranked.value.isNotEmpty())
     }
+
+    @Test
+    fun `rankCatalog http error sets rankError from body`() = runBlocking {
+        coEvery {
+            catalog.activities(any(), any(), any(), any())
+        } returns Response.success(
+            """{"data":[{"id":"1","name":"Walk"}]}""".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.error(
+            503,
+            "rank-down".toResponseBody("text/plain".toMediaType()),
+        )
+        vm.loadExplore("Paris", "FR", "")
+        val loaded = System.currentTimeMillis() + 15_000
+        while (vm.activities.value.isEmpty() && System.currentTimeMillis() < loaded) {
+            delay(25)
+        }
+        vm.rankCatalog()
+        delay(800)
+        assertEquals("rank-down", vm.rankError.value)
+    }
+
+    @Test
+    fun `rankCatalog http error with empty body yields empty rankError`() = runBlocking {
+        coEvery {
+            catalog.activities(any(), any(), any(), any())
+        } returns Response.success(
+            """{"data":[{"id":"1","name":"Walk"}]}""".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.error(
+            502,
+            "".toResponseBody(null),
+        )
+        vm.loadExplore("Paris", "FR", "")
+        val loaded = System.currentTimeMillis() + 15_000
+        while (vm.activities.value.isEmpty() && System.currentTimeMillis() < loaded) {
+            delay(25)
+        }
+        vm.rankCatalog()
+        delay(800)
+        assertEquals("", vm.rankError.value)
+    }
+
+    @Test
+    fun `rankCatalog exception uses default when message null`() = runBlocking {
+        coEvery {
+            catalog.activities(any(), any(), any(), any())
+        } returns Response.success(
+            """{"data":[{"id":"1","name":"Walk"}]}""".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.postLocalRecommendations(any()) } throws RuntimeException()
+        vm.loadExplore("Paris", "FR", "")
+        val loaded = System.currentTimeMillis() + 15_000
+        while (vm.activities.value.isEmpty() && System.currentTimeMillis() < loaded) {
+            delay(25)
+        }
+        vm.rankCatalog()
+        delay(800)
+        assertEquals("Error de red", vm.rankError.value)
+    }
 }

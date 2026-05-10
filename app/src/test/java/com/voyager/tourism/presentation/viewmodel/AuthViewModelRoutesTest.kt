@@ -1,6 +1,7 @@
 package com.voyager.tourism.presentation.viewmodel
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,5 +24,34 @@ class AuthViewModelRoutesTest {
         assertTrue(explore.contains("loc=") && explore.contains("country=") && explore.contains("destId="))
         val exploreFallback = AuthViewModel.createDestinationExploreRoute("   ", null, "id-only")
         assertTrue(exploreFallback.contains("destId="))
+    }
+
+    @Test
+    fun `createPlaceDetailRoute preserves place id segment`() {
+        assertEquals("place_detail/lima_centro", AuthViewModel.createPlaceDetailRoute("lima_centro"))
+    }
+
+    @Test
+    fun `createTravelPlanRoute trims hint before encoding`() {
+        val r = AuthViewModel.createTravelPlanRoute("  Bariloche  ")
+        assertTrue(r.startsWith("create_travel_plan?hint="))
+        assertTrue(r.contains("Bariloche"))
+        assertFalse(r.contains("  "))
+    }
+
+    @Test
+    fun `createDestinationExploreRoute blank loc falls back to destId`() {
+        val r = AuthViewModel.createDestinationExploreRoute("   ", "AR", "dst_bariloche")
+        assertTrue(r.contains("loc="))
+        assertTrue(r.contains("country="))
+        assertTrue(r.contains("destId="))
+    }
+
+    @Test
+    fun `createDestinationExploreRoute uses loc when non blank`() {
+        val r = AuthViewModel.createDestinationExploreRoute("Mendoza", null, null)
+        assertTrue(r.contains("loc="))
+        assertTrue(r.contains("country="))
+        assertTrue(r.contains("destId="))
     }
 }

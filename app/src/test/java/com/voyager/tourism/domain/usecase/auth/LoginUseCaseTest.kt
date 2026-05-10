@@ -234,4 +234,17 @@ class LoginUseCaseTest {
         assertTrue(r.isFailure)
         assertEquals("oauth-down", r.exceptionOrNull()?.message)
     }
+
+    @Test
+    fun `loginWithGoogle success without token skips saveToken`() = runTest {
+        val dto = TestFixtures.userDto(token = null)
+        coEvery { authRepository.exchangeGoogleCode("c", "s") } returns Result.success(dto)
+
+        val r = useCase.loginWithGoogle("c", "s")
+
+        assertTrue(r.isSuccess)
+        verify(exactly = 0) { tokenManager.saveToken(any()) }
+        verify { preferencesManager.saveCurrentUserId("42") }
+        verify { tokenManager.saveUser(any()) }
+    }
 }

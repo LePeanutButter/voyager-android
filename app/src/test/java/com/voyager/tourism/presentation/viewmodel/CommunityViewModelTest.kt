@@ -141,4 +141,22 @@ class CommunityViewModelTest {
         advanceUntilIdle()
         assertEquals("fail", vm.uiState.value.error)
     }
+
+    @Test
+    fun `setSelectedPlan refreshes discover with chosen plan id`() = runTest {
+        val p1 = TestFixtures.travelPlanDto(id = 1L)
+        val p2 = TestFixtures.travelPlanDto(id = 2L)
+        coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(p1, p2))
+        coEvery { socialRepo.getCompatibleTravelers("2", "") } returns emptyList()
+        coEvery {
+            voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
+        } returns Response.success("{}".toResponseBody("application/json".toMediaType()))
+
+        vm.selectTab(CommunityTab.DISCOVER)
+        advanceUntilIdle()
+        vm.setSelectedPlan("2")
+        advanceUntilIdle()
+
+        coVerify(atLeast = 1) { socialRepo.getCompatibleTravelers("2", "") }
+    }
 }
