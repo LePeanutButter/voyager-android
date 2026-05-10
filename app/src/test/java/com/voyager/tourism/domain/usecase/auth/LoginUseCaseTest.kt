@@ -224,4 +224,14 @@ class LoginUseCaseTest {
         assertTrue(r.isFailure)
         assertEquals("db", r.exceptionOrNull()?.message)
     }
+
+    @Test
+    fun `loginWithGoogle catches repository throw`() = runTest {
+        coEvery { authRepository.exchangeGoogleCode(any(), any()) } throws IllegalStateException("oauth-down")
+
+        val r = useCase.loginWithGoogle("c", "s")
+
+        assertTrue(r.isFailure)
+        assertEquals("oauth-down", r.exceptionOrNull()?.message)
+    }
 }

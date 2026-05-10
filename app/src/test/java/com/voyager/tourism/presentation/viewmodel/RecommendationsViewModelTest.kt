@@ -1,5 +1,6 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.TravelType
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
@@ -201,5 +202,37 @@ class RecommendationsViewModelTest {
         vm.submitFeedback("x", 3)
         vm.clearFeedbackMessage()
         assertNull(vm.feedbackMessage.value)
+    }
+
+    @Test
+    fun `submitFeedback http error with empty body yields empty message`() = runBlocking {
+        every { prefs.getCurrentUserId() } returns "42"
+        coEvery {
+            voyagerAi.postLocalRecommendationFeedback(any(), any(), any())
+        } returns Response.error(500, "".toResponseBody(null))
+
+        vm.submitFeedback("it1", 3)
+        val deadline = System.currentTimeMillis() + 10_000
+        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
+            delay(10)
+        }
+
+        assertEquals("", vm.feedbackMessage.value)
+    }
+
+    @Test
+    fun `load maps travelType into candidate category`() = runBlocking {
+        every { prefs.getCurrentUserId() } returns "42"
+        val plan = TestFixtures.travelPlanDto().copy(travelType = TravelType.CULTURAL)
+        coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(plan))
+        coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
+            """{"items":[{"id":"1","name":"R","category":"z","score":0.3,"description":"d"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+
+        vm.load()
+        awaitNotLoading()
+
+        assertEquals("R", vm.rows.value.first().name)
     }
 }

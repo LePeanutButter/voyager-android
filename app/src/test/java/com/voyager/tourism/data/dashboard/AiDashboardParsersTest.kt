@@ -86,4 +86,46 @@ class AiDashboardParsersTest {
         assertTrue(AiDashboardParsers.parseWeeklyDigestLines("   ").isEmpty())
         assertTrue(AiDashboardParsers.parseSeasonalityLines("{}").isEmpty())
     }
+
+    @Test
+    fun parseWeeklyDigestLines_includesSubtitleWhenPresent() {
+        val json = """
+            {"micro_trends":[{"title":"T","summary":"S"}]}
+        """.trimIndent()
+        val lines = AiDashboardParsers.parseWeeklyDigestLines(json)
+        assertEquals(listOf("T — S"), lines)
+    }
+
+    @Test
+    fun parseWeeklyDigestRows_trendsKey_andSignalSubtitle() {
+        val json = """{"trends":[{"headline":"H","signal":"up"}]}"""
+        val rows = AiDashboardParsers.parseWeeklyDigestRows(json)
+        assertEquals(1, rows.size)
+        assertEquals("H", rows[0].title)
+        assertEquals("up", rows[0].subtitle)
+    }
+
+    @Test
+    fun parseSeasonalityRows_profilesKey_andDefaultSubtitle() {
+        val json = """{"profiles":[{"destination":"Ushuaia","note":""}]}"""
+        val rows = AiDashboardParsers.parseSeasonalityRows(json)
+        assertEquals(1, rows.size)
+        assertEquals("Ushuaia", rows[0].title)
+        assertTrue(rows[0].subtitle.isNotBlank())
+    }
+
+    @Test
+    fun parseSeasonalityRows_destinationNameField() {
+        val json = """{"destinations":[{"destination_name":"Salta"}]}"""
+        assertEquals(listOf("Salta"), AiDashboardParsers.parseSeasonalityLines(json))
+    }
+
+    @Test
+    fun parseTrendsDashboard_topLevelEmergingWithoutDataWrapper() {
+        val json = """{"emerging_destinations":[{"name":"P","country":"Q"}]}"""
+        val list = AiDashboardParsers.parseTrendsDashboard(json)
+        assertEquals(1, list.size)
+        assertEquals("P", list[0].name)
+        assertEquals("Q", list[0].country)
+    }
 }

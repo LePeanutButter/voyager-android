@@ -8,11 +8,14 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -81,5 +84,84 @@ class AiAssistantViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.messages.value.any { it.text.contains("Hola") })
+    }
+
+    @Test
+    fun `ensureInitialized without user leaves messages empty`() = runTest {
+        coEvery { prefs.getCurrentUserId() } returns null
+        vm.ensureInitialized()
+        advanceUntilIdle()
+        assertTrue(vm.messages.value.isEmpty())
+    }
+
+    @Test
+    fun `ensureInitialized history http error shows fallback welcome`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "9"
+        coEvery { prefs.getOrCreateLocalChatSessionId("9") } returns "sid-x"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.error(
+            500,
+            "".toResponseBody(null),
+        )
+        vm.ensureInitialized()
+        delay(600)
+        assertTrue(vm.messages.value.any { it.text.contains("Voyager IA") })
+    }
+
+    @Test
+    fun `ensureInitialized parses history messages`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "3"
+        coEvery { prefs.getOrCreateLocalChatSessionId("3") } returns "sid-h"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
+            """{"messages":[{"role":"user","content":"u"},{"role":"assistant","content":"a"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        vm.ensureInitialized()
+        delay(600)
+        assertEquals(2, vm.messages.value.size)
+    }
+
+    @Test
+    fun `sendMessage http error surfaces in transcript`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "5"
+        coEvery { prefs.getOrCreateLocalChatSessionId("5") } returns "sid-e"
+        coEvery { repo.postLocalChatMessage(any()) } returns Response.error(
+            500,
+            "srv".toResponseBody("text/plain".toMediaType()),
+        )
+        vm.sendMessage("hola")
+        delay(600)
+        assertNotNull(vm.error.value)
+        assertTrue(vm.messages.value.last().text.contains("Error"))
+    }
+
+    @Test
+    fun `sendMessage with ranking trigger appends suggestions`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "42"
+        coEvery { prefs.getOrCreateLocalChatSessionId("42") } returns "sid-r"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            """{"emerging_destinations":[{"name":"Paris","country":"FR"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
+            """{"messages":[]}""".toResponseBody("application/json".toMediaType()),
+        )
+        vm.ensureInitialized()
+        delay(600)
+
+        coEvery { repo.postLocalChatMessage(any()) } returns Response.success(LocalChatResponseDto(reply = "ok"))
+        coEvery { repo.postLocalRecommendations(any()) } returns Response.success(
+            """{"items":[{"id":"1","name":"Museo","category":"c","score":0.5,"description":"d"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        vm.sendMessage("quiero recomendaciones de museos")
+        delay(800)
+
+        assertTrue(vm.messages.value.last().text.contains("Sugerencias"))
     }
 }

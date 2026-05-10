@@ -80,4 +80,21 @@ class CatalogActivitiesParserTest {
         assertEquals(1, rows.size)
         assertTrue(rows[0].id.startsWith("act-OnlyName"))
     }
+
+    @Test
+    fun `parseActivitiesJson data object without arrays yields empty`() {
+        assertTrue(CatalogActivitiesParser.parseActivitiesJson("""{"data":{}}""").isEmpty())
+    }
+
+    @Test
+    fun `parseActivitiesJson data scalar yields empty`() {
+        assertTrue(CatalogActivitiesParser.parseActivitiesJson("""{"data":true}""").isEmpty())
+    }
+
+    @Test
+    fun `parseActivitiesJson iterates up to forty before take fourteen`() {
+        val items = (1..35).joinToString(",") { i -> """{"id":"$i","name":"A$i"}""" }
+        val json = """{"data":[$items]}"""
+        assertEquals(14, CatalogActivitiesParser.parseActivitiesJson(json).size)
+    }
 }

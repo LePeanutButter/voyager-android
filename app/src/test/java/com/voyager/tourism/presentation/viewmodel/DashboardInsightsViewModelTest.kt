@@ -11,6 +11,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -70,5 +71,103 @@ class DashboardInsightsViewModelTest {
         )
         assertEquals("Paris", vm.trending.value.first().name)
         assertEquals("FR", vm.trending.value.first().country)
+    }
+
+    @Test
+    fun `refreshInsights sets trendingError when trends http fails`() = runBlocking {
+        coEvery { voyagerAi.getTrendsDashboard() } returns Response.error(
+            503,
+            "".toResponseBody(null),
+        )
+        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+
+        vm.refreshInsights()
+
+        val deadline = System.currentTimeMillis() + 60_000
+        while (vm.trendingError.value == null && System.currentTimeMillis() < deadline) {
+            delay(25)
+        }
+
+        assertNotNull(vm.trendingError.value)
+        assertTrue(vm.trending.value.isEmpty())
+    }
+
+    @Test
+    fun `refreshInsights weekly digest failure sets weeklyError`() = runBlocking {
+        coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
+            """{"emerging_destinations":[]}""".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getWeeklyDigest() } returns Response.error(
+            500,
+            "e".toResponseBody("text/plain".toMediaType()),
+        )
+        coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+
+        vm.refreshInsights()
+
+        val deadline = System.currentTimeMillis() + 60_000
+        while (vm.weeklyError.value == null && System.currentTimeMillis() < deadline) {
+            delay(25)
+        }
+
+        assertEquals("Digest semanal no disponible.", vm.weeklyError.value)
+    }
+
+    @Test
+    fun `refreshInsights seasonality failure sets seasonalityError`() = runBlocking {
+        coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.error(
+            500,
+            "".toResponseBody(null),
+        )
+
+        vm.refreshInsights()
+
+        val deadline = System.currentTimeMillis() + 60_000
+        while (vm.seasonalityError.value == null && System.currentTimeMillis() < deadline) {
+            delay(25)
+        }
+
+        assertEquals("Panorama estacional no disponible.", vm.seasonalityError.value)
+    }
+
+    @Test
+    fun `refreshInsights loads weekly and seasonality rows on success`() = runBlocking {
+        coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
+            """{"micro_trends":[{"title":"A","summary":"B"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
+            """{"destinations":[{"name":"Calafate"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+
+        vm.refreshInsights()
+
+        val deadline = System.currentTimeMillis() + 60_000
+        while (
+            (vm.weeklyRows.value.isEmpty() || vm.seasonalityRows.value.isEmpty()) &&
+            System.currentTimeMillis() < deadline
+        ) {
+            delay(25)
+        }
+
+        assertEquals("A", vm.weeklyRows.value.first().title)
+        assertEquals("Calafate", vm.seasonalityRows.value.first().title)
     }
 }

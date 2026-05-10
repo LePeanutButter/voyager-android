@@ -60,4 +60,31 @@ class TripExploreMatchingTest {
         val t = trip("Oaxaca")
         assertFalse(tripMatchesDestinationLabel(t, "Patagonia"))
     }
+
+    @Test
+    fun tripMatchesDestinationLabel_blankPrimary_returnsFalse() {
+        val t = trip("X")
+        assertFalse(tripMatchesDestinationLabel(t, "   , AR"))
+    }
+
+    @Test
+    fun tripMatchesDestinationLabel_byTitle() {
+        val t = trip("Otro", title = "Escapada a Mendoza")
+        assertTrue(tripMatchesDestinationLabel(t, "Mendoza, AR"))
+    }
+
+    @Test
+    fun tripMatchesDestinationLabel_byCountry() {
+        val t = trip("X", destId = "dst_x")
+        val trip = t.copy(
+            destination = t.destination.copy(name = "Capital", country = "Argentina"),
+        )
+        assertTrue(tripMatchesDestinationLabel(trip, "argentina"))
+    }
+
+    @Test
+    fun tripMatchesDestinationLabel_byDestinationIdEqualsPrimary() {
+        val t = trip("Y", destId = "Bariloche")
+        assertTrue(tripMatchesDestinationLabel(t, "bariloche"))
+    }
 }

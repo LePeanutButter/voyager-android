@@ -342,4 +342,41 @@ class AuthViewModelTest {
         assertTrue(vm.authState.value is AuthState.Authenticated)
         assertNull(vm.errorMessage.value)
     }
+
+    @Test
+    fun `login failure without message uses default`() = runTest {
+        coEvery { loginUseCase(any(), any()) } returns Result.failure(Exception())
+        val vm = viewModel()
+        vm.login("a", "b")
+        advanceUntilIdle()
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Login failed", (vm.authState.value as AuthState.Error).message)
+        assertEquals("Login failed", vm.errorMessage.value)
+    }
+
+    @Test
+    fun `oauth google failure without message uses default`() = runTest {
+        coEvery { loginUseCase.loginWithGoogle(any(), any()) } returns Result.failure(Exception())
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns null
+        every { uri.getQueryParameter("code") } returns "c"
+        every { uri.getQueryParameter("state") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
+        assertEquals("Error en login con Google", vm.oauthError.value)
+        assertTrue(vm.authState.value is AuthState.Unauthenticated)
+    }
+
+    @Test
+    fun `oauth error without description uses error code`() = runTest {
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns "invalid_request"
+        every { uri.getQueryParameter("error_description") } returns null
+        every { uri.getQueryParameter("code") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
+        assertEquals("invalid_request", vm.oauthError.value)
+    }
 }

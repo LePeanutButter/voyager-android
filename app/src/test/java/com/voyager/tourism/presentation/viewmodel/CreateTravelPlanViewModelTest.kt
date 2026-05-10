@@ -1,11 +1,14 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.domain.usecase.trip.CreateTravelPlanParams
 import com.voyager.tourism.domain.usecase.trip.CreateTravelPlanUseCase
 import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.TestScope
 import org.junit.Assert.assertEquals
@@ -211,5 +214,36 @@ class CreateTravelPlanViewModelTest {
         val state = vm.uiState.value
         assertTrue(state is CreateTravelPlanUiState.Success)
         assertEquals(plan, (state as CreateTravelPlanUiState.Success).travelPlan)
+    }
+
+    @Test
+    fun `createPlan preserves iso datetime strings`() = runTest {
+        val plan = TestFixtures.travelPlanDto()
+        coEvery { useCase(any()) } returns Result.success(plan)
+        vm.createPlan("T", "D", "O", "2027-03-01T08:00:00", "2027-03-10T18:00:00", 100.0, 1, "")
+        coVerify {
+            useCase(
+                CreateTravelPlanParams(
+                    title = "T",
+                    destination = "D",
+                    origin = "O",
+                    startDate = "2027-03-01T00:00:00",
+                    endDate = "2027-03-10T23:59:59",
+                    budget = 100.0,
+                    travelers = 1,
+                    description = null,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `createPlan failure without message uses default`() = runTest {
+        coEvery { useCase(any()) } returns Result.failure(Exception())
+        vm.createPlan("T", "D", "O", "2027-01-01", "2027-01-10", 1.0, 1, "")
+        advanceUntilIdle()
+        val state = vm.uiState.value
+        assertTrue(state is CreateTravelPlanUiState.Error)
+        assertEquals("Error desconocido", (state as CreateTravelPlanUiState.Error).message)
     }
 }
