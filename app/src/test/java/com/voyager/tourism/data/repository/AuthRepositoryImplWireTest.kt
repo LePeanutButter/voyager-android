@@ -103,14 +103,14 @@ class AuthRepositoryImplWireTest {
     }
 
     @Test
-    fun `handleGoogleCallback maps user envelope`() = runTest {
+    fun `exchangeGoogleCode maps user envelope`() = runTest {
         val user = TestFixtures.userDto()
         serverRule.server.enqueue(
             MockResponse()
                 .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
         )
 
-        val result = repository.handleGoogleCallback("code", "state")
+        val result = repository.exchangeGoogleCode("code", "state")
 
         assertTrue(result.isSuccess)
         assertEquals(user.id, result.getOrThrow().id)

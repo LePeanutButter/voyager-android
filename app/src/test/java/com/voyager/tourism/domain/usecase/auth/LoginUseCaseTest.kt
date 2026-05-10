@@ -72,7 +72,7 @@ class LoginUseCaseTest {
     @Test
     fun `loginWithGoogle success`() = runTest {
         val dto = TestFixtures.userDto()
-        coEvery { authRepository.handleGoogleCallback("code", "state") } returns Result.success(dto)
+        coEvery { authRepository.exchangeGoogleCode("code", "state") } returns Result.success(dto)
 
         val r = useCase.loginWithGoogle("code", "state")
 
@@ -83,7 +83,7 @@ class LoginUseCaseTest {
 
     @Test
     fun `loginWithGoogle failure`() = runTest {
-        coEvery { authRepository.handleGoogleCallback(any(), any()) } returns Result.failure(Exception("oauth"))
+        coEvery { authRepository.exchangeGoogleCode(any(), any()) } returns Result.failure(Exception("oauth"))
 
         val r = useCase.loginWithGoogle("c", null)
 
