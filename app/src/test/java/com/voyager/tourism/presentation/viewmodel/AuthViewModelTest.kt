@@ -89,7 +89,7 @@ class AuthViewModelTest {
     @Test
     fun `register success`() {
         coEvery {
-            registerUseCase("e@e.com", "p", "u", "F", "L")
+            registerUseCase("u", "e@e.com", "p", "F", "L")
         } returns Result.success(TestFixtures.domainUser())
         val vm = viewModel()
         vm.register("e@e.com", "p", "u", "F", "L")
@@ -180,7 +180,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register failure sets error state`() = runTest {
+    fun `register failure sets error state`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
             RuntimeException("Registration failed"),
         )
@@ -193,7 +193,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register with invalid email`() = runTest {
+    fun `register with invalid email`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
             RuntimeException("Invalid email"),
         )
@@ -206,7 +206,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register with weak password`() = runTest {
+    fun `register with weak password`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
             RuntimeException("Password too weak"),
         )
@@ -230,7 +230,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `login with network error`() = runTest {
+    fun `login with network error`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { loginUseCase(any(), any()) } returns Result.failure(RuntimeException("Network timeout"))
         val vm = viewModel()
         vm.login("test@test.com", "password")
@@ -241,7 +241,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `logout with error`() = runTest {
+    fun `logout with error`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { userRepository.logout() } returns Result.failure(RuntimeException("Logout failed"))
         val vm = viewModel()
         vm.logout()
@@ -291,7 +291,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `oauth with invalid state`() = runTest {
+    fun `oauth with invalid state`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { loginUseCase.loginWithGoogle(any(), any()) } returns Result.failure(RuntimeException("Invalid state"))
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns null
@@ -305,7 +305,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `session expiration notifier clears session`() = runTest {
+    fun `session expiration notifier clears session`() = runTest(mainDispatcherRule.dispatcher) {
         val vm = viewModel()
         sessionNotifier.notifySessionExpired()
         advanceUntilIdle()
@@ -315,7 +315,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `multiple concurrent login attempts`() = runTest {
+    fun `multiple concurrent login attempts`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { loginUseCase(any(), any()) } returns Result.success(TestFixtures.domainUser())
         val vm = viewModel()
 
@@ -328,7 +328,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `login after successful registration`() = runTest {
+    fun `login after successful registration`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.success(TestFixtures.domainUser())
         coEvery { loginUseCase(any(), any()) } returns Result.success(TestFixtures.domainUser())
         val vm = viewModel()
@@ -344,7 +344,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `login failure without message uses default`() = runTest {
+    fun `login failure without message uses default`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { loginUseCase(any(), any()) } returns Result.failure(Exception())
         val vm = viewModel()
         vm.login("a", "b")
@@ -355,7 +355,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `oauth google failure without message uses default`() = runTest {
+    fun `oauth google failure without message uses default`() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { loginUseCase.loginWithGoogle(any(), any()) } returns Result.failure(Exception())
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns null
@@ -369,7 +369,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `oauth error without description uses error code`() = runTest {
+    fun `oauth error without description uses error code`() = runTest(mainDispatcherRule.dispatcher) {
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns "invalid_request"
         every { uri.getQueryParameter("error_description") } returns null

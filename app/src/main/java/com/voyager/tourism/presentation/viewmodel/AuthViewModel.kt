@@ -89,7 +89,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            registerUseCase(email, password, username, firstName, lastName)
+            registerUseCase(username, email, password, firstName, lastName)
                 .onSuccess { user ->
                     _currentUser.value = user
                     _authState.value = AuthState.Authenticated
