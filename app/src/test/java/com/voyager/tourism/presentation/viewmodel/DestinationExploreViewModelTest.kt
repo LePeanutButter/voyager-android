@@ -7,8 +7,9 @@ import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertTrue
@@ -23,7 +24,7 @@ class DestinationExploreViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val catalog = mockk<CatalogRepository>()
+    private val catalog = mockk<CatalogRepository>(relaxed = true)
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>(relaxed = true)
     private lateinit var vm: DestinationExploreViewModel
@@ -32,24 +33,21 @@ class DestinationExploreViewModelTest {
     fun setup() {
         vm = DestinationExploreViewModel(catalog, voyagerAi, prefs)
         coEvery { prefs.getCurrentUserId() } returns "1"
-    }
-
-    @Test
-    fun `loadExplore fills destination label`() = runTest {
         coEvery {
             catalog.activities(any(), any(), any(), any())
         } returns Response.success(
             """{"data":{"activities":[]}}""".toResponseBody("application/json".toMediaType()),
         )
-        coEvery {
-            voyagerAi.postLocalRecommendations(any())
-        } returns Response.success(
-            """{"items":[]}""".toResponseBody("application/json".toMediaType()),
-        )
+    }
 
+    @Test
+    fun `loadExplore fills destination label`() = runBlocking {
         vm.loadExplore("Paris", "FR", "dest1")
-        advanceUntilIdle()
 
-        assertTrue(vm.destinationLabel.value.isNotBlank())
+        // La etiqueta se asigna al inicio del launch; el catálogo va por Dispatchers.IO.
+        val label = withTimeout(5_000) {
+            vm.destinationLabel.first { it.isNotBlank() }
+        }
+        assertTrue(label.contains("Paris"))
     }
 }

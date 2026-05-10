@@ -5,8 +5,9 @@ import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -41,7 +42,7 @@ class DashboardInsightsViewModelTest {
     }
 
     @Test
-    fun `refreshInsights loads trending when IA responds OK`() = runTest {
+    fun `refreshInsights loads trending when IA responds OK`() = runBlocking {
         val json = """{"emerging_destinations":[{"name":"Paris","country":"FR"}]}"""
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
             json.toResponseBody("application/json".toMediaType()),
@@ -49,14 +50,16 @@ class DashboardInsightsViewModelTest {
         coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
             """{}""".toResponseBody("application/json".toMediaType()),
         )
-        coEvery { voyagerAi.getSeasonalityOverview() } returns Response.success(
+        coEvery { voyagerAi.getSeasonalityOverview(any()) } returns Response.success(
             """{}""".toResponseBody("application/json".toMediaType()),
         )
 
         vm.refreshInsights()
-        advanceUntilIdle()
-
-        assertEquals("Paris", vm.trending.value.first().name)
-        assertEquals("FR", vm.trending.value.first().country)
+        // loadTrending usa Dispatchers.IO; advanceUntilIdle no espera ese hilo.
+        val rows = withTimeout(5_000) {
+            vm.trending.first { it.isNotEmpty() }
+        }
+        assertEquals("Paris", rows.first().name)
+        assertEquals("FR", rows.first().country)
     }
 }
