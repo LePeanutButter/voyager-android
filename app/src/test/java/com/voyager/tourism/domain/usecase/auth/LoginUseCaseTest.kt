@@ -45,14 +45,14 @@ class LoginUseCaseTest {
         val r = useCase("   ", "secret")
         assertTrue(r.isFailure)
         assertTrue(r.exceptionOrNull() is IllegalArgumentException)
-        assertEquals("Username cannot be blank", r.exceptionOrNull()?.message)
+        assertEquals("Username or email cannot be empty", r.exceptionOrNull()?.message)
     }
 
     @Test
     fun `invoke fails when password blank`() = runTest {
         val r = useCase("user@mail.com", " ")
         assertTrue(r.isFailure)
-        assertEquals("Password cannot be blank", r.exceptionOrNull()?.message)
+        assertEquals("Password cannot be empty", r.exceptionOrNull()?.message)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.voyager.tourism.util
 
+import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.ConnectionRequestDto
 import com.voyager.tourism.data.dto.CoordinatesDto
 import com.voyager.tourism.data.dto.DestinationDto
@@ -18,6 +19,18 @@ import com.voyager.tourism.domain.model.TripStatus
 import com.voyager.tourism.domain.model.User
 
 object TestFixtures {
+
+    /** Respuesta envuelta como la devuelve Retrofit/Moshi para endpoints Spring `ApiResponse<T>`. */
+    fun <T> apiResponse(
+        status: Int,
+        data: T? = null,
+        message: String = if (status in 200..299) "OK" else "Error",
+    ): ApiResponse<T> = ApiResponse(
+        timestamp = "2024-01-01T00:00:00",
+        status = status,
+        message = message,
+        data = data,
+    )
 
     fun userDto(
         id: Long = 42L,
