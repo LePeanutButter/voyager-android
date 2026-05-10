@@ -117,7 +117,7 @@ private fun SplashContent(
         )
         Spacer(modifier = Modifier.height(32.dp))
         CircularProgressIndicator(
-            color = if (darkTheme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )
     }

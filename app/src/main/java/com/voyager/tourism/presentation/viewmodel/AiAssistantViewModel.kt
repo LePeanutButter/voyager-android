@@ -67,7 +67,7 @@ class AiAssistantViewModel @Inject constructor(
             runCatching {
                 val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
                 withContext(Dispatchers.IO) { refreshRecommendationPool() }
-                loadHistoryIntoMessages(userId, sessionId)
+                loadHistoryIntoMessages(sessionId)
             }.onFailure {
                 _error.value = it.message ?: "Error al cargar el asistente"
                 _messages.value = listOf(
@@ -94,48 +94,66 @@ class AiAssistantViewModel @Inject constructor(
             _isSending.value = true
             _messages.value = _messages.value + ChatBubble(isUser = true, text = trimmed)
             val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
-            runCatching {
-                val chatRes = voyagerAiRepository.postLocalChatMessage(
-                    LocalChatRequestBody(userId = userId, sessionId = sessionId, message = trimmed),
-                )
-                if (!chatRes.isSuccessful) {
-                    val err = chatRes.errorBody()?.string()?.take(2_000) ?: "HTTP ${chatRes.code()}"
-                    _messages.value = _messages.value + ChatBubble(isUser = false, text = "Error: $err")
-                    return@runCatching
-                }
-                var reply = chatRes.body()?.reply?.take(8_000)?.ifBlank { "(Sin respuesta)" } ?: "(Sin respuesta)"
-                if (wantsLocalRanking(trimmed) && recommendationPool.isNotEmpty()) {
-                    runCatching {
-                        val rankRes = withContext(Dispatchers.IO) {
-                            voyagerAiRepository.postLocalRecommendations(
-                                LocalRecommendationRequestBody(
-                                    userId = userId,
-                                    query = trimmed,
-                                    limit = 5,
-                                    candidates = recommendationPool,
-                                ),
-                            )
-                        }
-                        if (rankRes.isSuccessful) {
-                            val ranked = LocalRecommendationParsers.parseItems(
-                                rankRes.body()?.string().orEmpty(),
-                            )
-                            val names = ranked.map { it.name }.filter { it.isNotBlank() }.take(5)
-                            if (names.isNotEmpty()) {
-                                reply += "\n\nSugerencias: ${names.joinToString(", ")}"
-                            }
-                        }
-                    }
-                }
+            
+            try {
+                val reply = sendMessageAndGetReply(userId, sessionId, trimmed)
                 _messages.value = _messages.value + ChatBubble(isUser = false, text = reply)
-            }.onFailure {
-                _error.value = it.message ?: "Error de red"
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error de red"
                 _messages.value = _messages.value + ChatBubble(
                     isUser = false,
                     text = "Error: ${_error.value}",
                 )
             }
             _isSending.value = false
+        }
+    }
+
+    private suspend fun sendMessageAndGetReply(userId: String, sessionId: String, message: String): String {
+        val chatRes = voyagerAiRepository.postLocalChatMessage(
+            LocalChatRequestBody(userId = userId, sessionId = sessionId, message = message),
+        )
+        if (!chatRes.isSuccessful) {
+            val err = chatRes.errorBody()?.string()?.take(2_000) ?: "HTTP ${chatRes.code()}"
+            throw Exception("Error: $err")
+        }
+        
+        var reply = chatRes.body()?.reply?.take(8_000)?.ifBlank { "(Sin respuesta)" } ?: "(Sin respuesta)"
+        
+        if (wantsLocalRanking(message) && recommendationPool.isNotEmpty()) {
+            reply = enrichReplyWithRecommendations(userId, message, reply)
+        }
+        
+        return reply
+    }
+
+    private suspend fun enrichReplyWithRecommendations(userId: String, message: String, reply: String): String {
+        return try {
+            val rankRes = withContext(Dispatchers.IO) {
+                voyagerAiRepository.postLocalRecommendations(
+                    LocalRecommendationRequestBody(
+                        userId = userId,
+                        query = message,
+                        limit = 5,
+                        candidates = recommendationPool,
+                    ),
+                )
+            }
+            if (rankRes.isSuccessful) {
+                val ranked = LocalRecommendationParsers.parseItems(
+                    rankRes.body()?.string().orEmpty(),
+                )
+                val names = ranked.map { it.name }.filter { it.isNotBlank() }.take(5)
+                if (names.isNotEmpty()) {
+                    reply + "\n\nSugerencias: ${names.joinToString(", ")}"
+                } else {
+                    reply
+                }
+            } else {
+                reply
+            }
+        } catch (e: Exception) {
+            reply
         }
     }
 
@@ -175,7 +193,7 @@ class AiAssistantViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadHistoryIntoMessages(userId: String, sessionId: String) {
+    private suspend fun loadHistoryIntoMessages(sessionId: String) {
         val histRes = withContext(Dispatchers.IO) {
             voyagerAiRepository.getLocalChatHistory(sessionId = sessionId, limit = 50)
         }

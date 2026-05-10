@@ -8,14 +8,21 @@ import com.voyager.tourism.data.local.TokenManager
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.TestScope
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class LoginUseCaseTest {
 
     private val authRepository = mockk<AuthRepository>()
@@ -26,6 +33,7 @@ class LoginUseCaseTest {
         .build()
 
     private lateinit var useCase: LoginUseCase
+    private val testScope = TestScope()
 
     @Before
     fun setup() {
@@ -37,12 +45,21 @@ class LoginUseCaseTest {
         val r = useCase("   ", "secret")
         assertTrue(r.isFailure)
         assertTrue(r.exceptionOrNull() is IllegalArgumentException)
+        assertEquals("Username cannot be blank", r.exceptionOrNull()?.message)
     }
 
     @Test
     fun `invoke fails when password blank`() = runTest {
         val r = useCase("user@mail.com", " ")
         assertTrue(r.isFailure)
+        assertEquals("Password cannot be blank", r.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `invoke fails when both blank`() = runTest {
+        val r = useCase("", "")
+        assertTrue(r.isFailure)
+        assertTrue(r.exceptionOrNull() is IllegalArgumentException)
     }
 
     @Test
@@ -70,6 +87,16 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun `invoke with network error`() = runTest {
+        coEvery { authRepository.loginUser(any(), any()) } returns Result.failure(RuntimeException("Network timeout"))
+
+        val r = useCase("u", "p")
+
+        assertTrue(r.isFailure)
+        assertEquals("Network timeout", r.exceptionOrNull()?.message)
+    }
+
+    @Test
     fun `loginWithGoogle success`() = runTest {
         val dto = TestFixtures.userDto()
         coEvery { authRepository.exchangeGoogleCode("code", "state") } returns Result.success(dto)
@@ -89,5 +116,89 @@ class LoginUseCaseTest {
 
         assertTrue(r.isFailure)
         assertEquals("oauth", r.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `loginWithGoogle with invalid code`() = runTest {
+        coEvery { authRepository.exchangeGoogleCode(any(), any()) } returns Result.failure(RuntimeException("Invalid code"))
+
+        val r = useCase.loginWithGoogle("invalid-code", "state")
+
+        assertTrue(r.isFailure)
+        assertEquals("Invalid code", r.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `loginWithGoogle with network error`() = runTest {
+        coEvery { authRepository.exchangeGoogleCode(any(), any()) } returns Result.failure(RuntimeException("Network error"))
+
+        val r = useCase.loginWithGoogle("code", "state")
+
+        assertTrue(r.isFailure)
+        assertEquals("Network error", r.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `loginWithGoogle with null state`() = runTest {
+        val dto = TestFixtures.userDto()
+        coEvery { authRepository.exchangeGoogleCode("code", null) } returns Result.success(dto)
+
+        val r = useCase.loginWithGoogle("code", null)
+
+        assertTrue(r.isSuccess)
+        verify { tokenManager.saveToken("jwt-token") }
+        verify { preferencesManager.saveCurrentUserId("42") }
+    }
+
+    @Test
+    fun `multiple login calls work correctly`() = runTest {
+        val dto1 = TestFixtures.userDto()
+        val dto2 = TestFixtures.userDto()
+        coEvery { authRepository.loginUser("u1", "p1") } returns Result.success(dto1)
+        coEvery { authRepository.loginUser("u2", "p2") } returns Result.success(dto2)
+
+        val r1 = useCase("u1", "p1")
+        val r2 = useCase("u2", "p2")
+
+        assertTrue(r1.isSuccess)
+        assertTrue(r2.isSuccess)
+        assertEquals("42", r1.getOrNull()?.id)
+        assertEquals("42", r2.getOrNull()?.id)
+    }
+
+    @Test
+    fun `login with special characters in username`() = runTest {
+        val dto = TestFixtures.userDto()
+        coEvery { authRepository.loginUser("user@domain.com", "pass") } returns Result.success(dto)
+
+        val r = useCase("user@domain.com", "pass")
+
+        assertTrue(r.isSuccess)
+        assertEquals("42", r.getOrNull()?.id)
+    }
+
+    @Test
+    fun `login with very long password`() = runTest {
+        val dto = TestFixtures.userDto()
+        coEvery { authRepository.loginUser("user", "very-long-password") } returns Result.success(dto)
+
+        val r = useCase("user", "very-long-password")
+
+        assertTrue(r.isSuccess)
+        assertEquals("42", r.getOrNull()?.id)
+    }
+
+    @Test
+    fun `login with whitespace only username`() = runTest {
+        val r = useCase("    ", "password")
+        assertTrue(r.isFailure)
+        assertTrue(r.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun `login with whitespace only password`() = runTest {
+        val r = useCase("username", "    ")
+        assertTrue(r.isFailure)
+        assertTrue(r.exceptionOrNull() is IllegalArgumentException)
     }
 }

@@ -40,10 +40,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.data.catalog.CatalogActivityRow
+import com.voyager.tourism.domain.model.Trip
 import com.voyager.tourism.domain.trip.tripMatchesDestinationLabel
 import com.voyager.tourism.presentation.viewmodel.DestinationExploreViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
 import com.voyager.tourism.presentation.ui.trip.spanishLabel
+
+data class DestinationExploreCallbacks(
+    val onBack: () -> Unit,
+    val onTripClick: (String) -> Unit,
+    val onCreatePlanHint: (String) -> Unit
+)
 
 /**
  * Pantalla equivalente a [voyager-web-client/src/pages/DestinationExplore/DestinationExplorePage.jsx]:
@@ -56,9 +63,7 @@ fun DestinationExploreScreen(
     countryRaw: String,
     destIdRaw: String,
     userId: String,
-    onBack: () -> Unit,
-    onTripClick: (String) -> Unit,
-    onCreatePlanHint: (String) -> Unit,
+    callbacks: DestinationExploreCallbacks,
     exploreViewModel: DestinationExploreViewModel = hiltViewModel(),
     tripViewModel: TripViewModel = hiltViewModel(),
 ) {
@@ -87,7 +92,7 @@ fun DestinationExploreScreen(
             TopAppBar(
                 title = { Text("Explorar destino", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = callbacks.onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
@@ -102,151 +107,203 @@ fun DestinationExploreScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Text(
-                    destinationLabel,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                if (catalogDestId.isNotBlank()) {
-                    Text(
-                        "Referencia catálogo / tendencias: $catalogDestId",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    "Mismo enfoque que en el web: catálogo de actividades y ranking con IA según tu perfil.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                DestinationHeaderSection(
+                    destinationLabel = destinationLabel,
+                    catalogDestId = catalogDestId
                 )
             }
 
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.SmartToy, contentDescription = null, modifier = Modifier.size(22.dp))
-                        Text("Ordenar catálogo con IA", style = MaterialTheme.typography.titleMedium)
-                    }
-                    Button(
-                        onClick = { exploreViewModel.rankCatalog() },
-                        enabled = !rankLoading && activities.isNotEmpty(),
-                    ) {
-                        if (rankLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                            )
-                        } else {
-                            Text("Rankear")
-                        }
-                    }
-                }
-                rankError?.let { err ->
-                    Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-                if (ranked.isNotEmpty()) {
-                    ranked.forEach { item ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            ),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(item.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-                                if (item.description.isNotBlank()) {
-                                    Text(
-                                        item.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                AiRankingSection(
+                    rankLoading = rankLoading,
+                    rankError = rankError,
+                    ranked = ranked,
+                    activities = activities,
+                    onRankCatalog = { exploreViewModel.rankCatalog() }
+                )
             }
 
             item {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Map, contentDescription = null)
-                    Text("Actividades del catálogo", style = MaterialTheme.typography.titleMedium)
-                }
-                when {
-                    catalogLoading -> {
-                        Row(
-                            Modifier.fillMaxWidth().padding(16.dp),
-                            horizontalArrangement = Arrangement.Center,
-                        ) { CircularProgressIndicator(modifier = Modifier.size(28.dp)) }
-                    }
-                    catalogError != null -> {
-                        Text(catalogError!!, color = MaterialTheme.colorScheme.error)
-                    }
-                    activities.isEmpty() -> {
-                        Text(
-                            "Sin actividades en catálogo para esta zona. Prueba otro destino o más tarde.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                CatalogActivitiesSection(
+                    catalogLoading = catalogLoading,
+                    catalogError = catalogError,
+                    activities = activities
+                )
             }
 
             items(activities, key = { it.id }) { act ->
                 CatalogActivityCard(
                     activity = act,
                     destinationLabel = destinationLabel,
-                    onCreatePlan = { hint -> onCreatePlanHint(hint) },
+                    onCreatePlan = { hint -> callbacks.onCreatePlanHint(hint) },
                 )
             }
 
             item {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Star, contentDescription = null)
-                    Text("Tus planes hacia este destino", style = MaterialTheme.typography.titleMedium)
-                }
-                if (matchingTrips.isEmpty()) {
-                    Text(
-                        "No hay planes que coincidan. Crea uno con una idea del listado.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    matchingTrips.forEach { trip ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(trip.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        trip.destination.name,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                                Text(trip.status.spanishLabel(), style = MaterialTheme.typography.labelSmall)
-                                TextButton(onClick = { onTripClick(trip.id) }) { Text("Ver plan") }
-                            }
-                        }
+                MatchingTripsSection(
+                    matchingTrips = matchingTrips,
+                    onTripClick = callbacks.onTripClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DestinationHeaderSection(
+    destinationLabel: String,
+    catalogDestId: String,
+) {
+    Text(
+        destinationLabel,
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+    )
+    if (catalogDestId.isNotBlank()) {
+        Text(
+            "Referencia catálogo / tendencias: $catalogDestId",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Text(
+        "Mismo enfoque que en el web: catálogo de actividades y ranking con IA según tu perfil.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun AiRankingSection(
+    rankLoading: Boolean,
+    rankError: String?,
+    ranked: List<CatalogActivityRow>,
+    activities: List<CatalogActivityRow>,
+    onRankCatalog: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Filled.SmartToy, contentDescription = null, modifier = Modifier.size(22.dp))
+            Text("Ordenar catálogo con IA", style = MaterialTheme.typography.titleMedium)
+        }
+        Button(
+            onClick = onRankCatalog,
+            enabled = !rankLoading && activities.isNotEmpty(),
+        ) {
+            if (rankLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Text("Rankear")
+            }
+        }
+    }
+    rankError?.let { err ->
+        Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+    if (ranked.isNotEmpty()) {
+        ranked.forEach { item ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ),
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(item.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
+                    if (item.description.isNotBlank()) {
+                        Text(
+                            item.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CatalogActivitiesSection(
+    catalogLoading: Boolean,
+    catalogError: String?,
+    activities: List<CatalogActivityRow>,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(Icons.Filled.Map, contentDescription = null)
+        Text("Actividades del catálogo", style = MaterialTheme.typography.titleMedium)
+    }
+    when {
+        catalogLoading -> {
+            Row(
+                Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) { CircularProgressIndicator(modifier = Modifier.size(28.dp)) }
+        }
+        catalogError != null -> {
+            Text(catalogError!!, color = MaterialTheme.colorScheme.error)
+        }
+        activities.isEmpty() -> {
+            Text(
+                "Sin actividades en catálogo para esta zona. Prueba otro destino o más tarde.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MatchingTripsSection(
+    matchingTrips: List<Trip>,
+    onTripClick: (String) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(Icons.Filled.Star, contentDescription = null)
+        Text("Tus planes hacia este destino", style = MaterialTheme.typography.titleMedium)
+    }
+    if (matchingTrips.isEmpty()) {
+        Text(
+            "No hay planes que coincidan. Crea uno con una idea del listado.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        matchingTrips.forEach { trip ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(trip.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        Text(
+                            trip.destination.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(trip.status.spanishLabel(), style = MaterialTheme.typography.labelSmall)
+                    TextButton(onClick = { onTripClick(trip.id) }) { Text("Ver plan") }
                 }
             }
         }

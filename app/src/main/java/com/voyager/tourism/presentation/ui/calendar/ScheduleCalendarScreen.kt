@@ -182,167 +182,22 @@ fun ScheduleCalendarScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(2.dp),
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        IconButton(
-                            onClick = {
-                                val c = cursorMonth.clone() as Calendar
-                                c.add(Calendar.MONTH, -1)
-                                cursorMonth = c
-                            },
-                        ) {
-                            Icon(Icons.Filled.ChevronLeft, contentDescription = "Mes anterior")
-                        }
-                        Text(monthTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                        IconButton(
-                            onClick = {
-                                val c = cursorMonth.clone() as Calendar
-                                c.add(Calendar.MONTH, 1)
-                                cursorMonth = c
-                            },
-                        ) {
-                            Icon(Icons.Filled.ChevronRight, contentDescription = "Mes siguiente")
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        weekLabels.forEach { label ->
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    monthDays.chunked(7).forEach { week ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            week.forEach { day ->
-                                val key = dateKey(day)
-                                val dayPlans = byDay[key].orEmpty()
-                                val outside = day.get(Calendar.MONTH) != visibleMonth
-                                val isToday = key == todayKey
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(0.72f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            when {
-                                                isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                                                outside -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                                            },
-                                        )
-                                        .padding(4.dp),
-                                ) {
-                                    Text(
-                                        "${day.get(Calendar.DAY_OF_MONTH)}",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (outside) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface,
-                                    )
-                                    dayPlans.take(2).forEach { plan ->
-                                        Text(
-                                            plan.title,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MaterialTheme.colorScheme.secondaryContainer)
-                                                .clickable { onTripClick(plan.id) }
-                                                .padding(horizontal = 2.dp, vertical = 1.dp),
-                                        )
-                                    }
-                                    if (dayPlans.size > 2) {
-                                        Text(
-                                            "+${dayPlans.size - 2} más",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                }
-            }
+            CalendarGridSection(
+                cursorMonth = cursorMonth,
+                monthTitle = monthTitle,
+                monthDays = monthDays,
+                visibleMonth = visibleMonth,
+                todayKey = todayKey,
+                byDay = byDay,
+                onTripClick = onTripClick,
+                onMonthChange = { newMonth -> cursorMonth = newMonth }
+            )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("Próximos planes", style = MaterialTheme.typography.titleMedium)
-                        Text("${upcoming.size}", style = MaterialTheme.typography.labelLarge)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (upcoming.isEmpty()) {
-                        Text(
-                            "Aún no tienes planes futuros para mostrar.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        upcoming.forEach { plan ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onTripClick(plan.id) }
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(plan.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        dateFmt.format(Date(plan.startDate)),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            Icons.Filled.LocationOn,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(14.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            plan.destination.name,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                }
-                                Text(plan.status.spanishLabel(), style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                }
-            }
+            UpcomingTripsSection(
+                upcoming = upcoming,
+                dateFmt = dateFmt,
+                onTripClick = onTripClick
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -353,6 +208,187 @@ fun ScheduleCalendarScreen(
                 }
                 TextButton(onClick = onViewAllTrips, modifier = Modifier.weight(1f)) {
                     Text("Ver todos mis viajes")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarGridSection(
+    cursorMonth: Calendar,
+    monthTitle: String,
+    monthDays: List<Calendar>,
+    visibleMonth: Int,
+    todayKey: String,
+    byDay: Map<String, List<Trip>>,
+    onTripClick: (String) -> Unit,
+    onMonthChange: (Calendar) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(2.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                IconButton(
+                    onClick = {
+                        val c = cursorMonth.clone() as Calendar
+                        c.add(Calendar.MONTH, -1)
+                        onMonthChange(c)
+                    },
+                ) {
+                    Icon(Icons.Filled.ChevronLeft, contentDescription = "Mes anterior")
+                }
+                Text(monthTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                IconButton(
+                    onClick = {
+                        val c = cursorMonth.clone() as Calendar
+                        c.add(Calendar.MONTH, 1)
+                        onMonthChange(c)
+                    },
+                ) {
+                    Icon(Icons.Filled.ChevronRight, contentDescription = "Mes siguiente")
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                weekLabels.forEach { label ->
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            monthDays.chunked(7).forEach { week ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    week.forEach { day ->
+                        val key = dateKey(day)
+                        val dayPlans = byDay[key].orEmpty()
+                        val outside = day.get(Calendar.MONTH) != visibleMonth
+                        val isToday = key == todayKey
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(0.72f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    when {
+                                        isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                        outside -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                    },
+                                )
+                                .padding(4.dp),
+                        ) {
+                            Text(
+                                "${day.get(Calendar.DAY_OF_MONTH)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                color = if (outside) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface,
+                            )
+                            dayPlans.take(2).forEach { plan ->
+                                Text(
+                                    plan.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                                        .clickable { onTripClick(plan.id) }
+                                        .padding(horizontal = 2.dp, vertical = 1.dp),
+                                )
+                            }
+                            if (dayPlans.size > 2) {
+                                Text(
+                                    "+${dayPlans.size - 2} más",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingTripsSection(
+    upcoming: List<Trip>,
+    dateFmt: SimpleDateFormat,
+    onTripClick: (String) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Próximos planes", style = MaterialTheme.typography.titleMedium)
+                Text("${upcoming.size}", style = MaterialTheme.typography.labelLarge)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (upcoming.isEmpty()) {
+                Text(
+                    "Aún no tienes planes futuros para mostrar.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                upcoming.forEach { plan ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onTripClick(plan.id) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(plan.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text(
+                                dateFmt.format(Date(plan.startDate)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.LocationOn,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    plan.destination.name,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        Text(plan.status.spanishLabel(), style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             }
         }

@@ -12,6 +12,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import com.voyager.tourism.domain.model.User
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.domain.usecase.auth.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,10 +55,10 @@ class LoginViewModel @Inject constructor(
                     LoginUiState.Success(user)
                 }
                 result.isFailure -> {
-                    val errorMessage = result.exceptionOrNull()?.message ?: "Error desconocido"
+                    val errorMessage = result.exceptionOrNull()?.message ?: UNKNOWN_ERROR
                     LoginUiState.Error(errorMessage)
                 }
-                else -> LoginUiState.Error("Error desconocido")
+                else -> LoginUiState.Error(UNKNOWN_ERROR)
             }
         }
     }
@@ -95,7 +96,7 @@ class LoginViewModel @Inject constructor(
                 _uiState.value = when {
                     result.isSuccess -> LoginUiState.Success(result.getOrThrow())
                     result.isFailure -> LoginUiState.Error(result.exceptionOrNull()?.message ?: "Error en el login")
-                    else -> LoginUiState.Error("Error desconocido")
+                    else -> LoginUiState.Error(UNKNOWN_ERROR)
                 }
             } catch (e: ApiException) {
                 _uiState.value = LoginUiState.Error(apiExceptionToUserMessage(e))

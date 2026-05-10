@@ -54,7 +54,24 @@ import com.voyager.tourism.domain.model.TravelerConnection
 import com.voyager.tourism.presentation.viewmodel.CommunityTab
 import com.voyager.tourism.presentation.viewmodel.CommunityViewModel
 import com.voyager.tourism.presentation.viewmodel.DiscoverMatchRow
+import java.util.Calendar
 import kotlin.math.roundToInt
+
+data class CommunityPlanData(
+    val plans: List<TravelPlanDto>,
+    val selectedPlanId: String,
+    val onPlanSelected: (String) -> Unit
+)
+
+data class CommunityDiscoverData(
+    val discoverLoading: Boolean,
+    val rows: List<DiscoverMatchRow>,
+    val highlights: List<DiscoverMatchRow>,
+    val refreshCooldownSec: Int,
+    val refreshNotice: String,
+    val onRefresh: () -> Unit,
+    val onConnect: (Long) -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,16 +168,20 @@ fun CommunityScreen(
                     onReject = viewModel::rejectRequest,
                 )
                 CommunityTab.DISCOVER -> DiscoverTabContent(
-                    plans = state.myPlans,
-                    selectedPlanId = state.selectedPlanId,
-                    onPlanSelected = viewModel::setSelectedPlan,
-                    discoverLoading = state.discoverLoading,
-                    rows = state.discoverRows,
-                    highlights = state.aiHighlightRows,
-                    refreshCooldownSec = state.refreshCooldownSec,
-                    refreshNotice = state.refreshNotice,
-                    onRefresh = viewModel::refreshDiscoverManual,
-                    onConnect = viewModel::sendDiscoverConnect,
+                    planData = CommunityPlanData(
+                        plans = state.myPlans,
+                        selectedPlanId = state.selectedPlanId,
+                        onPlanSelected = viewModel::setSelectedPlan
+                    ),
+                    discoverData = CommunityDiscoverData(
+                        discoverLoading = state.discoverLoading,
+                        rows = state.discoverRows,
+                        highlights = state.aiHighlightRows,
+                        refreshCooldownSec = state.refreshCooldownSec,
+                        refreshNotice = state.refreshNotice,
+                        onRefresh = viewModel::refreshDiscoverManual,
+                        onConnect = viewModel::sendDiscoverConnect
+                    )
                 )
             }
         }
@@ -265,22 +286,14 @@ private fun RequestsTabContent(
 
 @Composable
 private fun DiscoverTabContent(
-    plans: List<TravelPlanDto>,
-    selectedPlanId: String,
-    onPlanSelected: (String) -> Unit,
-    discoverLoading: Boolean,
-    rows: List<DiscoverMatchRow>,
-    highlights: List<DiscoverMatchRow>,
-    refreshCooldownSec: Int,
-    refreshNotice: String,
-    onRefresh: () -> Unit,
-    onConnect: (Long) -> Unit,
+    planData: CommunityPlanData,
+    discoverData: CommunityDiscoverData,
 ) {
     var planMenuOpen by remember { mutableStateOf(false) }
-    val selectedPlan = plans.find { it.id?.toString() == selectedPlanId } ?: plans.firstOrNull()
+    val selectedPlan = planData.plans.find { it.id?.toString() == planData.selectedPlanId } ?: planData.plans.firstOrNull()
     val planButtonLabel = selectedPlan?.let { planTitle(it) } ?: "Elegir plan"
 
-    if (plans.isEmpty()) {
+    if (planData.plans.isEmpty()) {
         EmptyState(
             title = "Crea un plan de viaje",
             subtitle = "Necesitas al menos un plan para buscar viajeros compatibles e IA.",
@@ -304,14 +317,14 @@ private fun DiscoverTabContent(
                     Text(planButtonLabel, maxLines = 1, style = MaterialTheme.typography.bodyMedium)
                 }
                 DropdownMenu(expanded = planMenuOpen, onDismissRequest = { planMenuOpen = false }) {
-                    plans.forEach { plan ->
+                    planData.plans.forEach { plan ->
                         val idStr = plan.id?.toString().orEmpty()
                         if (idStr.isNotBlank()) {
                             DropdownMenuItem(
                                 text = { Text(planTitle(plan)) },
                                 onClick = {
                                     planMenuOpen = false
-                                    onPlanSelected(idStr)
+                                    planData.onPlanSelected(idStr)
                                 },
                             )
                         }
@@ -319,32 +332,31 @@ private fun DiscoverTabContent(
                 }
             }
             IconButton(
-                onClick = onRefresh,
-                enabled = refreshCooldownSec <= 0 && !discoverLoading,
+                onClick = discoverData.onRefresh,
+                enabled = discoverData.refreshCooldownSec <= 0 && !discoverData.discoverLoading,
             ) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Actualizar descubrimiento")
             }
         }
 
-        if (refreshNotice.isNotBlank()) {
+        if (discoverData.refreshNotice.isNotBlank()) {
             Text(
-                refreshNotice,
+                discoverData.refreshNotice,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
-        if (refreshCooldownSec > 0) {
+        if (discoverData.refreshCooldownSec > 0) {
             Text(
-                "Espera ${refreshCooldownSec}s para volver a actualizar.",
+                "Puedes refrescar en ${discoverData.refreshCooldownSec} segundos",
                 modifier = Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-
-        if (discoverLoading) {
+        if (discoverData.discoverLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,45 +366,9 @@ private fun DiscoverTabContent(
             return
         }
 
-        LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (highlights.isNotEmpty()) {
-                item {
-                    Text(
-                        "Destacados IA",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                items(highlights, key = { "h-${it.userId}" }) { row ->
-                    DiscoverMatchCard(row = row, onConnect = onConnect, emphasizeAi = true)
-                }
-                item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
-            }
-            item {
-                Text(
-                    "Compatibles y sugerencias",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            if (rows.isEmpty()) {
-                item {
-                    Text(
-                        "No hay coincidencias para este plan. Prueba otro plan o actualiza más tarde.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                items(rows, key = { it.userId }) { row ->
-                    DiscoverMatchCard(row = row, onConnect = onConnect, emphasizeAi = row.isAiHighlight)
-                }
-            }
-        }
+        DiscoverMatchesList(
+            discoverData = discoverData
+        )
     }
 }
 
@@ -512,6 +488,51 @@ private fun formatMatchSource(source: String): String = when (source) {
     "ai" -> "IA"
     "both" -> "IA + backend"
     else -> "Compatibilidad"
+}
+
+@Composable
+private fun DiscoverMatchesList(
+    discoverData: CommunityDiscoverData,
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (discoverData.highlights.isNotEmpty()) {
+            item {
+                Text(
+                    "Destacados IA",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            items(discoverData.highlights, key = { "h-${it.userId}" }) { row ->
+                DiscoverMatchCard(row = row, onConnect = discoverData.onConnect, emphasizeAi = true)
+            }
+            item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
+        }
+        item {
+            Text(
+                "Compatibles y sugerencias",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        if (discoverData.rows.isEmpty()) {
+            item {
+                Text(
+                    "No hay coincidencias para este plan. Prueba otro plan o actualiza más tarde.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            items(discoverData.rows, key = { it.userId }) { row ->
+                DiscoverMatchCard(row = row, onConnect = discoverData.onConnect, emphasizeAi = row.isAiHighlight)
+            }
+        }
+    }
 }
 
 private fun formatScorePercent(score: Double): Int =

@@ -79,37 +79,7 @@ fun BehaviorAnalysisScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (ui.isLoading) {
-                BoxAlignedProgress()
-            }
-
-            ui.error?.let { err ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                ) {
-                    Text(
-                        text = err,
-                        modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            ui.successMessage?.let { msg ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                ) {
-                    Text(
-                        text = msg,
-                        modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            BehaviorAnalysisStatusCards(ui = ui)
 
             Button(
                 onClick = { viewModel.analyzeUserBehavior(userId, analysisPeriodDays = 7) },
@@ -122,54 +92,7 @@ fun BehaviorAnalysisScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             summary?.let { s ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Behavior Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                        ) {
-                            SummaryStat("${s.totalInteractions}", "Total interactions")
-                            SummaryStat("${s.analysisPeriodDays}", "Period (days)")
-                            SummaryStat("${s.recentPatterns.size}", "Patterns")
-                        }
-                        if (s.interactionBreakdown.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Interaction breakdown", fontWeight = FontWeight.SemiBold)
-                            s.interactionBreakdown.entries.forEach { (k, v) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(k, style = MaterialTheme.typography.bodyMedium)
-                                    Text("$v", fontWeight = FontWeight.Medium)
-                                }
-                            }
-                        }
-                        if (s.categoryBreakdown.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text("Category preferences", fontWeight = FontWeight.SemiBold)
-                            s.categoryBreakdown.entries.forEach { (k, v) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(k, style = MaterialTheme.typography.bodyMedium)
-                                    Text("$v", fontWeight = FontWeight.Medium)
-                                }
-                            }
-                        }
-                        s.lastAnalysis?.let { dt ->
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                "Last analysis: $dt",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+                BehaviorSummaryCard(summary = s)
             }
         }
     }
@@ -184,6 +107,93 @@ private fun BoxAlignedProgress() {
         horizontalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun BehaviorAnalysisStatusCards(ui: BehaviorAnalysisUiState) {
+    if (ui.isLoading) {
+        BoxAlignedProgress()
+    }
+
+    ui.error?.let { err ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        ) {
+            Text(
+                text = err,
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    ui.successMessage?.let { msg ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        ) {
+            Text(
+                text = msg,
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun BehaviorSummaryCard(summary: BehaviorSummary) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Behavior Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                SummaryStat("${summary.totalInteractions}", "Total interactions")
+                SummaryStat("${summary.analysisPeriodDays}", "Period (days)")
+                SummaryStat("${summary.recentPatterns.size}", "Patterns")
+            }
+            if (summary.interactionBreakdown.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Interaction breakdown", fontWeight = FontWeight.SemiBold)
+                summary.interactionBreakdown.entries.forEach { (k, v) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(k, style = MaterialTheme.typography.bodyMedium)
+                        Text("$v", fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+            if (summary.categoryBreakdown.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Category preferences", fontWeight = FontWeight.SemiBold)
+                summary.categoryBreakdown.entries.forEach { (k, v) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(k, style = MaterialTheme.typography.bodyMedium)
+                        Text("$v", fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+            summary.lastAnalysis?.let { dt ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Last analysis: $dt",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

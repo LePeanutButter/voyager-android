@@ -95,67 +95,14 @@ fun PlaceDetailScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            when {
-                loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                error != null -> {
-                    Text(
-                        error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-                items.isNotEmpty() -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(items, key = { it.id }) { row ->
-                            PlaceIdeaCard(row = row)
-                        }
-                    }
-                }
-                rawPayload.isNullOrBlank() -> {
-                    Text("Sin datos", style = MaterialTheme.typography.bodyMedium)
-                }
-                else -> {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            "No pudimos extraer una lista clara de sugerencias. Puedes revisar la respuesta del servicio abajo.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(onClick = { showTechnical = !showTechnical }) {
-                            Icon(
-                                if (showTechnical) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (showTechnical) "Ocultar detalle técnico" else "Ver detalle técnico")
-                        }
-                        if (showTechnical) {
-                            Text(
-                                rawPayload!!.take(8_000),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
+            PlaceDetailContent(
+                loading = loading,
+                error = error,
+                items = items,
+                rawPayload = rawPayload,
+                showTechnical = showTechnical,
+                onToggleTechnical = { showTechnical = !showTechnical }
+            )
         }
     }
 }
@@ -215,6 +162,78 @@ private fun PlaceIdeaCard(row: ParsedLocalRecommendationItem) {
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceDetailContent(
+    loading: Boolean,
+    error: String?,
+    items: List<ParsedLocalRecommendationItem>,
+    rawPayload: String?,
+    showTechnical: Boolean,
+    onToggleTechnical: () -> Unit,
+) {
+    when {
+        loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        error != null -> {
+            Text(
+                error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        items.isNotEmpty() -> {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(items, key = { it.id }) { row ->
+                    PlaceIdeaCard(row = row)
+                }
+            }
+        }
+        rawPayload.isNullOrBlank() -> {
+            Text("Sin datos", style = MaterialTheme.typography.bodyMedium)
+        }
+        else -> {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "No pudimos extraer una lista clara de sugerencias. Puedes revisar la respuesta del servicio abajo.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onToggleTechnical) {
+                    Icon(
+                        if (showTechnical) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (showTechnical) "Ocultar detalle técnico" else "Ver detalle técnico")
+                }
+                if (showTechnical) {
+                    Text(
+                        rawPayload!!.take(8_000),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

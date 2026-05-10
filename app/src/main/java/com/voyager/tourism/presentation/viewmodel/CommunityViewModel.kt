@@ -342,7 +342,7 @@ private fun mergeDiscoveryMatches(
             isAiHighlight = false,
         )
     }
-    for (r in parseBuddyRecommendations(buddyJson, planDestination)) {
+    for (r in parseBuddyRecommendations(buddyJson)) {
         val uid = r.userId
         if (uid == currentUserId) continue
         val existing = byId[uid]
@@ -383,7 +383,7 @@ private data class BuddyParsed(
     val shared: List<String>,
 )
 
-private fun parseBuddyRecommendations(json: String, planDestination: String): List<BuddyParsed> {
+private fun parseBuddyRecommendations(json: String): List<BuddyParsed> {
     if (json.isBlank()) return emptyList()
     return runCatching {
         val root = JSONObject(json)

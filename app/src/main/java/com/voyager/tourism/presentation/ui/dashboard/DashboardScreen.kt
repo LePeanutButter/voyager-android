@@ -73,6 +73,8 @@ import com.voyager.tourism.presentation.viewmodel.DashboardInsightsViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
 import java.util.Calendar
 
+private const val CREATE_PLAN_TEXT = "Crear plan"
+
 /**
  * Main dashboard screen showing trip overview and quick actions
  */
@@ -293,7 +295,7 @@ private fun DashboardBottomNavigationBar(
         NavigationBarItem(
             selected = false,
             onClick = onCreatePlanClick,
-            icon = { Icon(Icons.Filled.Add, contentDescription = "Crear plan") },
+            icon = { Icon(Icons.Filled.Add, contentDescription = CREATE_PLAN_TEXT) },
             label = { },
             alwaysShowLabel = false,
             colors = colors,
@@ -473,51 +475,12 @@ private fun DashboardAiInsightsSection(
                 title = "Tendencias",
                 subtitle = "Destinos emergentes",
             )
-            when {
-                trendingLoad -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(28.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    }
-                }
-                trendingErr != null -> {
-                    Text(
-                        text = trendingErr!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                trending.isEmpty() -> {
-                    Text(
-                        text = "Sin datos de tendencias.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                else -> {
-                    trending.forEach { dest ->
-                        TrendingDestinationRow(
-                            dest = dest,
-                            onOpen = {
-                                onDestinationExplore(
-                                    DestinationExploreParams(
-                                        loc = dest.name,
-                                        country = dest.country.takeIf { it.isNotBlank() },
-                                        destId = dest.id,
-                                    ),
-                                )
-                            },
-                        )
-                    }
-                }
-            }
+            TrendingSection(
+                trending = trending,
+                trendingErr = trendingErr,
+                trendingLoad = trendingLoad,
+                onDestinationExplore = onDestinationExplore
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             InsightSubsectionHeader(
@@ -525,33 +488,12 @@ private fun DashboardAiInsightsSection(
                 title = "Digest semanal",
                 subtitle = "Micro-tendencias",
             )
-            when {
-                weeklyErr != null -> {
-                    Text(
-                        text = weeklyErr!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                weeklyRows.isEmpty() -> {
-                    Text(
-                        text = "Sin highlights esta semana.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                else -> {
-                    weeklyRows.take(2).forEach { row ->
-                        DigestPreviewRow(
-                            row = row,
-                            onClick = { openExploreFromDigest(row) },
-                        )
-                    }
-                    TextButton(onClick = { sheet = InsightSheet.WeeklyDigest(weeklyRows) }) {
-                        Text("Ver digest completo")
-                    }
-                }
-            }
+            WeeklyDigestSection(
+                weeklyRows = weeklyRows,
+                weeklyErr = weeklyErr,
+                onOpenExploreFromDigest = { openExploreFromDigest(it) },
+                onShowFullDigest = { sheet = InsightSheet.WeeklyDigest(weeklyRows) }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             InsightSubsectionHeader(
@@ -559,32 +501,137 @@ private fun DashboardAiInsightsSection(
                 title = "Estacionalidad",
                 subtitle = "Patrones por destino",
             )
-            when {
-                seasonErr != null -> {
-                    Text(
-                        text = seasonErr!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                seasonRows.isEmpty() -> {
-                    Text(
-                        text = "Sin panorama estacional por ahora.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                else -> {
-                    seasonRows.take(2).forEach { row ->
-                        SeasonalityPreviewRow(
-                            row = row,
-                            onExploreIdeas = { openExploreFromSeasonality(row) },
+            SeasonalitySection(
+                seasonRows = seasonRows,
+                seasonErr = seasonErr,
+                onOpenExploreFromSeasonality = { openExploreFromSeasonality(it) },
+                onShowFullSeasonality = { sheet = InsightSheet.Seasonal(seasonRows) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrendingSection(
+    trending: List<ParsedTrendingDestination>,
+    trendingErr: String?,
+    trendingLoad: Boolean,
+    onDestinationExplore: (DestinationExploreParams) -> Unit,
+) {
+    when {
+        trendingLoad -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+        trendingErr != null -> {
+            Text(
+                text = trendingErr,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        trending.isEmpty() -> {
+            Text(
+                text = "Sin datos de tendencias.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        else -> {
+            trending.forEach { dest ->
+                TrendingDestinationRow(
+                    dest = dest,
+                    onOpen = {
+                        onDestinationExplore(
+                            DestinationExploreParams(
+                                loc = dest.name,
+                                country = dest.country.takeIf { it.isNotBlank() },
+                                destId = dest.id,
+                            ),
                         )
-                    }
-                    TextButton(onClick = { sheet = InsightSheet.Seasonal(seasonRows) }) {
-                        Text("Ver panorama completo")
-                    }
-                }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeeklyDigestSection(
+    weeklyRows: List<ParsedDigestRow>,
+    weeklyErr: String?,
+    onOpenExploreFromDigest: (ParsedDigestRow) -> Unit,
+    onShowFullDigest: () -> Unit,
+) {
+    when {
+        weeklyErr != null -> {
+            Text(
+                text = weeklyErr,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        weeklyRows.isEmpty() -> {
+            Text(
+                text = "Sin highlights esta semana.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        else -> {
+            weeklyRows.take(2).forEach { row ->
+                DigestPreviewRow(
+                    row = row,
+                    onClick = { onOpenExploreFromDigest(row) },
+                )
+            }
+            TextButton(onClick = onShowFullDigest) {
+                Text("Ver digest completo")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeasonalitySection(
+    seasonRows: List<ParsedSeasonalityRow>,
+    seasonErr: String?,
+    onOpenExploreFromSeasonality: (ParsedSeasonalityRow) -> Unit,
+    onShowFullSeasonality: () -> Unit,
+) {
+    when {
+        seasonErr != null -> {
+            Text(
+                text = seasonErr,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        seasonRows.isEmpty() -> {
+            Text(
+                text = "Sin panorama estacional por ahora.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        else -> {
+            seasonRows.take(2).forEach { row ->
+                SeasonalityPreviewRow(
+                    row = row,
+                    onExploreIdeas = { onOpenExploreFromSeasonality(row) },
+                )
+            }
+            TextButton(onClick = onShowFullSeasonality) {
+                Text("Ver panorama completo")
             }
         }
     }
@@ -682,7 +729,7 @@ private fun WeeklyDigestFullSheet(
                             Text("Ver ideas")
                         }
                         TextButton(onClick = { onCreatePlan(row.exploreQuery.ifBlank { row.title }) }) {
-                            Text("Crear plan")
+                            Text(CREATE_PLAN_TEXT)
                         }
                     }
                     val matches = tripsMatchingDigest(trips, row)
@@ -733,7 +780,7 @@ private fun SeasonalityFullSheet(
                             Text("Ver ideas para viajar")
                         }
                         TextButton(onClick = { onCreatePlan(row.title) }) {
-                            Text("Crear plan")
+                            Text(CREATE_PLAN_TEXT)
                         }
                     }
                     val matches = tripsMatchingSeasonality(trips, row)

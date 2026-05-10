@@ -90,29 +90,7 @@ fun AiAssistantScreen(
             if (loadingHistory) {
                 CircularProgressIndicator(modifier = Modifier.padding(bottom = 8.dp))
             }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(messages) { bubble ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (bubble.isUser) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        ),
-                    ) {
-                        Text(
-                            bubble.text,
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-            }
+            MessageList(messages = messages)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -138,6 +116,33 @@ fun AiAssistantScreen(
                         Icon(Icons.Filled.Send, contentDescription = "Enviar")
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MessageList(messages: List<com.voyager.tourism.presentation.viewmodel.AiAssistantViewModel.MessageBubble>) {
+    LazyColumn(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(messages) { bubble ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (bubble.isUser) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                ),
+            ) {
+                Text(
+                    bubble.text,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
     }
