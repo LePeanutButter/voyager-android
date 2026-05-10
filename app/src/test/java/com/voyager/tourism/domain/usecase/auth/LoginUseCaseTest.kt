@@ -201,4 +201,27 @@ class LoginUseCaseTest {
         assertTrue(r.isFailure)
         assertTrue(r.exceptionOrNull() is IllegalArgumentException)
     }
+
+    @Test
+    fun `invoke success without token skips saveToken`() = runTest {
+        val dto = TestFixtures.userDto(token = null)
+        coEvery { authRepository.loginUser("u", "p") } returns Result.success(dto)
+
+        val r = useCase("u", "p")
+
+        assertTrue(r.isSuccess)
+        verify(exactly = 0) { tokenManager.saveToken(any()) }
+        verify { preferencesManager.saveCurrentUserId("42") }
+        verify { tokenManager.saveUser(any()) }
+    }
+
+    @Test
+    fun `invoke catches unexpected exception from repository`() = runTest {
+        coEvery { authRepository.loginUser(any(), any()) } throws IllegalStateException("db")
+
+        val r = useCase("u", "p")
+
+        assertTrue(r.isFailure)
+        assertEquals("db", r.exceptionOrNull()?.message)
+    }
 }

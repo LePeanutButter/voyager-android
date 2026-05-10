@@ -1,7 +1,6 @@
 package com.voyager.tourism.presentation.viewmodel
 
 import android.net.Uri
-import java.nio.charset.StandardCharsets
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.session.SessionInvalidationNotifier
@@ -223,16 +222,16 @@ class AuthViewModel @Inject constructor(
 
         /** Ruta lista para [NavController.navigate] con destino sugerido (UTF-8). */
         fun createTravelPlanRoute(destinationHint: String): String {
-            val enc = Uri.encode(destinationHint.trim(), StandardCharsets.UTF_8.name())
+            val enc = Uri.encode(destinationHint.trim())
             return "create_travel_plan?hint=$enc"
         }
 
         /** Equivalente a `/explore/destination?loc=&country=&destId=` en el web. */
         fun createDestinationExploreRoute(loc: String, country: String?, destId: String?): String {
             val locNav = loc.trim().ifBlank { destId?.trim().orEmpty() }
-            val encLoc = Uri.encode(locNav, StandardCharsets.UTF_8.name())
-            val encCountry = Uri.encode(country?.trim().orEmpty(), StandardCharsets.UTF_8.name())
-            val encDest = Uri.encode(destId?.trim().orEmpty(), StandardCharsets.UTF_8.name())
+            val encLoc = Uri.encode(locNav)
+            val encCountry = Uri.encode(country?.trim().orEmpty())
+            val encDest = Uri.encode(destId?.trim().orEmpty())
             return "destination_explore?loc=$encLoc&country=$encCountry&destId=$encDest"
         }
     }
