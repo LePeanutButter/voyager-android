@@ -1,6 +1,7 @@
 package com.voyager.tourism.data.api
 
 import com.voyager.tourism.data.dto.ApiResponse
+import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.PagedResponseUserDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
@@ -37,7 +38,7 @@ interface UserApiService {
      * Authenticates a user with email/username and password.
      */
     @POST("users/login")
-    suspend fun loginUser(@Body body: UserLoginDto): ApiResponse<UserDto>
+    suspend fun loginUser(@Body body: UserLoginDto): ApiResponse<LoginResponseDto>
 
     /**
      * Fetches a user profile by numeric identifier.

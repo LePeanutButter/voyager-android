@@ -139,6 +139,12 @@ dependencies {
     // Image Loading (placeholder for future use)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Custom Tabs for In-App Browser (Google Auth)
+    implementation("androidx.browser:browser:1.7.0")
+
+    // Google Sign-In Native SDK
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
@@ -147,6 +153,8 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    // JSONObject en unit tests JVM: el android.jar stub no implementa org.json de forma fiable.
+    testImplementation("org.json:json:20240303")
 
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -167,6 +175,10 @@ ksp {
 
 jacoco {
     toolVersion = "0.8.12"
+}
+
+dependencyLocking {
+    lockAllConfigurations()
 }
 
 // Informe JaCoCo unificado (excluye UI Compose, Hilt y código generado para acercar el % a lógica de negocio)

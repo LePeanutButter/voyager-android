@@ -1,9 +1,10 @@
 package com.voyager.tourism.presentation.viewmodel
 
 import android.app.Application
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
 import com.voyager.tourism.domain.repository.AuthRepository
 import com.voyager.tourism.domain.usecase.auth.LoginUseCase
 import com.voyager.tourism.util.MainDispatcherRule
@@ -11,8 +12,6 @@ import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -54,21 +53,27 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `loginWithGoogle opens browser on success`() {
-        coEvery { authRepository.initiateGoogleLogin() } returns Result.success("https://oauth.example/authorize")
-        val context = mockk<Context>(relaxed = true)
-        vm.loginWithGoogle(context)
-        val slot = slot<Intent>()
-        verify { context.startActivity(capture(slot)) }
-        assertEquals(Intent.ACTION_VIEW, slot.captured.action)
-        assertTrue(vm.uiState.value is LoginUiState.GoogleLoginInitiated)
+    fun `handleGoogleSignInResult success uses serverAuthCode`() {
+        val account = mockk<GoogleSignInAccount>()
+        every { account.serverAuthCode } returns "srv-code"
+        val task = mockk<Task<GoogleSignInAccount>>()
+        every { task.getResult(ApiException::class.java) } returns account
+        coEvery { loginUseCase.loginWithGoogle("srv-code", null) } returns Result.success(TestFixtures.domainUser())
+
+        vm.handleGoogleSignInResult(task)
+
+        assertTrue(vm.uiState.value is LoginUiState.Success)
     }
 
     @Test
-    fun `loginWithGoogle url failure`() {
-        coEvery { authRepository.initiateGoogleLogin() } returns Result.failure(RuntimeException("no url"))
-        val context = mockk<Context>(relaxed = true)
-        vm.loginWithGoogle(context)
+    fun `handleGoogleSignInResult error when serverAuthCode null`() {
+        val account = mockk<GoogleSignInAccount>()
+        every { account.serverAuthCode } returns null
+        val task = mockk<Task<GoogleSignInAccount>>()
+        every { task.getResult(ApiException::class.java) } returns account
+
+        vm.handleGoogleSignInResult(task)
+
         assertTrue(vm.uiState.value is LoginUiState.Error)
     }
 
@@ -101,15 +106,6 @@ class LoginViewModelTest {
         coEvery { loginUseCase.loginWithGoogle(any(), any()) } throws RuntimeException("boom")
         val uri = Uri.parse("https://app/callback?code=c&state=s")
         vm.handleGoogleCallback(uri)
-        assertTrue(vm.uiState.value is LoginUiState.Error)
-    }
-
-    @Test
-    fun `loginWithGoogle startActivity failure sets error`() {
-        coEvery { authRepository.initiateGoogleLogin() } returns Result.success("https://oauth.example/authorize")
-        val context = mockk<Context>(relaxed = true)
-        every { context.startActivity(any()) } throws SecurityException("no activity")
-        vm.loginWithGoogle(context)
         assertTrue(vm.uiState.value is LoginUiState.Error)
     }
 

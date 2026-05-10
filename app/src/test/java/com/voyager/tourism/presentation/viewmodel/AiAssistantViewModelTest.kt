@@ -1,20 +1,31 @@
 package com.voyager.tourism.presentation.viewmodel
 
-import com.voyager.tourism.data.dto.AiChatReplyDto
+import com.voyager.tourism.data.dto.LocalChatResponseDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
 
+/**
+ * Pruebas de superficie pública del asistente IA (sin acoplar a miembros privados del ViewModel).
+ */
+@ExperimentalCoroutinesApi
 class AiAssistantViewModelTest {
 
     @get:Rule
@@ -30,41 +41,127 @@ class AiAssistantViewModelTest {
     }
 
     @Test
-    fun `empty message ignored`() {
-        vm.sendMessage("   ")
+    fun `no user shows error on send`() {
+        coEvery { prefs.getCurrentUserId() } returns null
+        vm.sendMessage("hola")
+        assertEquals("Inicia sesión para usar el asistente", vm.error.value)
+    }
+
+    @Test
+    fun `clearError clears observable error`() {
+        coEvery { prefs.getCurrentUserId() } returns null
+        vm.sendMessage("x")
+        assertEquals("Inicia sesión para usar el asistente", vm.error.value)
+        vm.clearError()
+        assertEquals(null, vm.error.value)
+    }
+
+    @Test
+    fun `clearConversation rotates session when user present`() = runTest {
+        coEvery { prefs.getCurrentUserId() } returns "7"
+        coEvery { prefs.rotateLocalChatSessionId("7") } returns "new-sid"
+        vm.clearConversation()
+        advanceUntilIdle()
+        coVerify { prefs.rotateLocalChatSessionId("7") }
+        assertTrue(vm.messages.value.any { it.text.contains("Conversación nueva") })
+    }
+
+    @Test
+    fun `ensureInitialized and sendMessage append assistant reply`() = runTest {
+        coEvery { prefs.getCurrentUserId() } returns "42"
+        coEvery { prefs.getOrCreateLocalChatSessionId("42") } returns "sid-1"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory("sid-1", 50) } returns Response.success(
+            """{"messages":[]}""".toResponseBody("application/json".toMediaType()),
+        )
+        vm.ensureInitialized()
+        advanceUntilIdle()
+
+        coEvery { repo.postLocalChatMessage(any()) } returns Response.success(LocalChatResponseDto(reply = "Hola"))
+        vm.sendMessage(" ping ")
+        advanceUntilIdle()
+
+        assertTrue(vm.messages.value.any { it.text.contains("Hola") })
+    }
+
+    @Test
+    fun `ensureInitialized without user leaves messages empty`() = runTest {
+        coEvery { prefs.getCurrentUserId() } returns null
+        vm.ensureInitialized()
+        advanceUntilIdle()
         assertTrue(vm.messages.value.isEmpty())
     }
 
     @Test
-    fun `no user shows error`() {
-        coEvery { prefs.getCurrentUserId() } returns null
-        vm.sendMessage("hola")
-        assertNotNull(vm.error.value)
-    }
-
-    @Test
-    fun `successful chat appends bubbles`() {
-        coEvery { prefs.getCurrentUserId() } returns "42"
-        coEvery { repo.postChat(any()) } returns Response.success(AiChatReplyDto("Hola"))
-        vm.sendMessage(" ping ")
-        assertEquals(2, vm.messages.value.size)
-        assertTrue(vm.messages.value.last().text.contains("Hola"))
-    }
-
-    @Test
-    fun `failed http adds error bubble`() {
-        coEvery { prefs.getCurrentUserId() } returns "42"
-        coEvery { repo.postChat(any()) } returns Response.error(
-            500,
-            "err".toResponseBody(null),
+    fun `ensureInitialized history http error shows fallback welcome`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "9"
+        coEvery { prefs.getOrCreateLocalChatSessionId("9") } returns "sid-x"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
         )
-        vm.sendMessage("x")
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.error(
+            500,
+            "".toResponseBody(null),
+        )
+        vm.ensureInitialized()
+        delay(600)
+        assertTrue(vm.messages.value.any { it.text.contains("Voyager IA") })
+    }
+
+    @Test
+    fun `ensureInitialized parses history messages`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "3"
+        coEvery { prefs.getOrCreateLocalChatSessionId("3") } returns "sid-h"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            "{}".toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
+            """{"messages":[{"role":"user","content":"u"},{"role":"assistant","content":"a"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        vm.ensureInitialized()
+        delay(600)
+        assertEquals(2, vm.messages.value.size)
+    }
+
+    @Test
+    fun `sendMessage http error surfaces in transcript`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "5"
+        coEvery { prefs.getOrCreateLocalChatSessionId("5") } returns "sid-e"
+        coEvery { repo.postLocalChatMessage(any()) } returns Response.error(
+            500,
+            "srv".toResponseBody("text/plain".toMediaType()),
+        )
+        vm.sendMessage("hola")
+        delay(600)
+        assertNotNull(vm.error.value)
         assertTrue(vm.messages.value.last().text.contains("Error"))
     }
 
     @Test
-    fun `clearError`() {
-        vm.clearError()
-        assertEquals(null, vm.error.value)
+    fun `sendMessage with ranking trigger appends suggestions`() = runBlocking {
+        coEvery { prefs.getCurrentUserId() } returns "42"
+        coEvery { prefs.getOrCreateLocalChatSessionId("42") } returns "sid-r"
+        coEvery { repo.getTrendsDashboard() } returns Response.success(
+            """{"emerging_destinations":[{"name":"Paris","country":"FR"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
+            """{"messages":[]}""".toResponseBody("application/json".toMediaType()),
+        )
+        vm.ensureInitialized()
+        delay(600)
+
+        coEvery { repo.postLocalChatMessage(any()) } returns Response.success(LocalChatResponseDto(reply = "ok"))
+        coEvery { repo.postLocalRecommendations(any()) } returns Response.success(
+            """{"items":[{"id":"1","name":"Museo","category":"c","score":0.5,"description":"d"}]}"""
+                .toResponseBody("application/json".toMediaType()),
+        )
+        vm.sendMessage("quiero recomendaciones de museos")
+        delay(800)
+
+        assertTrue(vm.messages.value.last().text.contains("Sugerencias"))
     }
 }

@@ -64,7 +64,7 @@ class LoginUseCase @Inject constructor(
      */
     suspend fun loginWithGoogle(code: String, state: String? = null): Result<User> {
         return try {
-            val result = authRepository.handleGoogleCallback(code, state ?: "")
+            val result = authRepository.exchangeGoogleCode(code, state)
             if (result.isSuccess) {
                 val userDto = result.getOrThrow()
                 userDto.token?.let { tokenManager.saveToken(it) }

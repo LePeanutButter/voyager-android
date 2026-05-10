@@ -1,5 +1,6 @@
 package com.voyager.tourism.data.api
 
+import com.voyager.tourism.data.dto.GoogleServerAuthRequest
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.util.TestFixtures
 import kotlinx.coroutines.test.runTest
@@ -23,22 +24,18 @@ class GoogleAuthApiServiceWireTest {
     }
 
     @Test
-    fun `initiateGoogleLogin GET returns ApiResponse string data`() = runTest {
+    fun `initiateGoogleLogin GET returns 302 redirect with Location header`() = runTest {
+        val googleUrl = "https://accounts.google.com/o/oauth2/v2/auth?client=1"
         serverRule.server.enqueue(
             MockResponse()
-                .setBody(
-                    ApiResponseEnvelope.success(
-                        serverRule.moshi,
-                        "https://accounts.google.com/o/oauth2/v2/auth?client=1",
-                        String::class.java,
-                    ),
-                ),
+                .setResponseCode(200)
+                .addHeader("Location", googleUrl)
         )
 
-        val r = api.initiateGoogleLogin()
+        val response = api.initiateGoogleLogin()
 
-        assertEquals(200, r.status)
-        assertTrue(r.data!!.contains("google.com"))
+        assertEquals(200, response.code())
+        assertEquals(googleUrl, response.headers()["Location"])
 
         val req = serverRule.server.takeRequest()
         assertEquals("GET", req.method)
@@ -46,23 +43,21 @@ class GoogleAuthApiServiceWireTest {
     }
 
     @Test
-    fun `handleGoogleCallback GET uses code and state query params`() = runTest {
+    fun `exchangeGoogleServerAuthCode POST sends JSON body`() = runTest {
         val user = TestFixtures.userDto()
         serverRule.server.enqueue(
             MockResponse()
                 .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
         )
 
-        val r = api.handleGoogleCallback(code = "auth-code-xyz", state = "csrf-state")
+        val r = api.exchangeGoogleServerAuthCode(GoogleServerAuthRequest(code = "auth-code-xyz"))
 
         assertEquals(200, r.status)
         assertEquals(user.id, r.data?.id)
 
         val req = serverRule.server.takeRequest()
-        assertEquals("GET", req.method)
-        val path = req.requestUrl!!.encodedPath
-        assertTrue(path.contains("auth/google/callback"))
-        assertEquals("auth-code-xyz", req.requestUrl!!.queryParameter("code"))
-        assertEquals("csrf-state", req.requestUrl!!.queryParameter("state"))
+        assertEquals("POST", req.method)
+        assertTrue(req.path!!.contains("/api/v1/auth/google/token"))
+        assertTrue(req.body.readUtf8().contains("auth-code-xyz"))
     }
 }

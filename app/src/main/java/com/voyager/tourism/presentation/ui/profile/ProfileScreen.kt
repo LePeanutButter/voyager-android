@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,8 +35,9 @@ import com.voyager.tourism.presentation.viewmodel.ProfileUiState
 fun ProfileScreen(
     onLogout: () -> Unit,
     onBack: () -> Unit = {},
+    onSettings: () -> Unit = {},
     onTravelPreferences: () -> Unit = {},
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -102,12 +104,16 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
-            
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.Close, contentDescription = "Cerrar")
+            Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                IconButton(onClick = onSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                }
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar")
+                }
             }
         }
-        
+
         when (uiState) {
             is ProfileUiState.Loading, is ProfileUiState.Saving -> {
                 Box(

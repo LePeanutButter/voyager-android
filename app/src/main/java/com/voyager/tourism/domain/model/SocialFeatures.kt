@@ -1,12 +1,15 @@
 package com.voyager.tourism.domain.model
 
 /**
- * Another traveler the current user is connected with and the connection state label from the backend.
+ * Conexión aceptada: id de fila en backend ([TravelConnectionDto.id]) y datos del otro usuario ([userId] peer).
  */
 data class TravelerConnection(
-    val id: Long,
+    val connectionId: Long,
+    val peerUserId: Long,
     val username: String,
-    val status: String
+    val firstName: String?,
+    val lastName: String?,
+    val status: String,
 )
 
 /**

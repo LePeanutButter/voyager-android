@@ -1,6 +1,13 @@
 package com.voyager.tourism.presentation.ui.auth
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +31,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.voyager.tourism.presentation.ui.theme.SmarTripLogo
+import com.voyager.tourism.presentation.ui.theme.SmarTripLogoVariant
+import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterViewModel
 import com.voyager.tourism.presentation.viewmodel.RegisterUiState
 
@@ -72,8 +82,8 @@ fun RegisterScreen(
                     "Cuenta creada exitosamente",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
-                navController.navigate("login") {
-                    popUpTo("register") { inclusive = true }
+                navController.navigate(AuthViewModel.ROUTE_LOGIN) {
+                    popUpTo(AuthViewModel.ROUTE_REGISTER) { inclusive = true }
                 }
             }
             is RegisterUiState.Error -> {
@@ -91,6 +101,13 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        SmarTripLogo(
+            variant = SmarTripLogoVariant.MatchTheme,
+            modifier = Modifier
+                .height(44.dp)
+                .fillMaxWidth(0.55f),
+        )
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = "Crear Cuenta",
             style = MaterialTheme.typography.headlineMedium,
@@ -291,7 +308,7 @@ fun RegisterScreen(
         
         // Login link
         TextButton(
-            onClick = { navController.navigate("login") },
+            onClick = { navController.navigate(AuthViewModel.ROUTE_LOGIN) },
             enabled = uiState !is RegisterUiState.Loading
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")

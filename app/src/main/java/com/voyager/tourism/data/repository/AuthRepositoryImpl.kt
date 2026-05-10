@@ -2,6 +2,7 @@ package com.voyager.tourism.data.repository
 
 import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.api.GoogleAuthApiService
+import com.voyager.tourism.data.dto.GoogleServerAuthRequest
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
@@ -65,9 +66,11 @@ class AuthRepositoryImpl @Inject constructor(
             )
             
             val response = userApiService.loginUser(request)
-            
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+            val payload = response.data
+
+            if (response.status == 200 && payload != null) {
+                val merged = payload.user.copy(token = payload.token)
+                Result.success(merged)
             } else {
                 Result.failure(Exception(response.message.ifBlank { "Login failed" }))
             }
@@ -77,11 +80,14 @@ class AuthRepositoryImpl @Inject constructor(
     }
     
     /**
-     * Exchanges the Google authorization code for a Voyager session profile.
+     * Intercambia el código de Google (`serverAuthCode` nativo o `code` de deep link) vía POST [auth/google/token].
+     * El parámetro [state] se conserva por compatibilidad con el flujo por URI; el backend actual no lo usa.
      */
-    override suspend fun handleGoogleCallback(code: String, state: String): Result<UserDto> {
+    override suspend fun exchangeGoogleCode(code: String, state: String?): Result<UserDto> {
         return try {
-            val response = googleAuthApiService.handleGoogleCallback(code, state)
+            val response = googleAuthApiService.exchangeGoogleServerAuthCode(
+                GoogleServerAuthRequest(code = code),
+            )
             
             if (response.status == 200 && response.data != null) {
                 Result.success(response.data)
@@ -95,14 +101,17 @@ class AuthRepositoryImpl @Inject constructor(
 
     /**
      * Requests the backend URL used to begin the Google OAuth2 redirect flow.
+     * Captured from the 'Location' header of the 302 redirect response.
      */
     override suspend fun initiateGoogleLogin(): Result<String> {
         return try {
             val response = googleAuthApiService.initiateGoogleLogin()
-            if (response.status == 200 && response.data != null) {
-                Result.success(response.data)
+            val location = response.headers()["Location"]
+            
+            if ((response.code() == 302 || response.code() == 301 || response.code() == 200) && location != null) {
+                Result.success(location)
             } else {
-                Result.failure(Exception(response.message.ifBlank { "Google login init failed" }))
+                Result.failure(Exception("No se pudo obtener la URL de redirección (Status: ${response.code()})"))
             }
         } catch (e: Exception) {
             Result.failure(e)

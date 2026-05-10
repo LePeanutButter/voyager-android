@@ -43,7 +43,7 @@ class CreateTravelPlanUseCaseTest {
         origin = "MAD",
         startDate = start,
         endDate = end,
-        budget = 100.0,
+        budget = 500_000.0,
         travelers = 2,
         description = "  notes  ",
     )
@@ -108,9 +108,23 @@ class CreateTravelPlanUseCaseTest {
     }
 
     @Test
-    fun `fails when budget negative`() = runTest {
+    fun `fails when budget below COP minimum`() = runTest {
         val (s, e) = futureRange()
-        val r = useCase(baseParams(s, e).copy(budget = -1.0))
+        val r = useCase(baseParams(s, e).copy(budget = 10_000.0))
+        assertTrue(r.isFailure)
+    }
+
+    @Test
+    fun `fails when budget not multiple of 50`() = runTest {
+        val (s, e) = futureRange()
+        val r = useCase(baseParams(s, e).copy(budget = 50_001.0))
+        assertTrue(r.isFailure)
+    }
+
+    @Test
+    fun `fails when budget null`() = runTest {
+        val (s, e) = futureRange()
+        val r = useCase(baseParams(s, e).copy(budget = null))
         assertTrue(r.isFailure)
     }
 

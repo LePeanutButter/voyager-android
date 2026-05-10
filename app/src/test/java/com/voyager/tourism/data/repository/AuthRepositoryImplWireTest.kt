@@ -4,6 +4,7 @@ import com.voyager.tourism.data.api.ApiResponseEnvelope
 import com.voyager.tourism.data.api.GoogleAuthApiService
 import com.voyager.tourism.data.api.RetrofitMockWebServerRule
 import com.voyager.tourism.data.api.UserApiService
+import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.util.TestFixtures
 import kotlinx.coroutines.test.runTest
@@ -57,21 +58,23 @@ class AuthRepositoryImplWireTest {
 
     @Test
     fun `loginUser maps 200 envelope to success`() = runTest {
-        val user = TestFixtures.userDto()
+        val user = TestFixtures.userDto(token = null)
+        val login = TestFixtures.loginResponseDto(user = user, token = "jwt-abc")
         serverRule.server.enqueue(
             MockResponse()
-                .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
+                .setBody(ApiResponseEnvelope.success(serverRule.moshi, login, LoginResponseDto::class.java)),
         )
 
         val result = repository.loginUser("traveler@mail.com", "secret")
 
         assertTrue(result.isSuccess)
         assertEquals(user.email, result.getOrThrow().email)
+        assertEquals("jwt-abc", result.getOrThrow().token)
     }
 
     @Test
     fun `loginUser failure when data null`() = runTest {
-        val json = ApiResponseEnvelope.success(serverRule.moshi, null, UserDto::class.java, status = 401, message = "Bad creds")
+        val json = ApiResponseEnvelope.success(serverRule.moshi, null, LoginResponseDto::class.java, status = 401, message = "Bad creds")
         serverRule.server.enqueue(MockResponse().setBody(json))
 
         val result = repository.loginUser("x", "y")
@@ -82,32 +85,28 @@ class AuthRepositoryImplWireTest {
 
     @Test
     fun `initiateGoogleLogin returns url string`() = runTest {
+        val googleUrl = "https://accounts.google.com/o/oauth2/v2/auth"
         serverRule.server.enqueue(
             MockResponse()
-                .setBody(
-                    ApiResponseEnvelope.success(
-                        serverRule.moshi,
-                        "https://oauth.example/authorize",
-                        String::class.java,
-                    ),
-                ),
+                .setResponseCode(200)
+                .addHeader("Location", googleUrl)
         )
 
         val result = repository.initiateGoogleLogin()
 
         assertTrue(result.isSuccess)
-        assertTrue(result.getOrThrow().startsWith("https://"))
+        assertEquals(googleUrl, result.getOrThrow())
     }
 
     @Test
-    fun `handleGoogleCallback maps user envelope`() = runTest {
+    fun `exchangeGoogleCode maps user envelope`() = runTest {
         val user = TestFixtures.userDto()
         serverRule.server.enqueue(
             MockResponse()
                 .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
         )
 
-        val result = repository.handleGoogleCallback("code", "state")
+        val result = repository.exchangeGoogleCode("code", "state")
 
         assertTrue(result.isSuccess)
         assertEquals(user.id, result.getOrThrow().id)

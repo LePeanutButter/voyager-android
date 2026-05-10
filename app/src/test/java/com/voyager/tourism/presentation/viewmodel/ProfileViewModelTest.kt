@@ -6,6 +6,7 @@ import com.voyager.tourism.domain.usecase.auth.UpdateProfileUseCase
 import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -74,14 +75,14 @@ class ProfileViewModelTest {
 
     @Test
     fun `getCurrentUserId parses string id from json`() {
-        coEvery { tokenManager.getUser() } returns """{"id":"99","email":"x"}"""
+        every { tokenManager.getCurrentUserId() } returns "99"
 
         assertEquals("99", vm.getCurrentUserId())
     }
 
     @Test
     fun `getCurrentUserId null when no json`() {
-        coEvery { tokenManager.getUser() } returns null
+        every { tokenManager.getCurrentUserId() } returns null
 
         assertNull(vm.getCurrentUserId())
     }

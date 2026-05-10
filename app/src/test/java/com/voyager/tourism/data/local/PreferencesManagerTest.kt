@@ -3,8 +3,12 @@ package com.voyager.tourism.data.local
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.voyager.tourism.data.dto.SmarTripSettingsPayload
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -75,5 +79,41 @@ class PreferencesManagerTest {
         assertEquals("jwt", pm.authTokenFlow.value)
         pm.clearAuthData()
         assertNull(pm.authTokenFlow.value)
+    }
+
+    @Test
+    fun `smartrip_settings JSON round trip matches web shape`() {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val pm = PreferencesManager(ctx)
+        val payload = SmarTripSettingsPayload(
+            darkMode = true,
+            communitySuggestions = false,
+            profileVisibility = "private",
+        )
+        pm.saveSmarTripSettings(payload)
+        val read = pm.getSmarTripSettings()
+        assertTrue(read.darkMode)
+        assertFalse(read.communitySuggestions)
+        assertEquals("private", read.profileVisibility)
+        assertTrue(pm.darkThemeFlow.value)
+    }
+
+    @Test
+    fun `local chat session id is stable until rotate or clearAuth`() {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val pm = PreferencesManager(ctx)
+        pm.saveCurrentUserId("u1")
+        val s1 = pm.getOrCreateLocalChatSessionId("u1")
+        val s2 = pm.getOrCreateLocalChatSessionId("u1")
+        assertEquals(s1, s2)
+        val s3 = pm.rotateLocalChatSessionId("u1")
+        assertNotEquals(s1, s3)
+        assertEquals(s3, pm.getOrCreateLocalChatSessionId("u1"))
+        pm.saveAuthToken("t")
+        pm.clearAuthData()
+        assertNull(pm.getCurrentUserId())
+        pm.saveCurrentUserId("u1")
+        val s4 = pm.getOrCreateLocalChatSessionId("u1")
+        assertNotEquals(s3, s4)
     }
 }

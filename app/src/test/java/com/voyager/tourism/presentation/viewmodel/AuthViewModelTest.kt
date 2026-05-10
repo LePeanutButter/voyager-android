@@ -9,9 +9,12 @@ import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -20,6 +23,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class AuthViewModelTest {
 
     @get:Rule
@@ -85,7 +89,7 @@ class AuthViewModelTest {
     @Test
     fun `register success`() {
         coEvery {
-            registerUseCase("e@e.com", "p", "u", "F", "L")
+            registerUseCase("u", "e@e.com", "p", "F", "L")
         } returns Result.success(TestFixtures.domainUser())
         val vm = viewModel()
         vm.register("e@e.com", "p", "u", "F", "L")
@@ -173,5 +177,206 @@ class AuthViewModelTest {
         vm.onSessionExpired()
         assertEquals(AuthViewModel.ROUTE_LOGIN, nav.await())
         assertTrue(vm.authState.value is AuthState.Unauthenticated)
+    }
+
+    @Test
+    fun `register failure sets error state`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+            RuntimeException("Registration failed"),
+        )
+        val vm = viewModel()
+        vm.register("test@test.com", "pass", "user", "first", "last")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Registration failed", (vm.authState.value as AuthState.Error).message)
+    }
+
+    @Test
+    fun `register with invalid email`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+            RuntimeException("Invalid email"),
+        )
+        val vm = viewModel()
+        vm.register("invalid-email", "pass", "user", "first", "last")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Invalid email", (vm.authState.value as AuthState.Error).message)
+    }
+
+    @Test
+    fun `register with weak password`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+            RuntimeException("Password too weak"),
+        )
+        val vm = viewModel()
+        vm.register("test@test.com", "weak", "user", "first", "last")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Password too weak", (vm.authState.value as AuthState.Error).message)
+    }
+
+    @Test
+    fun `login with empty credentials`() = runTest {
+        coEvery { loginUseCase(any(), any()) } returns Result.failure(RuntimeException("Empty credentials"))
+        val vm = viewModel()
+        vm.login("", "")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Empty credentials", (vm.authState.value as AuthState.Error).message)
+    }
+
+    @Test
+    fun `login with network error`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { loginUseCase(any(), any()) } returns Result.failure(RuntimeException("Network timeout"))
+        val vm = viewModel()
+        vm.login("test@test.com", "password")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Network timeout", (vm.authState.value as AuthState.Error).message)
+    }
+
+    @Test
+    fun `logout with error`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { userRepository.logout() } returns Result.failure(RuntimeException("Logout failed"))
+        val vm = viewModel()
+        vm.logout()
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Unauthenticated)
+        assertNull(vm.currentUser.value)
+    }
+
+    @Test
+    fun `oauth with state parameter`() = runBlocking {
+        coEvery { loginUseCase.loginWithGoogle("c", "custom-state") } returns Result.success(TestFixtures.domainUser())
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns null
+        every { uri.getQueryParameter("code") } returns "c"
+        every { uri.getQueryParameter("state") } returns "custom-state"
+        val vm = viewModel()
+        val nav = async { vm.navigateAfterAuth.first() }
+        yield()
+        vm.handleGoogleOAuthUri(uri)
+        assertEquals(AuthViewModel.ROUTE_DASHBOARD, nav.await())
+        assertTrue(vm.authState.value is AuthState.Authenticated)
+    }
+
+    @Test
+    fun `oauth with access_denied error`() = runBlocking {
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns "access_denied"
+        every { uri.getQueryParameter("error_description") } returns "User denied access"
+        every { uri.getQueryParameter("code") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+
+        assertEquals("User denied access", vm.oauthError.value)
+    }
+
+    @Test
+    fun `oauth with server_error`() = runBlocking {
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns "server_error"
+        every { uri.getQueryParameter("error_description") } returns "Internal server error"
+        every { uri.getQueryParameter("code") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+
+        assertEquals("Internal server error", vm.oauthError.value)
+    }
+
+    @Test
+    fun `oauth with invalid state`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { loginUseCase.loginWithGoogle(any(), any()) } returns Result.failure(RuntimeException("Invalid state"))
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns null
+        every { uri.getQueryParameter("code") } returns "c"
+        every { uri.getQueryParameter("state") } returns "invalid-state"
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
+
+        assertEquals("Invalid state", vm.oauthError.value)
+    }
+
+    @Test
+    fun `session expiration notifier clears session`() = runTest(mainDispatcherRule.dispatcher) {
+        val vm = viewModel()
+        sessionNotifier.notifySessionExpired()
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Unauthenticated)
+        assertNull(vm.currentUser.value)
+    }
+
+    @Test
+    fun `multiple concurrent login attempts`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { loginUseCase(any(), any()) } returns Result.success(TestFixtures.domainUser())
+        val vm = viewModel()
+
+        vm.login("test1@test.com", "password1")
+        vm.login("test2@test.com", "password2")
+        advanceUntilIdle()
+
+        assertTrue(vm.authState.value is AuthState.Authenticated)
+        assertNull(vm.errorMessage.value)
+    }
+
+    @Test
+    fun `login after successful registration`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { registerUseCase(any(), any(), any(), any(), any()) } returns Result.success(TestFixtures.domainUser())
+        coEvery { loginUseCase(any(), any()) } returns Result.success(TestFixtures.domainUser())
+        val vm = viewModel()
+
+        vm.register("test@test.com", "password", "testuser", "First", "Last")
+        advanceUntilIdle()
+        assertTrue(vm.authState.value is AuthState.Authenticated)
+
+        vm.login("test@test.com", "password")
+        advanceUntilIdle()
+        assertTrue(vm.authState.value is AuthState.Authenticated)
+        assertNull(vm.errorMessage.value)
+    }
+
+    @Test
+    fun `login failure without message uses default`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { loginUseCase(any(), any()) } returns Result.failure(Exception())
+        val vm = viewModel()
+        vm.login("a", "b")
+        advanceUntilIdle()
+        assertTrue(vm.authState.value is AuthState.Error)
+        assertEquals("Login failed", (vm.authState.value as AuthState.Error).message)
+        assertEquals("Login failed", vm.errorMessage.value)
+    }
+
+    @Test
+    fun `oauth google failure without message uses default`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { loginUseCase.loginWithGoogle(any(), any()) } returns Result.failure(Exception())
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns null
+        every { uri.getQueryParameter("code") } returns "c"
+        every { uri.getQueryParameter("state") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
+        assertEquals("Error en login con Google", vm.oauthError.value)
+        assertTrue(vm.authState.value is AuthState.Unauthenticated)
+    }
+
+    @Test
+    fun `oauth error without description uses error code`() = runTest(mainDispatcherRule.dispatcher) {
+        val uri = mockk<android.net.Uri>()
+        every { uri.getQueryParameter("error") } returns "invalid_request"
+        every { uri.getQueryParameter("error_description") } returns null
+        every { uri.getQueryParameter("code") } returns null
+        val vm = viewModel()
+        vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
+        assertEquals("invalid_request", vm.oauthError.value)
     }
 }

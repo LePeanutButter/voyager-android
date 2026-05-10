@@ -89,7 +89,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            registerUseCase(email, password, username, firstName, lastName)
+            registerUseCase(username, email, password, firstName, lastName)
                 .onSuccess { user ->
                     _currentUser.value = user
                     _authState.value = AuthState.Authenticated
@@ -200,7 +200,40 @@ class AuthViewModel @Inject constructor(
 
     companion object {
         const val ROUTE_LOGIN = "login"
+        const val ROUTE_REGISTER = "register"
         const val ROUTE_DASHBOARD = "dashboard"
+        const val ROUTE_TRIPS = "trips"
+        const val ROUTE_TRIP_DETAIL = "trip_detail/{tripId}"
+        const val ROUTE_CREATE_TRIP = "create_travel_plan"
+        const val ROUTE_CREATE_TRIP_WITH_HINT = "create_travel_plan?hint={hint}"
+        const val ROUTE_CALENDAR = "schedule_calendar"
+        const val ROUTE_RECOMMENDATIONS = "recommendations"
+        const val ROUTE_PLACE_DETAIL = "place_detail/{placeId}"
+        const val ROUTE_DESTINATION_EXPLORE = "destination_explore?loc={loc}&country={country}&destId={destId}"
+        const val ROUTE_PROFILE = "profile"
+        const val ROUTE_SETTINGS = "settings"
+        const val ROUTE_BEHAVIOR_ANALYSIS = "behavior_analysis"
+        const val ROUTE_TRAVEL_PREFERENCES = "travel_preferences"
+        const val ROUTE_SOCIAL = "social"
+        const val ROUTE_AI_ASSISTANT = "ai_assistant"
+
+        fun createTripDetailRoute(tripId: String) = "trip_detail/$tripId"
+        fun createPlaceDetailRoute(placeId: String) = "place_detail/$placeId"
+
+        /** Ruta lista para [NavController.navigate] con destino sugerido (UTF-8). */
+        fun createTravelPlanRoute(destinationHint: String): String {
+            val enc = Uri.encode(destinationHint.trim())
+            return "create_travel_plan?hint=$enc"
+        }
+
+        /** Equivalente a `/explore/destination?loc=&country=&destId=` en el web. */
+        fun createDestinationExploreRoute(loc: String, country: String?, destId: String?): String {
+            val locNav = loc.trim().ifBlank { destId?.trim().orEmpty() }
+            val encLoc = Uri.encode(locNav)
+            val encCountry = Uri.encode(country?.trim().orEmpty())
+            val encDest = Uri.encode(destId?.trim().orEmpty())
+            return "destination_explore?loc=$encLoc&country=$encCountry&destId=$encDest"
+        }
     }
 }
 

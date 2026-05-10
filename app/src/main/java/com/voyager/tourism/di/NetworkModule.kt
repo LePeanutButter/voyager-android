@@ -30,29 +30,15 @@ import javax.inject.Singleton
 /**
  * Dagger Hilt module that wires Retrofit, Moshi, and OkHttp for **voyager-backend-core**
  * (`BACKEND_BASE_URL`, must end with `/api/v1/`) and **voyager-ai-service**
- * (`AI_SERVICE_BASE_URL`, must end with `/api/v1/`).
+ * (`AI_SERVICE_BASE_URL`, debe terminar en barra api v1). Expone VoyagerAiApi: local recommendations, tendencias, matching, chat, etc.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    /**
-     * Provides a Moshi instance with Kotlin JSON adapter support for Retrofit.
-     */
-    @Provides
-    @Singleton
-    fun provideMoshi(): Moshi {
-        return Moshi.Builder()
-            .add(KotlinJsonAdapterFactory())
-            .build()
-    }
-
-    /**
-     * Provides a shared [OkHttpClient] with logging, auth and unauthorized interceptors, and timeouts.
-     */
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(
+    private fun newOkHttpClient(
+        readTimeoutSec: Long,
+        writeTimeoutSec: Long,
         authInterceptor: AuthInterceptor,
         unauthorizedResponseInterceptor: UnauthorizedResponseInterceptor,
     ): OkHttpClient {
@@ -69,9 +55,52 @@ object NetworkModule {
             .addInterceptor(authInterceptor)
             .addInterceptor(unauthorizedResponseInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(readTimeoutSec, TimeUnit.SECONDS)
+            .writeTimeout(writeTimeoutSec, TimeUnit.SECONDS)
             .build()
+    }
+
+    /**
+     * Provides a Moshi instance with Kotlin JSON adapter support for Retrofit.
+     */
+    @Provides
+    @Singleton
+    fun provideMoshi(): Moshi {
+        return Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        unauthorizedResponseInterceptor: UnauthorizedResponseInterceptor,
+    ): OkHttpClient {
+        return newOkHttpClient(
+            readTimeoutSec = 60,
+            writeTimeoutSec = 60,
+            authInterceptor = authInterceptor,
+            unauthorizedResponseInterceptor = unauthorizedResponseInterceptor,
+        )
+    }
+
+    /**
+     * Cliente HTTP para el microservicio IA: lecturas largas (Ollama) como en `aiMicroservice.js` del web.
+     */
+    @Provides
+    @Singleton
+    @Named("ai_client")
+    fun provideAiOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        unauthorizedResponseInterceptor: UnauthorizedResponseInterceptor,
+    ): OkHttpClient {
+        return newOkHttpClient(
+            readTimeoutSec = 180,
+            writeTimeoutSec = 120,
+            authInterceptor = authInterceptor,
+            unauthorizedResponseInterceptor = unauthorizedResponseInterceptor,
+        )
     }
 
     /**
@@ -93,9 +122,53 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("ai")
-    fun provideAiRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+    fun provideAiRetrofit(@Named("ai_client") okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BuildConfig.AI_SERVICE_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    /**
+     * Cliente HTTP que NO sigue redirecciones (302), necesario para capturar el Location de Google OAuth.
+     */
+    @Provides
+    @Singleton
+    @Named("no_redirects_client")
+    fun provideNoRedirectOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        unauthorizedResponseInterceptor: UnauthorizedResponseInterceptor,
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.HEADERS
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
+                },
+            )
+            .addInterceptor(authInterceptor)
+            .addInterceptor(unauthorizedResponseInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    /**
+     * Provides a [Retrofit] client for Google Auth that doesn't follow redirects.
+     */
+    @Provides
+    @Singleton
+    @Named("google_auth_retrofit")
+    fun provideGoogleAuthRetrofit(@Named("no_redirects_client") okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BACKEND_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -110,11 +183,11 @@ object NetworkModule {
         retrofit.create(UserApiService::class.java)
 
     /**
-     * Provides the Google OAuth API service for the backend retrofit instance.
+     * Provides the Google OAuth API service using a non-redirecting Retrofit instance.
      */
     @Provides
     @Singleton
-    fun provideGoogleAuthApiService(retrofit: Retrofit): GoogleAuthApiService =
+    fun provideGoogleAuthApiService(@Named("google_auth_retrofit") retrofit: Retrofit): GoogleAuthApiService =
         retrofit.create(GoogleAuthApiService::class.java)
 
     /**

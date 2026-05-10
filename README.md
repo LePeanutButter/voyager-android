@@ -25,7 +25,7 @@
 
 ## Background
 
-Voyager Tourism is a comprehensive Android application template that demonstrates best practices for building scalable, maintainable mobile applications using modern Android development stack. The project showcases Clean Architecture principles, MVVM pattern, and industry-standard libraries for dependency injection, networking, and local storage.
+**SmarTrip** (módulo Android del ecosistema Voyager) es una aplicación que sigue buenas prácticas de Android moderno: arquitectura limpia, MVVM, inyección de dependencias (Hilt), red (Retrofit/Moshi), almacenamiento local y UI con Jetpack Compose, alineada con el cliente web `voyager-web-client`.
 
 Key architectural decisions:
 - **Clean Architecture**: Separation of concerns with distinct layers (Presentation, Domain, Data)
@@ -396,4 +396,4 @@ This project is licensed under the GNU General Public License v3.0. See the [LIC
 
 ### Copyright
 
-© 2026 Voyager Team. All rights reserved.
+© 2026 SmarTrip / Voyager. All rights reserved.

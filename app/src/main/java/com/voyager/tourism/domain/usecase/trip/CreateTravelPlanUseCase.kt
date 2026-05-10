@@ -29,6 +29,11 @@ class CreateTravelPlanUseCase @Inject constructor(
     private val travelRepository: TravelRepository
 ) {
 
+    private companion object {
+        const val COP_MIN = 50_000L
+        const val COP_STEP = 50L
+    }
+
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     /**
@@ -57,7 +62,7 @@ class CreateTravelPlanUseCase @Inject constructor(
             ?.let { return Result.failure(it) }
 
         validateTravelers(travelers)?.let { return Result.failure(it) }
-        validateBudget(budget)?.let { return Result.failure(it) }
+        validateCopBudget(budget)?.let { return Result.failure(it) }
 
         return try {
             val request = TravelPlanRequest(
@@ -91,8 +96,9 @@ class CreateTravelPlanUseCase @Inject constructor(
     }
 
     private fun parseRequiredDate(value: String): Date? {
+        val day = value.trim().take(10)
         return try {
-            dateFormat.parse(value)
+            dateFormat.parse(day)
         } catch (_: Exception) {
             null
         }
@@ -121,8 +127,19 @@ class CreateTravelPlanUseCase @Inject constructor(
         return null
     }
 
-    private fun validateBudget(budget: Double?): Exception? {
-        if (budget != null && budget < 0) return IllegalArgumentException("El presupuesto no puede ser negativo")
+    private fun validateCopBudget(budget: Double?): Exception? {
+        if (budget == null) {
+            return IllegalArgumentException(
+                "Indica un presupuesto mínimo de $COP_MIN COP en múltiplos de $COP_STEP.",
+            )
+        }
+        val cop = kotlin.math.round(budget).toLong()
+        if (cop < COP_MIN) {
+            return IllegalArgumentException("El presupuesto mínimo es $COP_MIN COP.")
+        }
+        if (cop % COP_STEP != 0L) {
+            return IllegalArgumentException("El presupuesto debe ser múltiplo de $COP_STEP COP.")
+        }
         return null
     }
 }

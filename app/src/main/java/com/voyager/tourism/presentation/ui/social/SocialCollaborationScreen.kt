@@ -115,7 +115,7 @@ fun SocialCollaborationScreen(
                     }
                     state.connections.forEach { connection ->
                         AssistChip(
-                            onClick = { selectedReceiverId = connection.id.toString() },
+                            onClick = { selectedReceiverId = connection.peerUserId.toString() },
                             label = { Text("${connection.username} (${connection.status})") }
                         )
                     }

@@ -28,6 +28,7 @@ data class ApiErrorDto(
  */
 @JsonClass(generateAdapter = true)
 data class ConnectionDto(
+    @Json(name = "id") val id: Long? = null,
     @Json(name = "userId") val userId: Long,
     @Json(name = "username") val username: String,
     @Json(name = "firstName") val firstName: String? = null,

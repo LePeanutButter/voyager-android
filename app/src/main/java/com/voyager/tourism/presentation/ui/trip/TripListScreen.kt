@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.voyager.tourism.domain.model.TripStatus
 import com.voyager.tourism.presentation.viewmodel.AuthViewModel
 import com.voyager.tourism.presentation.viewmodel.TripViewModel
 
@@ -49,7 +50,7 @@ fun TripListScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "All Trips",
+                text = "Mis viajes",
                 style = MaterialTheme.typography.headlineMedium
             )
             
@@ -59,7 +60,7 @@ fun TripListScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Trip"
+                    contentDescription = "Crear plan de viaje"
                 )
             }
         }
@@ -96,13 +97,19 @@ fun TripListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "No trips planned yet",
+                        text = "Aún no tienes planes de viaje",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Comienza a planear tu primera aventura y deja que la IA te guie al destino ideal.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                     Button(onClick = onAddTrip) {
-                        Text("Plan Your First Trip")
+                        Text("Crear mi primer plan")
                     }
                 }
             }
@@ -147,12 +154,12 @@ private fun TripListItem(
                 )
                 
                 Text(
-                    text = trip.status.name,
+                    text = trip.status.spanishLabel(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = when (trip.status.name) {
-                        "ACTIVE" -> MaterialTheme.colorScheme.primary
-                        "COMPLETED" -> MaterialTheme.colorScheme.secondary
-                        "PLANNING" -> MaterialTheme.colorScheme.tertiary
+                    color = when (trip.status) {
+                        TripStatus.ACTIVE -> MaterialTheme.colorScheme.primary
+                        TripStatus.COMPLETED -> MaterialTheme.colorScheme.secondary
+                        TripStatus.PLANNING -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
@@ -169,7 +176,7 @@ private fun TripListItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = "${trip.travelers} travelers",
+                text = "${trip.travelers} viajeros",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -181,13 +188,13 @@ private fun TripListItem(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Budget: $${trip.budget}",
+                    text = "Presupuesto: $${trip.budget}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
-                    text = "Click for details",
+                    text = "Ver detalle",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )

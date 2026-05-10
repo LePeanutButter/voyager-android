@@ -1,5 +1,6 @@
 package com.voyager.tourism.util
 
+import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.ConnectionRequestDto
 import com.voyager.tourism.data.dto.CoordinatesDto
 import com.voyager.tourism.data.dto.DestinationDto
@@ -7,6 +8,7 @@ import com.voyager.tourism.data.dto.TravelerMatchDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelPlanStatus
 import com.voyager.tourism.data.dto.TripDto
+import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserRole
 import com.voyager.tourism.data.dto.UserStatus
@@ -17,6 +19,18 @@ import com.voyager.tourism.domain.model.TripStatus
 import com.voyager.tourism.domain.model.User
 
 object TestFixtures {
+
+    /** Respuesta envuelta como la devuelve Retrofit/Moshi para endpoints Spring `ApiResponse<T>`. */
+    fun <T> apiResponse(
+        status: Int,
+        data: T? = null,
+        message: String = if (status in 200..299) "OK" else "Error",
+    ): ApiResponse<T> = ApiResponse(
+        timestamp = "2024-01-01T00:00:00",
+        status = status,
+        message = message,
+        data = data,
+    )
 
     fun userDto(
         id: Long = 42L,
@@ -37,6 +51,16 @@ object TestFixtures {
         createdAt = "2024-01-01T10:00:00Z",
         updatedAt = "2024-01-02T10:00:00Z",
         token = token,
+    )
+
+    fun loginResponseDto(
+        user: UserDto = userDto(token = null),
+        token: String = "jwt-token",
+    ) = LoginResponseDto(
+        token = token,
+        tokenType = "Bearer",
+        expiresIn = 7200L,
+        user = user,
     )
 
     fun domainUser() = User(

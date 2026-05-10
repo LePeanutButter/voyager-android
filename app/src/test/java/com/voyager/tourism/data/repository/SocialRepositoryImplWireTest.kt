@@ -158,7 +158,8 @@ class SocialRepositoryImplWireTest {
         )
         val r = repository.getConnections(1L)
         assertTrue(r.isSuccess)
-        assertEquals(8L, r.getOrThrow().first().id)
+        assertEquals(8L, r.getOrThrow().first().connectionId)
+        assertEquals(8L, r.getOrThrow().first().peerUserId)
         assertEquals("pal", r.getOrThrow().first().username)
     }
 
