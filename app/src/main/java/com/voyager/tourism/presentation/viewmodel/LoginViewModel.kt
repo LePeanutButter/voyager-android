@@ -31,6 +31,10 @@ class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
+    
+    companion object {
+        private const val UNKNOWN_ERROR = "Error desconocido"
+    }
 
     private var googleSignInClient: GoogleSignInClient? = null
     

@@ -96,6 +96,7 @@ fun PlaceDetailScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             PlaceDetailContent(
+                modifier = Modifier.weight(1f),
                 loading = loading,
                 error = error,
                 items = items,
@@ -171,6 +172,7 @@ private fun PlaceIdeaCard(row: ParsedLocalRecommendationItem) {
 
 @Composable
 private fun PlaceDetailContent(
+    modifier: Modifier = Modifier,
     loading: Boolean,
     error: String?,
     items: List<ParsedLocalRecommendationItem>,
@@ -181,9 +183,8 @@ private fun PlaceDetailContent(
     when {
         loading -> {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = modifier
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -192,13 +193,14 @@ private fun PlaceDetailContent(
         error != null -> {
             Text(
                 error,
+                modifier = modifier,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
         items.isNotEmpty() -> {
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(items, key = { it.id }) { row ->
@@ -207,11 +209,11 @@ private fun PlaceDetailContent(
             }
         }
         rawPayload.isNullOrBlank() -> {
-            Text("Sin datos", style = MaterialTheme.typography.bodyMedium)
+            Text("Sin datos", modifier = modifier, style = MaterialTheme.typography.bodyMedium)
         }
         else -> {
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = modifier,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(

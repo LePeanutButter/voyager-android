@@ -32,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.voyager.tourism.data.dto.BehaviorSummary
 import com.voyager.tourism.presentation.viewmodel.BehaviorAnalysisViewModel
+import com.voyager.tourism.presentation.viewmodel.BehaviorAnalysisUiState
 
 /**
  * Equivalente a [BehaviorAnalysisPage.jsx] + resumen tipo [BehaviorAnalysisDashboard.jsx].
@@ -79,7 +81,7 @@ fun BehaviorAnalysisScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            BehaviorAnalysisStatusCards(ui = ui)
+            BehaviorAnalysisStatusCards(state = ui)
 
             Button(
                 onClick = { viewModel.analyzeUserBehavior(userId, analysisPeriodDays = 7) },
@@ -111,12 +113,12 @@ private fun BoxAlignedProgress() {
 }
 
 @Composable
-private fun BehaviorAnalysisStatusCards(ui: BehaviorAnalysisUiState) {
-    if (ui.isLoading) {
+private fun BehaviorAnalysisStatusCards(state: BehaviorAnalysisUiState) {
+    if (state.isLoading) {
         BoxAlignedProgress()
     }
 
-    ui.error?.let { err ->
+    state.error?.let { err ->
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -130,7 +132,7 @@ private fun BehaviorAnalysisStatusCards(ui: BehaviorAnalysisUiState) {
         Spacer(modifier = Modifier.height(8.dp))
     }
 
-    ui.successMessage?.let { msg ->
+    state.successMessage?.let { msg ->
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -162,26 +164,26 @@ private fun BehaviorSummaryCard(summary: BehaviorSummary) {
             if (summary.interactionBreakdown.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Interaction breakdown", fontWeight = FontWeight.SemiBold)
-                summary.interactionBreakdown.entries.forEach { (k, v) ->
+                summary.interactionBreakdown.entries.forEach { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(k, style = MaterialTheme.typography.bodyMedium)
-                        Text("$v", fontWeight = FontWeight.Medium)
+                        Text(entry.key, style = MaterialTheme.typography.bodyMedium)
+                        Text("${entry.value}", fontWeight = FontWeight.Medium)
                     }
                 }
             }
             if (summary.categoryBreakdown.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text("Category preferences", fontWeight = FontWeight.SemiBold)
-                summary.categoryBreakdown.entries.forEach { (k, v) ->
+                summary.categoryBreakdown.entries.forEach { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(k, style = MaterialTheme.typography.bodyMedium)
-                        Text("$v", fontWeight = FontWeight.Medium)
+                        Text(entry.key, style = MaterialTheme.typography.bodyMedium)
+                        Text("${entry.value}", fontWeight = FontWeight.Medium)
                     }
                 }
             }

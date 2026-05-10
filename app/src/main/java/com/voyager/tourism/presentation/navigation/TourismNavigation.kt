@@ -29,6 +29,7 @@ import com.voyager.tourism.presentation.ui.behavior.BehaviorAnalysisScreen
 import com.voyager.tourism.presentation.ui.calendar.ScheduleCalendarScreen
 import com.voyager.tourism.presentation.ui.dashboard.DashboardScreen
 import com.voyager.tourism.presentation.navigation.DestinationExploreParams
+import com.voyager.tourism.presentation.ui.destination.DestinationExploreCallbacks
 import com.voyager.tourism.presentation.ui.destination.DestinationExploreScreen
 import com.voyager.tourism.presentation.ui.place.PlaceDetailScreen
 import com.voyager.tourism.presentation.ui.preferences.TravelPreferencesScreen
@@ -190,14 +191,18 @@ private fun NavGraphBuilder.addMainAppRoutes(
         )
     }
     
-    addTripRoutes(navController)
+    addTripRoutes(navController, authViewModel)
     addExploreRoutes(navController, authViewModel)
     addProfileRoutes(navController, authViewModel)
 }
 
-private fun NavGraphBuilder.addTripRoutes(navController: NavHostController) {
+private fun NavGraphBuilder.addTripRoutes(
+    navController: NavHostController,
+    authViewModel: AuthViewModel,
+) {
     composable(AuthViewModel.ROUTE_TRIPS) {
         TripListScreen(
+            authViewModel = authViewModel,
             onTripClick = { tripId ->
                 navController.navigate(AuthViewModel.createTripDetailRoute(tripId)) {
                     launchSingleTop = true
@@ -304,7 +309,7 @@ private fun NavGraphBuilder.addExploreRoutes(
                             launchSingleTop = true
                         }
                     },
-                    onCreatePlanHint = { hint ->
+                    onCreatePlanHint = { hint: String ->
                         navController.navigate(AuthViewModel.createTravelPlanRoute(hint)) {
                             launchSingleTop = true
                         }
@@ -415,44 +420,9 @@ private fun NavGraphBuilder.addProfileRoutes(
         }
     }
     composable(AuthViewModel.ROUTE_SOCIAL) {
-        val currentUser by authViewModel.currentUser.collectAsState()
-        val uid = currentUser?.id.orEmpty()
-        if (uid.isNotBlank()) {
-            CommunityScreen(
-                userId = uid,
-                onBack = { navController.navigateUp() },
-                onTripClick = { tripId ->
-                    navController.navigate(AuthViewModel.createTripDetailRoute(tripId)) {
-                        launchSingleTop = true
-                    }
-                },
-                onCreatePlan = {
-                    navController.navigate(AuthViewModel.createTravelPlanRoute("")) {
-                        launchSingleTop = true
-                    }
-                },
-                onViewAllTrips = {
-                    navController.navigate(AuthViewModel.ROUTE_TRIPS) {
-                        launchSingleTop = true
-                    }
-                },
-                onOpenProfile = {
-                    navController.navigate(AuthViewModel.ROUTE_PROFILE) {
-                        launchSingleTop = true
-                    }
-                },
-                onOpenAssistant = {
-                    navController.navigate(AuthViewModel.ROUTE_AI_ASSISTANT) {
-                        launchSingleTop = true
-                    }
-                },
-            )
-        } else {
-            Text(
-                "Inicia sesión para acceder a la comunidad.",
-                modifier = Modifier.padding(16.dp),
-            )
-        }
+        CommunityScreen(
+            onBack = { navController.navigateUp() },
+        )
     }
     composable(AuthViewModel.ROUTE_AI_ASSISTANT) {
         val currentUser by authViewModel.currentUser.collectAsState()

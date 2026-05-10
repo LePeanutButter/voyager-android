@@ -117,7 +117,7 @@ fun DestinationExploreScreen(
                 AiRankingSection(
                     rankLoading = rankLoading,
                     rankError = rankError,
-                    ranked = ranked,
+                    ranked = activities,
                     activities = activities,
                     onRankCatalog = { exploreViewModel.rankCatalog() }
                 )

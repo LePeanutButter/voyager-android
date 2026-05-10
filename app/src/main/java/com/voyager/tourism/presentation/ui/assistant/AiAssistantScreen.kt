@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voyager.tourism.presentation.viewmodel.AiAssistantViewModel
+import com.voyager.tourism.presentation.viewmodel.ChatBubble
 
 /**
  * Chat-style AI assistant: message history, input field, send action, and loading/error display.
@@ -122,12 +123,12 @@ fun AiAssistantScreen(
 }
 
 @Composable
-private fun MessageList(messages: List<com.voyager.tourism.presentation.viewmodel.AiAssistantViewModel.MessageBubble>) {
+private fun MessageList(messages: List<ChatBubble>) {
     LazyColumn(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(messages) { bubble ->
+        items(messages, key = { it.hashCode() }) { bubble ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
