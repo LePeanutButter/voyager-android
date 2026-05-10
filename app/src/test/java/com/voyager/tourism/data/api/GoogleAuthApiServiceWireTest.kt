@@ -28,13 +28,13 @@ class GoogleAuthApiServiceWireTest {
         val googleUrl = "https://accounts.google.com/o/oauth2/v2/auth?client=1"
         serverRule.server.enqueue(
             MockResponse()
-                .setResponseCode(302)
+                .setResponseCode(200)
                 .addHeader("Location", googleUrl)
         )
 
         val response = api.initiateGoogleLogin()
 
-        assertEquals(302, response.code())
+        assertEquals(200, response.code())
         assertEquals(googleUrl, response.headers()["Location"])
 
         val req = serverRule.server.takeRequest()

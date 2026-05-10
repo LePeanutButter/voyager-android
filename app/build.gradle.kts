@@ -177,6 +177,10 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
+dependencyLocking {
+    lockAllConfigurations()
+}
+
 // Informe JaCoCo unificado (excluye UI Compose, Hilt y código generado para acercar el % a lógica de negocio)
 val jacocoExcluded = listOf(
     "**/R.class",

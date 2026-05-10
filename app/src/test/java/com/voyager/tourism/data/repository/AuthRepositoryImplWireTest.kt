@@ -85,21 +85,17 @@ class AuthRepositoryImplWireTest {
 
     @Test
     fun `initiateGoogleLogin returns url string`() = runTest {
+        val googleUrl = "https://accounts.google.com/o/oauth2/v2/auth"
         serverRule.server.enqueue(
             MockResponse()
-                .setBody(
-                    ApiResponseEnvelope.success(
-                        serverRule.moshi,
-                        "https://oauth.example/authorize",
-                        String::class.java,
-                    ),
-                ),
+                .setResponseCode(200)
+                .addHeader("Location", googleUrl)
         )
 
         val result = repository.initiateGoogleLogin()
 
         assertTrue(result.isSuccess)
-        assertTrue(result.getOrThrow().startsWith("https://"))
+        assertEquals(googleUrl, result.getOrThrow())
     }
 
     @Test

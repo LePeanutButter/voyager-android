@@ -108,7 +108,7 @@ class AuthRepositoryImpl @Inject constructor(
             val response = googleAuthApiService.initiateGoogleLogin()
             val location = response.headers()["Location"]
             
-            if ((response.code() == 302 || response.code() == 301) && location != null) {
+            if ((response.code() == 302 || response.code() == 301 || response.code() == 200) && location != null) {
                 Result.success(location)
             } else {
                 Result.failure(Exception("No se pudo obtener la URL de redirección (Status: ${response.code()})"))
