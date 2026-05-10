@@ -5,9 +5,8 @@ import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -53,13 +52,23 @@ class DashboardInsightsViewModelTest {
         coEvery { voyagerAi.getSeasonalityOverview(any()) } returns Response.success(
             """{}""".toResponseBody("application/json".toMediaType()),
         )
+        coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
+            """{}""".toResponseBody("application/json".toMediaType()),
+        )
 
         vm.refreshInsights()
-        // loadTrending usa Dispatchers.IO; advanceUntilIdle no espera ese hilo.
-        val rows = withTimeout(5_000) {
-            vm.trending.first { it.isNotEmpty() }
+
+        // loadTrending usa Dispatchers.IO; en CI el hilo puede tardar más que un withTimeout corto.
+        val deadline = System.currentTimeMillis() + 60_000
+        while (vm.trending.value.isEmpty() && System.currentTimeMillis() < deadline) {
+            delay(25)
         }
-        assertEquals("Paris", rows.first().name)
-        assertEquals("FR", rows.first().country)
+
+        assertTrue(
+            "Sin tendencias tras esperar; trendingError=${vm.trendingError.value}",
+            vm.trending.value.isNotEmpty(),
+        )
+        assertEquals("Paris", vm.trending.value.first().name)
+        assertEquals("FR", vm.trending.value.first().country)
     }
 }

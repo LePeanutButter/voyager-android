@@ -4,10 +4,11 @@ import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertFalse
@@ -29,19 +30,23 @@ class PlaceDetailViewModelTest {
 
     @Before
     fun setup() {
-        coEvery { prefs.getCurrentUserId() } returns "42"
+        every { prefs.getCurrentUserId() } returns "42"
         vm = PlaceDetailViewModel(voyagerAi, prefs)
     }
 
     @Test
-    fun `loadPlace success clears loading`() = runTest {
+    fun `loadPlace success clears loading`() = runBlocking {
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            """{"items":[{"id":"1","name":"Tour","category":"x","rating":4.5,"price_label":"","description":""}]}"""
+            """{"items":[{"id":"1","name":"Tour","category":"x","score":0.9,"description":"d"}]}"""
                 .toResponseBody("application/json".toMediaType()),
         )
 
         vm.loadPlace("lima_peru")
-        advanceUntilIdle()
+
+        val deadline = System.currentTimeMillis() + 60_000
+        while (vm.isLoading.value && System.currentTimeMillis() < deadline) {
+            delay(10)
+        }
 
         assertFalse(vm.isLoading.value)
         assertTrue(vm.rankedItems.value.isNotEmpty())

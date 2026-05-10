@@ -7,12 +7,11 @@ import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,11 +42,10 @@ class DestinationExploreViewModelTest {
     @Test
     fun `loadExplore fills destination label`() = runBlocking {
         vm.loadExplore("Paris", "FR", "dest1")
+        // MainDispatcherRule usa UnconfinedTestDispatcher: el launch llega hasta el primer suspend (IO)
+        // después de asignar la etiqueta; un yield asegura esa ejecución en otros schedulers.
+        yield()
 
-        // La etiqueta se asigna al inicio del launch; el catálogo va por Dispatchers.IO.
-        val label = withTimeout(5_000) {
-            vm.destinationLabel.first { it.isNotBlank() }
-        }
-        assertTrue(label.contains("Paris"))
+        assertEquals("Paris, FR", vm.destinationLabel.value)
     }
 }
