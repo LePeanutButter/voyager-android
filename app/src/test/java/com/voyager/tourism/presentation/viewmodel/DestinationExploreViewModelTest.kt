@@ -11,8 +11,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -71,9 +69,9 @@ class DestinationExploreViewModelTest {
     }
 
     @Test
-    fun `rankCatalog without activities sets error`() = runTest {
+    fun `rankCatalog without activities sets error`() = runBlocking {
         vm.rankCatalog()
-        advanceUntilIdle()
+        delay(400)
         assertTrue(vm.rankError.value?.contains("catálogo") == true)
     }
 
