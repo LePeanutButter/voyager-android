@@ -24,7 +24,7 @@ class PlaceDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val voyagerAi = mockk<VoyagerAiRepository>()
+    private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>()
     private lateinit var vm: PlaceDetailViewModel
 
