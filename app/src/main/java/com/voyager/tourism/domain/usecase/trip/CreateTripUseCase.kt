@@ -26,9 +26,9 @@ class CreateTripUseCase @Inject constructor(
         }
         
         return try {
-            // Set initial status to PLANNING if not set
+            // Set initial status to ACTIVE as requested
             val tripToCreate = trip.copy(
-                status = TripStatus.PLANNING,
+                status = TripStatus.ACTIVE,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )

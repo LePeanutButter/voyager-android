@@ -14,11 +14,11 @@ kotlin {
 
 val voyagerBackendBaseUrl: String =
     (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://10.0.2.2:8080/api/v1/"
+        ?: "http://192.168.1.8:8080/api/v1/"
 
 val voyagerAiBaseUrl: String =
     (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://10.0.2.2:8000/api/v1/"
+        ?: "http://192.168.1.8:8000/api/v1/"
 
 android {
     namespace = "com.voyager.tourism"
