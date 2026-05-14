@@ -45,13 +45,13 @@ interface CatalogApiService {
      * Searches flight offers between an origin and destination IATA code on a departure date.
      */
     @GET("catalog/flights")
-    suspend fun flightOffers(@QueryMap queries: Map<String, String>): Response<ResponseBody>
+    suspend fun flightOffers(@QueryMap queries: Map<String, String>): ApiResponse<List<FlightOfferDto>>
 
     /**
      * Lists candidate hotels for a given IATA city code.
      */
     @GET("catalog/hotels/by-city")
-    suspend fun hotelsByCity(@Query("cityCode") cityCode: String): Response<ResponseBody>
+    suspend fun hotelsByCity(@Query("cityCode") cityCode: String): ApiResponse<List<HotelDto>>
 
     /**
      * Retrieves concrete hotel offer pricing for selected hotel ids and stay window.
@@ -64,7 +64,7 @@ interface CatalogApiService {
         @Query("adults") adults: Int = 1,
         @Query("rooms") rooms: Int = 1,
         @Query("currency") currency: String? = null,
-    ): Response<ResponseBody>
+    ): ApiResponse<List<Map<String, Any>>> // Hotel offers can be very complex, using a map for the inner offer part but wrapped in ApiResponse
 
     /**
      * Queries point-of-interest activities around a latitude/longitude with radius filters.
@@ -75,5 +75,6 @@ interface CatalogApiService {
         @Query("longitude") longitude: Double,
         @Query("radius") radius: Double = 5.0,
         @Query("radiusUnit") radiusUnit: String = "KM",
-    ): Response<ResponseBody>
+    ): ApiResponse<List<ActivityDto>>
 }
+
