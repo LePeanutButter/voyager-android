@@ -91,8 +91,21 @@ class TripRepositoryImpl @Inject constructor(
                 val resp = travelPlanApi.createTravelPlan(body)
                 val data = resp.data
                 if ((resp.status == 200 || resp.status == 201) && data != null) {
+                    // Force ACTIVE status using PUT if backend defaulted to something else
+                    var finalTripDto = data
+                    if (data.status != TravelPlanStatus.ACTIVE && data.id != null) {
+                        try {
+                            val statusResp = travelPlanApi.updateTravelPlanStatus(data.id, "ACTIVE")
+                            if (statusResp.status == 200 && statusResp.data != null) {
+                                finalTripDto = statusResp.data
+                            }
+                        } catch (e: Exception) {
+                            // If update status fails, we still have the created trip
+                        }
+                    }
+
                     val created = tripMapper.fromTravelPlanDto(
-                        data,
+                        finalTripDto,
                         currentUserId().orEmpty(),
                     )
                     tripDao.insertTrip(tripMapper.toEntityFromTrip(created))
