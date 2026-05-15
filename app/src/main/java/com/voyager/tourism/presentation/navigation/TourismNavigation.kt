@@ -37,6 +37,7 @@ import com.voyager.tourism.presentation.ui.profile.ProfileScreen
 import com.voyager.tourism.presentation.ui.recommendations.RecommendationsScreen
 import com.voyager.tourism.presentation.ui.settings.SettingsScreen
 import com.voyager.tourism.presentation.ui.social.CommunityScreen
+import com.voyager.tourism.presentation.ui.social.TravelerChatScreen
 import com.voyager.tourism.presentation.ui.trip.CreateTravelPlanScreen
 import com.voyager.tourism.presentation.ui.trip.TripDetailScreen
 import com.voyager.tourism.presentation.ui.trip.TripListScreen
@@ -420,9 +421,44 @@ private fun NavGraphBuilder.addProfileRoutes(
         }
     }
     composable(AuthViewModel.ROUTE_SOCIAL) {
+        val currentUser by authViewModel.currentUser.collectAsState()
+        val uid = currentUser?.id.orEmpty()
         CommunityScreen(
             onBack = { navController.navigateUp() },
+            onChatClick = { conn ->
+                val peerName = listOfNotNull(conn.firstName, conn.lastName).joinToString(" ").trim().ifBlank { conn.username }
+                if (uid.isNotBlank()) {
+                    navController.navigate(AuthViewModel.createTravelerChatRoute(conn.connectionId, peerName, uid)) {
+                        launchSingleTop = true
+                    }
+                }
+            },
         )
+    }
+    composable(
+        route = AuthViewModel.ROUTE_TRAVELER_CHAT,
+        arguments = listOf(
+            navArgument("connectionId") { type = NavType.StringType },
+            navArgument("peerName") { type = NavType.StringType },
+            navArgument("currentUserId") { type = NavType.StringType },
+        ),
+    ) { entry ->
+        val connectionId = entry.arguments?.getString("connectionId")?.toLongOrNull()
+        val peerName = decodeNavQueryParam(entry.arguments?.getString("peerName"))
+        val currentUserId = decodeNavQueryParam(entry.arguments?.getString("currentUserId"))
+        if (currentUserId.isNotBlank() && connectionId != null) {
+            TravelerChatScreen(
+                connectionId = connectionId,
+                peerName = peerName.ifBlank { "Viajero" },
+                currentUserId = currentUserId,
+                onBack = { navController.navigateUp() },
+            )
+        } else {
+            Text(
+                "No se pudo abrir el chat.",
+                modifier = Modifier.padding(16.dp),
+            )
+        }
     }
     composable(AuthViewModel.ROUTE_AI_ASSISTANT) {
         val currentUser by authViewModel.currentUser.collectAsState()

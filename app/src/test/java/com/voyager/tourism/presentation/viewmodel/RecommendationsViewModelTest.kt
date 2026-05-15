@@ -1,20 +1,27 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
+import com.voyager.tourism.data.dto.AiTravelerMatchDto
 import com.voyager.tourism.data.dto.TravelType
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -23,10 +30,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
 import java.io.IOException
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class RecommendationsViewModelTest {
 
     @get:Rule
@@ -39,27 +49,36 @@ class RecommendationsViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
+        
+        clearMocks(voyagerAi, prefs, travelRepo)
+
         every { prefs.getCurrentUserId() } returns null
         vm = RecommendationsViewModel(voyagerAi, prefs, travelRepo)
     }
 
-    private suspend fun awaitNotLoading() {
-        val deadline = System.currentTimeMillis() + 60_000
-        while (vm.isLoading.value && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
     }
 
+
     @Test
-    fun `load anonymous user fetches default candidates and maps rows`() = runBlocking {
+    fun `load anonymous user fetches default candidates and maps rows`() = runTest {
         every { prefs.getCurrentUserId() } returns null
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            """{"items":[{"id":"1","name":"R1","category":"c","score":0.5,"description":"d"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(
+                matches = listOf(
+                    AiTravelerMatchDto("u1", "R1", 25, 80.0, emptyList(), 0.8, "Bio 1")
+                ),
+                userId = "anonymous",
+                totalMatches = 1
+            )
         )
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         coVerify(exactly = 0) { travelRepo.getUserTravelPlans(any()) }
         assertFalse(vm.isLoading.value)
@@ -69,17 +88,22 @@ class RecommendationsViewModelTest {
     }
 
     @Test
-    fun `load uses travel plans when user is logged in`() = runBlocking {
+    fun `load uses travel plans when user is logged in`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         val plan = TestFixtures.travelPlanDto(destination = "Tokyo")
         coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(plan))
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            """{"items":[{"id":"x","name":"Y","category":"z","score":0.2,"description":"d"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(
+                matches = listOf(
+                    AiTravelerMatchDto("u2", "Y", 30, 95.0, emptyList(), 0.9, "Bio 2")
+                ),
+                userId = "42",
+                totalMatches = 1
+            )
         )
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         coVerify(atLeast = 1) { travelRepo.getUserTravelPlans("42") }
         assertEquals("Y", vm.rows.value.first().name)
@@ -87,38 +111,39 @@ class RecommendationsViewModelTest {
     }
 
     @Test
-    fun `load sets error on unsuccessful http response`() = runBlocking {
+    fun `load sets error on unsuccessful http response`() = runTest {
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.error(
             503,
             "unavailable".toResponseBody("text/plain".toMediaType()),
         )
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         assertTrue(vm.rows.value.isEmpty())
         assertNotNull(vm.error.value)
+        assertTrue(vm.error.value!!.contains("HTTP 503"))
     }
 
     @Test
-    fun `load sets error when service returns no items`() = runBlocking {
+    fun `load sets error when service returns no items`() = runTest {
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(emptyList(), "42", 0)
         )
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         assertTrue(vm.rows.value.isEmpty())
         assertNotNull(vm.error.value)
     }
 
     @Test
-    fun `load sets error on network exception`() = runBlocking {
+    fun `load sets error on network exception`() = runTest {
         coEvery { voyagerAi.postLocalRecommendations(any()) } throws IOException("net down")
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         assertTrue(vm.rows.value.isEmpty())
         assertNotNull(vm.error.value)
@@ -132,23 +157,20 @@ class RecommendationsViewModelTest {
     }
 
     @Test
-    fun `submitFeedback success shows confirmation`() = runBlocking {
+    fun `submitFeedback success shows confirmation`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         coEvery {
             voyagerAi.postLocalRecommendationFeedback(userId = "42", itemId = "it1", rating = 4)
-        } returns Response.success("ok".toResponseBody("text/plain".toMediaType()))
+        } returns Response.success(Unit)
 
         vm.submitFeedback("it1", 4)
-        val deadline = System.currentTimeMillis() + 10_000
-        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+        advanceUntilIdle()
 
         assertEquals("Valoración enviada", vm.feedbackMessage.value)
     }
 
     @Test
-    fun `submitFeedback failure maps error body`() = runBlocking {
+    fun `submitFeedback failure maps error body`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         coEvery {
             voyagerAi.postLocalRecommendationFeedback(any(), any(), any())
@@ -158,40 +180,31 @@ class RecommendationsViewModelTest {
         )
 
         vm.submitFeedback("it1", 2)
-        val deadline = System.currentTimeMillis() + 10_000
-        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+        advanceUntilIdle()
 
-        assertEquals("bad", vm.feedbackMessage.value)
+        assertEquals("No se pudo registrar la valoración", vm.feedbackMessage.value)
     }
 
     @Test
-    fun `submitFeedback exception shows message`() = runBlocking {
+    fun `submitFeedback exception shows message`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         coEvery { voyagerAi.postLocalRecommendationFeedback(any(), any(), any()) } throws IOException("x")
 
         vm.submitFeedback("it1", 5)
-        val deadline = System.currentTimeMillis() + 10_000
-        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+        advanceUntilIdle()
 
         assertEquals("x", vm.feedbackMessage.value)
     }
 
     @Test
-    fun `submitFeedback clamps rating`() = runBlocking {
+    fun `submitFeedback clamps rating`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         coEvery {
             voyagerAi.postLocalRecommendationFeedback("42", "it1", 5)
-        } returns Response.success("".toResponseBody(null))
+        } returns Response.success(Unit)
 
         vm.submitFeedback("it1", 99)
-        val deadline = System.currentTimeMillis() + 10_000
-        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+        advanceUntilIdle()
 
         coVerify { voyagerAi.postLocalRecommendationFeedback("42", "it1", 5) }
     }
@@ -205,34 +218,37 @@ class RecommendationsViewModelTest {
     }
 
     @Test
-    fun `submitFeedback http error with empty body yields empty message`() = runBlocking {
+    fun `submitFeedback http error with empty body yields empty message`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         coEvery {
             voyagerAi.postLocalRecommendationFeedback(any(), any(), any())
         } returns Response.error(500, "".toResponseBody(null))
 
         vm.submitFeedback("it1", 3)
-        val deadline = System.currentTimeMillis() + 10_000
-        while (vm.feedbackMessage.value == null && System.currentTimeMillis() < deadline) {
-            delay(10)
-        }
+        advanceUntilIdle()
 
-        assertEquals("", vm.feedbackMessage.value)
+        assertEquals("No se pudo registrar la valoración", vm.feedbackMessage.value)
     }
 
     @Test
-    fun `load maps travelType into candidate category`() = runBlocking {
+    fun `load maps travelType into candidate category`() = runTest {
         every { prefs.getCurrentUserId() } returns "42"
         val plan = TestFixtures.travelPlanDto().copy(travelType = TravelType.CULTURAL)
         coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(plan))
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            """{"items":[{"id":"1","name":"R","category":"z","score":0.3,"description":"d"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(
+                matches = listOf(
+                    AiTravelerMatchDto("u3", "R", 20, 70.0, emptyList(), 0.7)
+                ),
+                userId = "42",
+                totalMatches = 1
+            )
         )
 
         vm.load()
-        awaitNotLoading()
+        advanceUntilIdle()
 
         assertEquals("R", vm.rows.value.first().name)
     }
 }
+

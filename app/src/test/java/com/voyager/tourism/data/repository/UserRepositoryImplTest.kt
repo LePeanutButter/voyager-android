@@ -134,7 +134,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `updateUserPreferences refreshes profile`() = runTest {
-        coEvery { voyagerAi.postUserPreferences(eq("42"), any()) } returns Response.success("{}".toResponseBody())
+        coEvery { voyagerAi.postUserPreferences(eq("42"), any()) } returns Response.success(Unit)
         val dto = TestFixtures.userDto()
         coEvery { userApi.getUserById(42L) } returns apiOk(dto)
         val prefsModel = UserPreferences(

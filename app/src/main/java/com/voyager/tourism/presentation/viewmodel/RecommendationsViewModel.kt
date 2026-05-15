@@ -2,11 +2,11 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.local.PreferencesManager
-import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,21 +82,23 @@ class RecommendationsViewModel @Inject constructor(
                 )
                 val response = voyagerAi.postLocalRecommendations(body)
                 if (!response.isSuccessful) {
-                    _error.value = response.errorBody()?.string()?.take(1_500)
-                        ?: "No se pudieron cargar recomendaciones (HTTP ${response.code()})"
+                    _error.value = "No se pudieron cargar recomendaciones (HTTP ${response.code()})"
                     _rows.value = emptyList()
                     return@runCatching
                 }
-                val text = response.body()?.string().orEmpty()
-                val parsed = LocalRecommendationParsers.parseItems(text)
-                _rows.value = parsed.map {
+                val bodyResponse: AiMatchingResponseDto = response.body() ?: AiMatchingResponseDto(emptyList(), userId, 0)
+                _rows.value = bodyResponse.matches.map {
                     RecommendationListRow(
-                        id = it.id,
+                        id = it.userId,
                         name = it.name,
-                        description = it.description,
-                        rating = it.rating,
-                        priceLabel = it.priceLabel,
-                        category = it.category,
+                        description = it.bio.orEmpty(),
+                        rating = (it.compatibilityScore / 20.0).toFloat(),
+                        priceLabel = when {
+                            it.compatibilityScore >= 75.0 -> "$$$"
+                            it.compatibilityScore >= 45.0 -> "$$"
+                            else -> "$"
+                        },
+                        category = "match",
                     )
                 }
                 if (_rows.value.isEmpty()) {
@@ -127,8 +129,7 @@ class RecommendationsViewModel @Inject constructor(
                 if (res.isSuccessful) {
                     _feedbackMessage.value = "Valoración enviada"
                 } else {
-                    _feedbackMessage.value = res.errorBody()?.string()?.take(500)
-                        ?: "No se pudo registrar la valoración"
+                    _feedbackMessage.value = "No se pudo registrar la valoración"
                 }
             }.onFailure {
                 _feedbackMessage.value = it.message ?: "Error al enviar valoración"

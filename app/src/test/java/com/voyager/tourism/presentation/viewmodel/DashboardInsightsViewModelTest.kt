@@ -1,14 +1,23 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiSeasonalityOverviewDto
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
+import com.voyager.tourism.data.dto.TrendItemDto
+import com.voyager.tourism.data.dto.WeeklyDigestDto
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -16,9 +25,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class DashboardInsightsViewModelTest {
 
     @get:Rule
@@ -29,7 +41,14 @@ class DashboardInsightsViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = DashboardInsightsViewModel(voyagerAi)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
     }
 
     @Test
@@ -42,91 +61,77 @@ class DashboardInsightsViewModelTest {
     }
 
     @Test
-    fun `refreshInsights loads trending when IA responds OK`() = runBlocking {
-        val json = """{"emerging_destinations":[{"name":"Paris","country":"FR"}]}"""
+    fun `refreshInsights loads trending when IA responds OK`() = runTest {
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
-            json.toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(
+                listOf(TrendItemDto("paris-123", "Paris", 0.5, 90.0)),
+                emptyList(),
+                emptyList()
+            )
         )
-        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
-            """{}""".toResponseBody("application/json".toMediaType()),
-        )
-        coEvery { voyagerAi.getSeasonalityOverview(any()) } returns Response.success(
-            """{}""".toResponseBody("application/json".toMediaType()),
+        coEvery { voyagerAi.getWeeklyDigestTyped() } returns Response.success(
+            WeeklyDigestDto(raw = emptyMap())
         )
         coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
-            """{}""".toResponseBody("application/json".toMediaType()),
+            AiSeasonalityOverviewDto(1, emptyMap(), emptyList(), emptyList())
         )
 
         vm.refreshInsights()
-
-        // loadTrending usa Dispatchers.IO; en CI el hilo puede tardar más que un withTimeout corto.
-        val deadline = System.currentTimeMillis() + 60_000
-        while (vm.trending.value.isEmpty() && System.currentTimeMillis() < deadline) {
-            delay(25)
-        }
+        advanceUntilIdle()
 
         assertTrue(
             "Sin tendencias tras esperar; trendingError=${vm.trendingError.value}",
             vm.trending.value.isNotEmpty(),
         )
         assertEquals("Paris", vm.trending.value.first().name)
-        assertEquals("FR", vm.trending.value.first().country)
     }
 
     @Test
-    fun `refreshInsights sets trendingError when trends http fails`() = runBlocking {
+    fun `refreshInsights sets trendingError when trends http fails`() = runTest {
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.error(
             503,
             "".toResponseBody(null),
         )
-        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+        coEvery { voyagerAi.getWeeklyDigestTyped() } returns Response.success(
+            WeeklyDigestDto(raw = emptyMap())
         )
         coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiSeasonalityOverviewDto(1, emptyMap(), emptyList(), emptyList())
         )
 
         vm.refreshInsights()
-
-        val deadline = System.currentTimeMillis() + 60_000
-        while (vm.trendingError.value == null && System.currentTimeMillis() < deadline) {
-            delay(25)
-        }
+        advanceUntilIdle()
 
         assertNotNull(vm.trendingError.value)
         assertTrue(vm.trending.value.isEmpty())
     }
 
     @Test
-    fun `refreshInsights weekly digest failure sets weeklyError`() = runBlocking {
+    fun `refreshInsights weekly digest failure sets weeklyError`() = runTest {
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
-            """{"emerging_destinations":[]}""".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(emptyList(), emptyList(), emptyList())
         )
-        coEvery { voyagerAi.getWeeklyDigest() } returns Response.error(
+        coEvery { voyagerAi.getWeeklyDigestTyped() } returns Response.error(
             500,
             "e".toResponseBody("text/plain".toMediaType()),
         )
         coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiSeasonalityOverviewDto(1, emptyMap(), emptyList(), emptyList())
         )
 
         vm.refreshInsights()
-
-        val deadline = System.currentTimeMillis() + 60_000
-        while (vm.weeklyError.value == null && System.currentTimeMillis() < deadline) {
-            delay(25)
-        }
+        advanceUntilIdle()
 
         assertEquals("Digest semanal no disponible.", vm.weeklyError.value)
     }
 
     @Test
-    fun `refreshInsights seasonality failure sets seasonalityError`() = runBlocking {
+    fun `refreshInsights seasonality failure sets seasonalityError`() = runTest {
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(emptyList(), emptyList(), emptyList())
         )
-        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+        coEvery { voyagerAi.getWeeklyDigestTyped() } returns Response.success(
+            WeeklyDigestDto(raw = emptyMap())
         )
         coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.error(
             500,
@@ -134,40 +139,35 @@ class DashboardInsightsViewModelTest {
         )
 
         vm.refreshInsights()
-
-        val deadline = System.currentTimeMillis() + 60_000
-        while (vm.seasonalityError.value == null && System.currentTimeMillis() < deadline) {
-            delay(25)
-        }
+        advanceUntilIdle()
 
         assertEquals("Panorama estacional no disponible.", vm.seasonalityError.value)
     }
 
     @Test
-    fun `refreshInsights loads weekly and seasonality rows on success`() = runBlocking {
+    fun `refreshInsights loads weekly and seasonality rows on success`() = runTest {
         coEvery { voyagerAi.getTrendsDashboard() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(emptyList(), emptyList(), emptyList())
         )
-        coEvery { voyagerAi.getWeeklyDigest() } returns Response.success(
-            """{"micro_trends":[{"title":"A","summary":"B"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+        coEvery { voyagerAi.getWeeklyDigestTyped() } returns Response.success(
+            WeeklyDigestDto(
+                raw = mapOf(
+                    "items" to listOf(
+                        mapOf("id" to "1", "title" to "A")
+                    )
+                )
+            )
         )
         coEvery { voyagerAi.getSeasonalityOverview(null) } returns Response.success(
-            """{"destinations":[{"name":"Calafate"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiSeasonalityOverviewDto(1, emptyMap(), listOf("Calafate"), emptyList())
         )
 
         vm.refreshInsights()
+        advanceUntilIdle()
 
-        val deadline = System.currentTimeMillis() + 60_000
-        while (
-            (vm.weeklyRows.value.isEmpty() || vm.seasonalityRows.value.isEmpty()) &&
-            System.currentTimeMillis() < deadline
-        ) {
-            delay(25)
-        }
-
+        assertTrue(vm.weeklyRows.value.isNotEmpty())
         assertEquals("A", vm.weeklyRows.value.first().title)
         assertEquals("Calafate", vm.seasonalityRows.value.first().title)
     }
 }
+

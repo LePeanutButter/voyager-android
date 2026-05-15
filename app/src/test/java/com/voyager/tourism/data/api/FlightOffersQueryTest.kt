@@ -14,9 +14,9 @@ class FlightOffersQueryTest {
             departureDate = "2025-08-01",
         )
         val m = q.toQueryMap()
-        assertEquals("MAD", m["originLocationCode"])
-        assertEquals("BCN", m["destinationLocationCode"])
-        assertEquals("2025-08-01", m["departureDate"])
+        assertEquals("MAD", m["origin_location_code"])
+        assertEquals("BCN", m["destination_location_code"])
+        assertEquals("2025-08-01", m["departure_date"])
         assertEquals("1", m["adults"])
     }
 
@@ -31,9 +31,9 @@ class FlightOffersQueryTest {
             currencyCode = " ",
         )
         val m = q.toQueryMap()
-        assertFalse(m.containsKey("returnDate"))
-        assertFalse(m.containsKey("travelClass"))
-        assertFalse(m.containsKey("currencyCode"))
+        assertFalse(m.containsKey("return_date"))
+        assertFalse(m.containsKey("travel_class"))
+        assertFalse(m.containsKey("currency_code"))
     }
 
     @Test
@@ -50,11 +50,11 @@ class FlightOffersQueryTest {
             currencyCode = "EUR",
         )
         val m = q.toQueryMap()
-        assertEquals("2025-01-10", m["returnDate"])
+        assertEquals("2025-01-10", m["return_date"])
         assertEquals("2", m["children"])
         assertEquals("5", m["max"])
-        assertEquals("ECONOMY", m["travelClass"])
-        assertEquals("true", m["nonStop"])
-        assertEquals("EUR", m["currencyCode"])
+        assertEquals("ECONOMY", m["travel_class"])
+        assertEquals("true", m["non_stop"])
+        assertEquals("EUR", m["currency_code"])
     }
 }

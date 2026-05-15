@@ -6,12 +6,18 @@ import com.voyager.tourism.data.dto.CreateActivityRequest
 import com.voyager.tourism.data.dto.MatchResponseDto
 import com.voyager.tourism.data.dto.MessageDto
 import com.voyager.tourism.data.dto.PagedResponseMessageDto
+import com.voyager.tourism.data.dto.PagedResponseSocialPostDto
+import com.voyager.tourism.data.dto.PagedResponseSocialReviewDto
 import com.voyager.tourism.data.dto.PagedResponseTravelPlanDto
 import com.voyager.tourism.data.dto.PagedResponseUserDto
 import com.voyager.tourism.data.dto.ReservationDto
 import com.voyager.tourism.data.dto.ShareActivityRequestDto
 import com.voyager.tourism.data.dto.SharedActivityActionRequestDto
 import com.voyager.tourism.data.dto.SharedActivityResponseDto
+import com.voyager.tourism.data.dto.SocialCommentDto
+import com.voyager.tourism.data.dto.SocialConversationDto
+import com.voyager.tourism.data.dto.SocialPostDto
+import com.voyager.tourism.data.dto.SocialReviewDto
 import com.voyager.tourism.data.dto.TravelPlanActivityDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelerSummaryDto
@@ -20,8 +26,6 @@ import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserStatisticsDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
 import com.voyager.tourism.data.dto.SendMessageRequestDto
-import okhttp3.ResponseBody
-import retrofit2.Response
 
 /**
  * Escape hatch for **voyager-backend-core** endpoints not covered by the focused repositories
@@ -122,19 +126,19 @@ interface BackendSupplementRepository {
     suspend fun getTravelerSummary(travelerId: Long): ApiResponse<TravelerSummaryDto>
 
     /** Creates a review with loosely typed payload mirroring backend JSON. */
-    suspend fun createReview(body: Map<String, Any?>): ApiResponse<Map<String, Any?>>
+    suspend fun createReview(body: SocialReviewDto): ApiResponse<SocialReviewDto>
 
     /** Fetches reviews as raw JSON for custom parsing pipelines. */
-    suspend fun getReviews(targetType: String, targetId: Long, page: Int = 0, size: Int = 20): Response<ResponseBody>
+    suspend fun getReviews(targetType: String, targetId: Long, page: Int = 0, size: Int = 20): ApiResponse<PagedResponseSocialReviewDto>
 
     /** Updates review content or rating. */
-    suspend fun updateReview(reviewId: Long, body: Map<String, Any?>): ApiResponse<Map<String, Any?>>
+    suspend fun updateReview(reviewId: Long, body: SocialReviewDto): ApiResponse<SocialReviewDto>
 
     /** Deletes a published review. */
     suspend fun deleteReview(reviewId: Long): ApiResponse<Unit>
 
     /** Lists conversations for messaging home screens. */
-    suspend fun getConversations(userId: Long): Response<ResponseBody>
+    suspend fun getConversations(userId: Long): ApiResponse<List<SocialConversationDto>>
 
     /** Returns paginated DM history for a specific connection pairing. */
     suspend fun getConversationMessages(
@@ -148,22 +152,22 @@ interface BackendSupplementRepository {
     suspend fun markMessageAsRead(messageId: Long): ApiResponse<Unit>
 
     /** Streams timeline cards for the social feed experience. */
-    suspend fun getSocialFeed(userId: Long, page: Int = 0, size: Int = 20): Response<ResponseBody>
+    suspend fun getSocialFeed(userId: Long, page: Int = 0, size: Int = 20): ApiResponse<PagedResponseSocialPostDto>
 
     /** Publishes a new post with arbitrary structured fields. */
-    suspend fun createPost(body: Map<String, Any?>): ApiResponse<Map<String, Any?>>
+    suspend fun createPost(body: SocialPostDto): ApiResponse<SocialPostDto>
 
     /** Records a like for analytics and counters. */
-    suspend fun likePost(postId: Long): ApiResponse<Map<String, Any?>>
+    suspend fun likePost(postId: Long): ApiResponse<SocialPostDto>
 
     /** Removes a previously registered like. */
-    suspend fun unlikePost(postId: Long): ApiResponse<Map<String, Any?>>
+    suspend fun unlikePost(postId: Long): ApiResponse<SocialPostDto>
 
     /** Appends a threaded comment to a feed post. */
-    suspend fun commentOnPost(postId: Long, body: Map<String, Any?>): ApiResponse<Map<String, Any?>>
+    suspend fun commentOnPost(postId: Long, body: SocialCommentDto): ApiResponse<SocialCommentDto>
 
     /** Fetches nested comments as raw JSON. */
-    suspend fun getPostComments(postId: Long, page: Int = 0, size: Int = 20): Response<ResponseBody>
+    suspend fun getPostComments(postId: Long, page: Int = 0, size: Int = 20): ApiResponse<List<SocialCommentDto>>
 
     /** Sends a peer-to-peer direct message. */
     suspend fun sendMessage(body: SendMessageRequestDto): ApiResponse<MessageDto>

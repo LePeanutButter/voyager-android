@@ -22,10 +22,14 @@ import com.voyager.tourism.data.dto.TravelerSummaryDto
 import com.voyager.tourism.data.dto.UpdateActivityRequest
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
+import com.voyager.tourism.data.dto.PagedResponseSocialReviewDto
+import com.voyager.tourism.data.dto.PagedResponseSocialPostDto
 import com.voyager.tourism.data.dto.UserStatisticsDto
+import com.voyager.tourism.data.dto.SocialCommentDto
+import com.voyager.tourism.data.dto.SocialConversationDto
+import com.voyager.tourism.data.dto.SocialPostDto
+import com.voyager.tourism.data.dto.SocialReviewDto
 import com.voyager.tourism.domain.repository.BackendSupplementRepository
-import okhttp3.ResponseBody
-import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,7 +43,6 @@ class BackendSupplementRepositoryImpl @Inject constructor(
     private val socialApi: SocialApiService,
     private val miscApi: BackendMiscApiService,
 ) : BackendSupplementRepository {
-
     /** @see BackendSupplementRepository.registerUserAlias */
     override suspend fun registerUserAlias(body: UserRegistrationDto): ApiResponse<UserDto> =
         userApi.registerUserAlias(body)
@@ -148,15 +151,15 @@ class BackendSupplementRepositoryImpl @Inject constructor(
         socialApi.getTravelerSummary(travelerId)
 
     /** @see BackendSupplementRepository.createReview */
-    override suspend fun createReview(body: Map<String, Any?>): ApiResponse<Map<String, Any?>> =
+    override suspend fun createReview(body: SocialReviewDto): ApiResponse<SocialReviewDto> =
         socialApi.createReview(body)
 
     /** @see BackendSupplementRepository.getReviews */
-    override suspend fun getReviews(targetType: String, targetId: Long, page: Int, size: Int): Response<ResponseBody> =
+    override suspend fun getReviews(targetType: String, targetId: Long, page: Int, size: Int): ApiResponse<PagedResponseSocialReviewDto> =
         socialApi.getReviews(targetType, targetId, page, size)
 
     /** @see BackendSupplementRepository.updateReview */
-    override suspend fun updateReview(reviewId: Long, body: Map<String, Any?>): ApiResponse<Map<String, Any?>> =
+    override suspend fun updateReview(reviewId: Long, body: SocialReviewDto): ApiResponse<SocialReviewDto> =
         socialApi.updateReview(reviewId, body)
 
     /** @see BackendSupplementRepository.deleteReview */
@@ -164,7 +167,7 @@ class BackendSupplementRepositoryImpl @Inject constructor(
         socialApi.deleteReview(reviewId)
 
     /** @see BackendSupplementRepository.getConversations */
-    override suspend fun getConversations(userId: Long): Response<ResponseBody> =
+    override suspend fun getConversations(userId: Long): ApiResponse<List<SocialConversationDto>> =
         socialApi.getConversations(userId)
 
     /** @see BackendSupplementRepository.getConversationMessages */
@@ -180,27 +183,27 @@ class BackendSupplementRepositoryImpl @Inject constructor(
         socialApi.markMessageAsRead(messageId)
 
     /** @see BackendSupplementRepository.getSocialFeed */
-    override suspend fun getSocialFeed(userId: Long, page: Int, size: Int): Response<ResponseBody> =
+    override suspend fun getSocialFeed(userId: Long, page: Int, size: Int): ApiResponse<PagedResponseSocialPostDto> =
         socialApi.getSocialFeed(userId, page, size)
 
     /** @see BackendSupplementRepository.createPost */
-    override suspend fun createPost(body: Map<String, Any?>): ApiResponse<Map<String, Any?>> =
+    override suspend fun createPost(body: SocialPostDto): ApiResponse<SocialPostDto> =
         socialApi.createPost(body)
 
     /** @see BackendSupplementRepository.likePost */
-    override suspend fun likePost(postId: Long): ApiResponse<Map<String, Any?>> =
+    override suspend fun likePost(postId: Long): ApiResponse<SocialPostDto> =
         socialApi.likePost(postId)
 
     /** @see BackendSupplementRepository.unlikePost */
-    override suspend fun unlikePost(postId: Long): ApiResponse<Map<String, Any?>> =
+    override suspend fun unlikePost(postId: Long): ApiResponse<SocialPostDto> =
         socialApi.unlikePost(postId)
 
     /** @see BackendSupplementRepository.commentOnPost */
-    override suspend fun commentOnPost(postId: Long, body: Map<String, Any?>): ApiResponse<Map<String, Any?>> =
+    override suspend fun commentOnPost(postId: Long, body: SocialCommentDto): ApiResponse<SocialCommentDto> =
         socialApi.commentOnPost(postId, body)
 
     /** @see BackendSupplementRepository.getPostComments */
-    override suspend fun getPostComments(postId: Long, page: Int, size: Int): Response<ResponseBody> =
+    override suspend fun getPostComments(postId: Long, page: Int, size: Int): ApiResponse<List<SocialCommentDto>> =
         socialApi.getPostComments(postId, page, size)
 
     /** @see BackendSupplementRepository.sendMessage */

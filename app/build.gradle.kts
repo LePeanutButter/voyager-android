@@ -20,6 +20,9 @@ val voyagerAiBaseUrl: String =
     (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
         ?: "http://192.168.1.8:8000/api/v1/"
 
+val voyagerChatBrokerUrl: String =
+    (project.findProperty("VOYAGER_CHAT_BROKER_URL") as? String)?.trim().orEmpty()
+
 android {
     namespace = "com.voyager.tourism"
     compileSdk = 34
@@ -35,6 +38,8 @@ android {
         buildConfigField("String", "BACKEND_BASE_URL", "\"${voyagerBackendBaseUrl.replace("\"", "\\\"")}\"")
         // FastAPI AI (prefijo /api/v1). Sobrescribe: VOYAGER_AI_BASE_URL=https://tu-ia.com/api/v1/
         buildConfigField("String", "AI_SERVICE_BASE_URL", "\"${voyagerAiBaseUrl.replace("\"", "\\\"")}\"")
+        // Broker STOMP/WebSocket opcional para chat en vivo entre viajeros.
+        buildConfigField("String", "CHAT_BROKER_URL", "\"${voyagerChatBrokerUrl.replace("\"", "\\\"")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

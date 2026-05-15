@@ -2,12 +2,13 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.voyager.tourism.data.catalog.CatalogActivitiesParser
 import com.voyager.tourism.data.catalog.CatalogActivityRow
 import com.voyager.tourism.data.destination.buildDestinationExploreLabel
 import com.voyager.tourism.data.destination.resolveDestinationHint
-import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
+import com.voyager.tourism.data.dto.ActivityDto
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
@@ -76,12 +77,7 @@ class DestinationExploreViewModel @Inject constructor(
                         radiusUnit = "KM",
                     )
                 }
-                if (res.isSuccessful) {
-                    val text = res.body()?.string().orEmpty()
-                    _activities.value = CatalogActivitiesParser.parseActivitiesJson(text)
-                } else {
-                    _catalogError.value = res.errorBody()?.string()?.take(1_500) ?: "HTTP ${res.code()}"
-                }
+                _activities.value = res.data.orEmpty().mapNotNull { it.toCatalogRow() }
             }.onFailure {
                 _catalogError.value = it.message ?: "Error de catálogo"
             }
@@ -122,10 +118,10 @@ class DestinationExploreViewModel @Inject constructor(
                 )
                 val res = withContext(Dispatchers.IO) { voyagerAiRepository.postLocalRecommendations(body) }
                 if (res.isSuccessful) {
-                    val text = res.body()?.string().orEmpty()
-                    _ranked.value = LocalRecommendationParsers.parseItems(text)
+                    val rawJson = res.body()?.toString() ?: ""
+                    _ranked.value = LocalRecommendationParsers.parseItems(rawJson)
                 } else {
-                    _rankError.value = res.errorBody()?.string()?.take(1_500) ?: "HTTP ${res.code()}"
+                    _rankError.value = res.errorBody()?.string()?.ifBlank { "HTTP ${res.code()}" } ?: "HTTP ${res.code()}"
                 }
             }.onFailure {
                 _rankError.value = it.message ?: "Error de red"
@@ -133,4 +129,14 @@ class DestinationExploreViewModel @Inject constructor(
             _rankLoading.value = false
         }
     }
+}
+
+private fun ActivityDto.toCatalogRow(): CatalogActivityRow? {
+    val nameValue = name.trim()
+    if (nameValue.isBlank()) return null
+    return CatalogActivityRow(
+        id = id,
+        name = nameValue,
+        description = shortDescription?.trim().orEmpty().ifBlank { nameValue },
+    )
 }

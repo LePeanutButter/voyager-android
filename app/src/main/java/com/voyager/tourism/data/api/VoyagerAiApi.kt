@@ -2,6 +2,12 @@ package com.voyager.tourism.data.api
 
 import com.voyager.tourism.data.dto.AiChatRequestDto
 import com.voyager.tourism.data.dto.AiChatReplyDto
+import com.voyager.tourism.data.dto.AiAdaptiveMenuDto
+import com.voyager.tourism.data.dto.AiHomeFeedDto
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
+import com.voyager.tourism.data.dto.AiSeasonalityOverviewDto
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
+import com.voyager.tourism.data.dto.ConnectionDto
 import com.voyager.tourism.data.dto.AiConnectionOutcomeRequestBody
 import com.voyager.tourism.data.dto.AiSeasonalForecastRequestBody
 import com.voyager.tourism.data.dto.AiTravelerMatchRequestBody
@@ -51,12 +57,14 @@ interface VoyagerAiApi {
     @POST("local/chat/message")
     suspend fun postLocalChatMessage(@Body body: LocalChatRequestBody): Response<LocalChatResponseDto>
 
-    /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web). */
+    /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web).
+     * Prefer typed list of `LocalChatResponseDto` for strong typing on the client.
+     */
     @GET("local/chat/history/{session_id}")
     suspend fun getLocalChatHistory(
         @Path("session_id") sessionId: String,
         @Query("limit") limit: Int = 50,
-    ): Response<List<LocalChatResponseDto>>
+    ): Response<List<com.voyager.tourism.data.dto.LocalChatResponseDto>>
 
     // --- users (perfil IA) ---
     /** Bootstraps an AI-side user profile mirror. */
@@ -220,5 +228,19 @@ interface VoyagerAiApi {
     /** Lightweight readiness probe for uptime monitors. */
     @GET("/health")
     suspend fun getHealth(): Response<Map<String, Any>>
+
+    // --- ingest / admin (exposed by web client's aiService; mobile rarely uses these,
+    // but expose them here behind admin callers if needed) ---
+    @POST("trends/ingest/signals")
+    suspend fun ingestTrendSignals(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("trends/ingest/segments")
+    suspend fun ingestTrendSegments(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("seasonality/ingest/profiles")
+    suspend fun ingestSeasonalityProfiles(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("matching/profiles/ingest")
+    suspend fun ingestMatchingProfiles(@Body body: Map<String, Any>): Response<Unit>
 }
 

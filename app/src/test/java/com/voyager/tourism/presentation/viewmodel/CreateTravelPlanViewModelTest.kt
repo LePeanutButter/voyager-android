@@ -6,11 +6,15 @@ import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.TestScope
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -19,8 +23,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class CreateTravelPlanViewModelTest {
 
     @get:Rule
@@ -28,12 +35,19 @@ class CreateTravelPlanViewModelTest {
 
     private val useCase = mockk<CreateTravelPlanUseCase>()
     private lateinit var vm: CreateTravelPlanViewModel
-    private val testScope = TestScope()
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = CreateTravelPlanViewModel(useCase)
     }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
+    }
+
 
     @Test
     fun `initial state is Idle`() {

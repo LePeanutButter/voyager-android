@@ -3,6 +3,7 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
@@ -72,12 +73,24 @@ class PlaceDetailViewModel @Inject constructor(
                 )
                 val response = voyagerAiRepository.postLocalRecommendations(body)
                 if (response.isSuccessful) {
-                    val text = response.body()?.string().orEmpty()
-                    _payload.value = text
-                    _rankedItems.value = LocalRecommendationParsers.parseItems(text)
+                    val ranked = response.body() ?: AiMatchingResponseDto(matches = emptyList(), userId = userId, totalMatches = 0)
+                    _payload.value = ranked.matches.joinToString("\n") { it.name }
+                    _rankedItems.value = ranked.matches.map { match ->
+                        ParsedLocalRecommendationItem(
+                            id = match.userId,
+                            name = match.name,
+                            description = match.bio.orEmpty(),
+                            category = "match",
+                            rating = ((match.compatibilityScore / 100.0) * 5.0).toFloat(),
+                            priceLabel = when {
+                                match.compatibilityScore >= 75.0 -> "$$$"
+                                match.compatibilityScore >= 45.0 -> "$$"
+                                else -> "$"
+                            },
+                        )
+                    }
                 } else {
-                    _error.value = response.errorBody()?.string()?.take(2_000)
-                        ?: "HTTP ${response.code()}"
+                    _error.value = "HTTP ${response.code()}"
                 }
             }.onFailure {
                 _error.value = it.message ?: "Error de red"

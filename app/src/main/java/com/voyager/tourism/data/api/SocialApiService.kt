@@ -3,8 +3,14 @@ package com.voyager.tourism.data.api
 import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.ConnectionDto
 import com.voyager.tourism.data.dto.ConnectionRequestDto
+import com.voyager.tourism.data.dto.PagedResponseSocialPostDto
+import com.voyager.tourism.data.dto.PagedResponseSocialReviewDto
 import com.voyager.tourism.data.dto.MessageDto
 import com.voyager.tourism.data.dto.PagedResponseMessageDto
+import com.voyager.tourism.data.dto.SocialCommentDto
+import com.voyager.tourism.data.dto.SocialConversationDto
+import com.voyager.tourism.data.dto.SocialPostDto
+import com.voyager.tourism.data.dto.SocialReviewDto
 import com.voyager.tourism.data.dto.SendConnectionRequestDto
 import com.voyager.tourism.data.dto.SendMessageRequestDto
 import com.voyager.tourism.data.dto.TravelerSummaryDto
@@ -112,12 +118,19 @@ interface SocialApiService {
     suspend fun getConversations(@Path("userId") userId: Long): ApiResponse<List<SocialConversationDto>>
 
     /**
+     * Compatibility query for travelers tied to a travel plan (web: `/travel-plans/{id}/compatible-travelers`).
+     * Duplicate entry here to make the social surface easier to call from feature code.
+     */
+    @GET("travel-plans/{id}/compatible-travelers")
+    suspend fun getCompatibleTravelers(@Path("id") planId: Long): ApiResponse<List<com.voyager.tourism.data.dto.TravelerMatchDto>>
+
+    /**
      * Returns a paged chat transcript between the authenticated user and a connection.
      */
     @GET("social/connections/{connectionId}/messages")
     suspend fun getConversationMessages(
         @Path("connectionId") connectionId: Long,
-        @Query("userId") userId: Long,
+        @Query("user_id") userId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 50,
     ): PagedResponseMessageDto

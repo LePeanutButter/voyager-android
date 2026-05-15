@@ -1,31 +1,40 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
 import com.voyager.tourism.data.dto.LocalChatResponseDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
 
 /**
  * Pruebas de superficie pública del asistente IA (sin acoplar a miembros privados del ViewModel).
  */
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class AiAssistantViewModelTest {
 
     @get:Rule
@@ -37,7 +46,14 @@ class AiAssistantViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = AiAssistantViewModel(repo, prefs)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
     }
 
     @Test
@@ -71,10 +87,15 @@ class AiAssistantViewModelTest {
         coEvery { prefs.getCurrentUserId() } returns "42"
         coEvery { prefs.getOrCreateLocalChatSessionId("42") } returns "sid-1"
         coEvery { repo.getTrendsDashboard() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(
+                trendingDestinations = emptyList(),
+                popularActivities = emptyList(),
+                emergingSegments = emptyList(),
+                lastUpdated = "now"
+            )
         )
-        coEvery { repo.getLocalChatHistory("sid-1", 50) } returns Response.success(
-            """{"messages":[]}""".toResponseBody("application/json".toMediaType()),
+        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
+            emptyList()
         )
         vm.ensureInitialized()
         advanceUntilIdle()
@@ -95,39 +116,54 @@ class AiAssistantViewModelTest {
     }
 
     @Test
-    fun `ensureInitialized history http error shows fallback welcome`() = runBlocking {
+    fun `ensureInitialized history http error shows fallback welcome`() = runTest {
         coEvery { prefs.getCurrentUserId() } returns "9"
         coEvery { prefs.getOrCreateLocalChatSessionId("9") } returns "sid-x"
         coEvery { repo.getTrendsDashboard() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(
+                trendingDestinations = emptyList(),
+                popularActivities = emptyList(),
+                emergingSegments = emptyList(),
+                lastUpdated = "now"
+            )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.error(
             500,
             "".toResponseBody(null),
         )
         vm.ensureInitialized()
-        delay(600)
+        advanceUntilIdle()
         assertTrue(vm.messages.value.any { it.text.contains("Voyager IA") })
     }
 
     @Test
-    fun `ensureInitialized parses history messages`() = runBlocking {
+    fun `ensureInitialized parses history messages`() = runTest {
         coEvery { prefs.getCurrentUserId() } returns "3"
         coEvery { prefs.getOrCreateLocalChatSessionId("3") } returns "sid-h"
         coEvery { repo.getTrendsDashboard() } returns Response.success(
-            "{}".toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(
+                trendingDestinations = emptyList(),
+                popularActivities = emptyList(),
+                emergingSegments = emptyList(),
+                lastUpdated = "now"
+            )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            """{"messages":[{"role":"user","content":"u"},{"role":"assistant","content":"a"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            listOf(
+                LocalChatResponseDto(reply = "u"),
+                LocalChatResponseDto(reply = "a")
+            )
         )
         vm.ensureInitialized()
-        delay(600)
+        advanceUntilIdle()
+        // verify history loading
         assertEquals(2, vm.messages.value.size)
+        assertEquals("u", vm.messages.value[0].text)
+        assertEquals("a", vm.messages.value[1].text)
     }
 
     @Test
-    fun `sendMessage http error surfaces in transcript`() = runBlocking {
+    fun `sendMessage http error surfaces in transcript`() = runTest {
         coEvery { prefs.getCurrentUserId() } returns "5"
         coEvery { prefs.getOrCreateLocalChatSessionId("5") } returns "sid-e"
         coEvery { repo.postLocalChatMessage(any()) } returns Response.error(
@@ -135,32 +171,49 @@ class AiAssistantViewModelTest {
             "srv".toResponseBody("text/plain".toMediaType()),
         )
         vm.sendMessage("hola")
-        delay(600)
+        advanceUntilIdle()
         assertNotNull(vm.error.value)
-        assertTrue(vm.messages.value.last().text.contains("Error"))
+        assertTrue(vm.messages.value.last().text.contains("srv"))
     }
 
+
     @Test
-    fun `sendMessage with ranking trigger appends suggestions`() = runBlocking {
+    fun `sendMessage with ranking trigger appends suggestions`() = runTest {
         coEvery { prefs.getCurrentUserId() } returns "42"
         coEvery { prefs.getOrCreateLocalChatSessionId("42") } returns "sid-r"
         coEvery { repo.getTrendsDashboard() } returns Response.success(
-            """{"emerging_destinations":[{"name":"Paris","country":"FR"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiTrendDashboardDto(
+                trendingDestinations = listOf(
+                    com.voyager.tourism.data.dto.TrendItemDto("1", "Paris", 0.1, 0.9)
+                ),
+                popularActivities = emptyList(),
+                emergingSegments = emptyList(),
+                lastUpdated = "now"
+            )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            """{"messages":[]}""".toResponseBody("application/json".toMediaType()),
+            emptyList()
         )
         vm.ensureInitialized()
-        delay(600)
+        advanceUntilIdle()
 
         coEvery { repo.postLocalChatMessage(any()) } returns Response.success(LocalChatResponseDto(reply = "ok"))
         coEvery { repo.postLocalRecommendations(any()) } returns Response.success(
-            """{"items":[{"id":"1","name":"Museo","category":"c","score":0.5,"description":"d"}]}"""
-                .toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(
+                matches = listOf(
+                    com.voyager.tourism.data.dto.AiTravelerMatchDto(
+                        userId = "1",
+                        name = "Museo",
+                        compatibilityScore = 0.5,
+                        travelStyleMatch = 0.5
+                    )
+                ),
+                userId = "42",
+                totalMatches = 1
+            )
         )
         vm.sendMessage("quiero recomendaciones de museos")
-        delay(800)
+        advanceUntilIdle()
 
         assertTrue(vm.messages.value.last().text.contains("Sugerencias"))
     }

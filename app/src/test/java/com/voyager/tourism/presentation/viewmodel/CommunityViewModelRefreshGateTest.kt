@@ -1,5 +1,6 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
@@ -11,6 +12,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -18,10 +22,13 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
 import java.util.ArrayList
 
@@ -31,6 +38,7 @@ import java.util.ArrayList
  * bloquear ni dejar minutos de [delay] reales.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class CommunityViewModelRefreshGateTest {
 
     private val std = StandardTestDispatcher()
@@ -47,6 +55,8 @@ class CommunityViewModelRefreshGateTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns std
         every { prefs.getCurrentUserId() } returns "42"
         coEvery { socialRepo.getConnections(42L) } returns Result.success(emptyList())
         coEvery { socialRepo.getPendingRequests("") } returns emptyList()
@@ -54,9 +64,15 @@ class CommunityViewModelRefreshGateTest {
         coEvery { socialRepo.getCompatibleTravelers(any(), any()) } returns emptyList()
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
-        } returns Response.success("{}".toResponseBody("application/json".toMediaType()))
+        } returns Response.success(AiMatchingResponseDto(emptyList(), "42", 0))
         vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
     }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
+    }
+
 
     @Test
     fun `refreshDiscoverManual when rate limited shows notice`() = runTest(std) {

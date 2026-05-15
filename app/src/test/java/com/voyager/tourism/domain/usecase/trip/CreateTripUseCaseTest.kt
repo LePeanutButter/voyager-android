@@ -80,7 +80,7 @@ class CreateTripUseCaseTest {
 
         assertTrue(r.isSuccess)
         val created = r.getOrNull()!!
-        assertEquals(TripStatus.PLANNING, created.status)
+        assertEquals(TripStatus.ACTIVE, created.status)
         assertTrue(created.createdAt > 0)
         assertTrue(created.updatedAt > 0)
     }

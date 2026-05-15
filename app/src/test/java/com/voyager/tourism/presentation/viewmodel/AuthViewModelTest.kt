@@ -9,21 +9,27 @@ import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class AuthViewModelTest {
 
     @get:Rule
@@ -36,8 +42,15 @@ class AuthViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         sessionNotifier = SessionInvalidationNotifier()
         coEvery { userRepository.getCurrentUser() } returns Result.success(null)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
     }
 
     private fun viewModel() = AuthViewModel(
@@ -134,7 +147,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `oauth success navigates dashboard`() = runBlocking {
+    fun `oauth success navigates dashboard`() = runTest {
         coEvery { loginUseCase.loginWithGoogle("c", "s") } returns Result.success(TestFixtures.domainUser())
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns null
@@ -144,6 +157,7 @@ class AuthViewModelTest {
         val nav = async { vm.navigateAfterAuth.first() }
         yield()
         vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
         assertEquals(AuthViewModel.ROUTE_DASHBOARD, nav.await())
         assertTrue(vm.authState.value is AuthState.Authenticated)
     }
@@ -170,11 +184,12 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `onSessionExpired emits login route`() = runBlocking {
+    fun `onSessionExpired emits login route`() = runTest {
         val vm = viewModel()
         val nav = async { vm.navigateAfterAuth.first() }
         yield()
         vm.onSessionExpired()
+        advanceUntilIdle()
         assertEquals(AuthViewModel.ROUTE_LOGIN, nav.await())
         assertTrue(vm.authState.value is AuthState.Unauthenticated)
     }
@@ -252,7 +267,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `oauth with state parameter`() = runBlocking {
+    fun `oauth with state parameter`() = runTest {
         coEvery { loginUseCase.loginWithGoogle("c", "custom-state") } returns Result.success(TestFixtures.domainUser())
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns null
@@ -262,30 +277,33 @@ class AuthViewModelTest {
         val nav = async { vm.navigateAfterAuth.first() }
         yield()
         vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
         assertEquals(AuthViewModel.ROUTE_DASHBOARD, nav.await())
         assertTrue(vm.authState.value is AuthState.Authenticated)
     }
 
     @Test
-    fun `oauth with access_denied error`() = runBlocking {
+    fun `oauth with access_denied error`() = runTest {
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns "access_denied"
         every { uri.getQueryParameter("error_description") } returns "User denied access"
         every { uri.getQueryParameter("code") } returns null
         val vm = viewModel()
         vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
 
         assertEquals("User denied access", vm.oauthError.value)
     }
 
     @Test
-    fun `oauth with server_error`() = runBlocking {
+    fun `oauth with server_error`() = runTest {
         val uri = mockk<android.net.Uri>()
         every { uri.getQueryParameter("error") } returns "server_error"
         every { uri.getQueryParameter("error_description") } returns "Internal server error"
         every { uri.getQueryParameter("code") } returns null
         val vm = viewModel()
         vm.handleGoogleOAuthUri(uri)
+        advanceUntilIdle()
 
         assertEquals("Internal server error", vm.oauthError.value)
     }

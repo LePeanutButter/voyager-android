@@ -7,14 +7,26 @@ import com.voyager.tourism.domain.repository.TripRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class TripDetailViewModelTest {
 
     @get:Rule

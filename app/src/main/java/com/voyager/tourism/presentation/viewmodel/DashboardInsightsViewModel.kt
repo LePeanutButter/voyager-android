@@ -6,6 +6,7 @@ import com.voyager.tourism.data.dashboard.AiDashboardParsers
 import com.voyager.tourism.data.dashboard.ParsedDigestRow
 import com.voyager.tourism.data.dashboard.ParsedSeasonalityRow
 import com.voyager.tourism.data.dashboard.ParsedTrendingDestination
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import javax.inject.Inject
 
 /**
@@ -59,8 +61,13 @@ class DashboardInsightsViewModel @Inject constructor(
                 _trending.value = emptyList()
                 return
             }
-            val body = res.body()?.string().orEmpty()
-            _trending.value = AiDashboardParsers.parseTrendsDashboard(body)
+            val body: AiTrendDashboardDto = res.body() ?: run {
+                _trending.value = emptyList()
+                return
+            }
+            _trending.value = body.trendingDestinations.map {
+                ParsedTrendingDestination(id = it.id, name = it.name, country = "")
+            }
         } catch (e: Exception) {
             _trendingError.value = e.message ?: "Error de tendencias"
             _trending.value = emptyList()
@@ -72,14 +79,20 @@ class DashboardInsightsViewModel @Inject constructor(
     private suspend fun loadWeekly() {
         _weeklyError.value = null
         try {
-            val res = withContext(Dispatchers.IO) { voyagerAi.getWeeklyDigest() }
+            val res = withContext(Dispatchers.IO) { voyagerAi.getWeeklyDigestTyped() }
             if (!res.isSuccessful) {
                 _weeklyError.value = "Digest semanal no disponible."
                 _weeklyRows.value = emptyList()
                 return
             }
-            val body = res.body()?.string().orEmpty()
-            _weeklyRows.value = AiDashboardParsers.parseWeeklyDigestRows(body)
+            val body = res.body()
+            if (body == null) {
+                _weeklyRows.value = emptyList()
+                return
+            }
+            // Prefer typed DTO parsing in AiDashboardParsers
+            val json = body.raw?.let { JSONObject(it).toString() } ?: JSONObject(mapOf<String, Any>()).toString()
+            _weeklyRows.value = AiDashboardParsers.parseWeeklyDigestRows(json)
         } catch (e: Exception) {
             _weeklyError.value = e.message ?: "Digest no disponible"
             _weeklyRows.value = emptyList()
@@ -95,8 +108,18 @@ class DashboardInsightsViewModel @Inject constructor(
                 _seasonalityRows.value = emptyList()
                 return
             }
-            val body = res.body()?.string().orEmpty()
-            _seasonalityRows.value = AiDashboardParsers.parseSeasonalityRows(body)
+            val body = res.body()
+            _seasonalityRows.value = if (body == null) {
+                emptyList()
+            } else {
+                (body.peakDestinations + body.shoulderDestinations).map { destination ->
+                    ParsedSeasonalityRow(
+                        id = destination,
+                        title = destination,
+                        subtitle = "Perfil estacional disponible",
+                    )
+                }
+            }
         } catch (e: Exception) {
             _seasonalityError.value = e.message ?: "Estacionalidad no disponible"
             _seasonalityRows.value = emptyList()

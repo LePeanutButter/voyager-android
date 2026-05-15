@@ -215,6 +215,7 @@ class AuthViewModel @Inject constructor(
         const val ROUTE_BEHAVIOR_ANALYSIS = "behavior_analysis"
         const val ROUTE_TRAVEL_PREFERENCES = "travel_preferences"
         const val ROUTE_SOCIAL = "social"
+        const val ROUTE_TRAVELER_CHAT = "traveler_chat/{connectionId}/{peerName}/{currentUserId}"
         const val ROUTE_AI_ASSISTANT = "ai_assistant"
 
         fun createTripDetailRoute(tripId: String) = "trip_detail/$tripId"
@@ -233,6 +234,13 @@ class AuthViewModel @Inject constructor(
             val encCountry = Uri.encode(country?.trim().orEmpty())
             val encDest = Uri.encode(destId?.trim().orEmpty())
             return "destination_explore?loc=$encLoc&country=$encCountry&destId=$encDest"
+        }
+
+        /** Opens the peer-to-peer chat screen for an existing connection. */
+        fun createTravelerChatRoute(connectionId: Long, peerName: String, currentUserId: String): String {
+            val encPeerName = Uri.encode(peerName.trim().ifBlank { "Viajero" })
+            val encUserId = Uri.encode(currentUserId.trim())
+            return "traveler_chat/$connectionId/$encPeerName/$encUserId"
         }
     }
 }

@@ -61,9 +61,9 @@ data class HotelDto(
 data class ActivityDto(
     @Json(name = "id") val id: String,
     @Json(name = "name") val name: String,
-    @Json(name = "shortDescription") val shortDescription: String? = null,
+    @Json(name = "short_description") val shortDescription: String? = null,
     @Json(name = "rating") val rating: String? = null,
     @Json(name = "price") val price: Map<String, Any>? = null,
     @Json(name = "pictures") val pictures: List<String> = emptyList(),
-    @Json(name = "bookingLink") val bookingLink: String? = null
+    @Json(name = "booking_link") val bookingLink: String? = null
 )

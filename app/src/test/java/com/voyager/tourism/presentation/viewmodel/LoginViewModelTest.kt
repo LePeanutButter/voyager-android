@@ -12,6 +12,13 @@ import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -21,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class LoginViewModelTest {
@@ -34,26 +42,35 @@ class LoginViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Dispatchers::class)
+        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = LoginViewModel(loginUseCase, authRepository)
     }
 
+    @After
+    fun tearDown() {
+        unmockkStatic(Dispatchers::class)
+    }
+
     @Test
-    fun `login success`() {
+    fun `login success`() = runTest {
         coEvery { loginUseCase("u", "p") } returns Result.success(TestFixtures.domainUser())
         vm.login("u", "p")
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Success)
     }
 
     @Test
-    fun `login failure`() {
+    fun `login failure`() = runTest {
         coEvery { loginUseCase(any(), any()) } returns Result.failure(RuntimeException("x"))
         vm.login("u", "p")
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Error)
         assertEquals("x", (vm.uiState.value as LoginUiState.Error).message)
     }
 
     @Test
-    fun `handleGoogleSignInResult success uses serverAuthCode`() {
+    fun `handleGoogleSignInResult success uses serverAuthCode`() = runTest {
         val account = mockk<GoogleSignInAccount>()
         every { account.serverAuthCode } returns "srv-code"
         val task = mockk<Task<GoogleSignInAccount>>()
@@ -61,53 +78,60 @@ class LoginViewModelTest {
         coEvery { loginUseCase.loginWithGoogle("srv-code", null) } returns Result.success(TestFixtures.domainUser())
 
         vm.handleGoogleSignInResult(task)
+        advanceUntilIdle()
 
         assertTrue(vm.uiState.value is LoginUiState.Success)
     }
 
     @Test
-    fun `handleGoogleSignInResult error when serverAuthCode null`() {
+    fun `handleGoogleSignInResult error when serverAuthCode null`() = runTest {
         val account = mockk<GoogleSignInAccount>()
         every { account.serverAuthCode } returns null
         val task = mockk<Task<GoogleSignInAccount>>()
         every { task.getResult(ApiException::class.java) } returns account
 
         vm.handleGoogleSignInResult(task)
+        advanceUntilIdle()
 
         assertTrue(vm.uiState.value is LoginUiState.Error)
     }
 
     @Test
-    fun `handleGoogleCallback missing code`() {
+    fun `handleGoogleCallback missing code`() = runTest {
         val uri = Uri.parse("https://app/callback")
         vm.handleGoogleCallback(uri)
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Error)
     }
 
     @Test
-    fun `handleGoogleCallback success`() {
+    fun `handleGoogleCallback success`() = runTest {
         coEvery { loginUseCase.loginWithGoogle("c", "s") } returns Result.success(TestFixtures.domainUser())
         val uri = Uri.parse("https://app/callback?code=c&state=s")
         vm.handleGoogleCallback(uri)
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Success)
     }
 
     @Test
-    fun `handleGoogleCallback login failure`() {
+    fun `handleGoogleCallback login failure`() = runTest {
         coEvery { loginUseCase.loginWithGoogle("c", null) } returns Result.failure(RuntimeException("oauth"))
         val uri = Uri.parse("https://app/callback?code=c")
         vm.handleGoogleCallback(uri)
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Error)
         assertEquals("oauth", (vm.uiState.value as LoginUiState.Error).message)
     }
 
     @Test
-    fun `handleGoogleCallback unexpected exception sets error`() {
+    fun `handleGoogleCallback unexpected exception sets error`() = runTest {
         coEvery { loginUseCase.loginWithGoogle(any(), any()) } throws RuntimeException("boom")
         val uri = Uri.parse("https://app/callback?code=c&state=s")
         vm.handleGoogleCallback(uri)
+        advanceUntilIdle()
         assertTrue(vm.uiState.value is LoginUiState.Error)
     }
+
 
     @Test
     fun `resetState`() {
