@@ -9,11 +9,13 @@ import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -23,6 +25,7 @@ import javax.inject.Inject
 class PlaceDetailViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -71,7 +74,9 @@ class PlaceDetailViewModel @Inject constructor(
                         ),
                     ),
                 )
-                val response = voyagerAiRepository.postLocalRecommendations(body)
+                val response = withContext(dispatchers.io) {
+                    voyagerAiRepository.postLocalRecommendations(body)
+                }
                 if (response.isSuccessful) {
                     val ranked = response.body() ?: AiMatchingResponseDto(matches = emptyList(), userId = userId, totalMatches = 0)
                     _payload.value = ranked.matches.joinToString("\n") { it.name }

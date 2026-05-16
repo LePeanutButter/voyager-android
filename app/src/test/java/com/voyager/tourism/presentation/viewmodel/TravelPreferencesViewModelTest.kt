@@ -38,14 +38,11 @@ class TravelPreferencesViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = TravelPreferencesViewModel(repository)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

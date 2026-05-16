@@ -7,7 +7,9 @@ import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,13 +46,11 @@ class CommunityViewModelTest {
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val supplementRepo = mockk<BackendSupplementRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>(relaxed = true)
+    private val testDispatchers = TestDispatcherProvider(mainDispatcherRule.dispatcher)
     private lateinit var vm: CommunityViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-
         coEvery { socialRepo.getConnections(42L) } returns Result.success(emptyList())
         coEvery { socialRepo.getPendingRequests("") } returns emptyList()
         every { prefs.getCurrentUserId() } returns "42"
@@ -59,17 +59,16 @@ class CommunityViewModelTest {
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
         } returns Response.success(AiMatchingResponseDto(emptyList(), "42", 0))
-        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
+        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test
     fun `initial ui state uses defaults`() {
-        val fresh = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
+        val fresh = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
         assertEquals(CommunityTab.CONNECTIONS, fresh.uiState.value.activeTab)
         assertEquals(null, fresh.uiState.value.error)
     }

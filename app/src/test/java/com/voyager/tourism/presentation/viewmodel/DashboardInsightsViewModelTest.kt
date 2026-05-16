@@ -6,6 +6,7 @@ import com.voyager.tourism.data.dto.TrendItemDto
 import com.voyager.tourism.data.dto.WeeklyDigestDto
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -13,6 +14,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -33,22 +35,22 @@ import retrofit2.Response
 @RunWith(RobolectricTestRunner::class)
 class DashboardInsightsViewModelTest {
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val voyagerAi = mockk<VoyagerAiRepository>()
+    private val dispatchers = TestDispatcherProvider(testDispatcher)
     private lateinit var vm: DashboardInsightsViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-        vm = DashboardInsightsViewModel(voyagerAi)
+        vm = DashboardInsightsViewModel(voyagerAi, dispatchers)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

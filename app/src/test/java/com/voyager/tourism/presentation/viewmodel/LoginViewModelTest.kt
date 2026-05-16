@@ -42,14 +42,11 @@ class LoginViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = LoginViewModel(loginUseCase, authRepository)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

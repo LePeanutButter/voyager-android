@@ -13,6 +13,7 @@ import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Deferred
@@ -79,6 +80,7 @@ class CommunityViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
     private val supplementRepository: BackendSupplementRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CommunityUiState())
@@ -138,10 +140,10 @@ class CommunityViewModel @Inject constructor(
         _uiState.update { it.copy(isLoadingHeader = true, error = null) }
         runCatching {
             coroutineScope {
-                val connsDeferred = async(Dispatchers.IO) {
+                val connsDeferred = async(dispatchers.io) {
                     socialRepository.getConnections(uid).getOrThrow()
                 }
-                val pendingDeferred = async(Dispatchers.IO) {
+                val pendingDeferred = async(dispatchers.io) {
                     socialRepository.getPendingRequests("")
                 }
                 connsDeferred.await() to pendingDeferred.await()
@@ -196,14 +198,14 @@ class CommunityViewModel @Inject constructor(
         _uiState.update { it.copy(discoverLoading = true, error = null) }
         runCatching {
             coroutineScope {
-                val compatDeferred: Deferred<List<TravelerMatchDto>> = async(Dispatchers.IO) {
+                val compatDeferred: Deferred<List<TravelerMatchDto>> = async(dispatchers.io) {
                     runCatching {
                         socialRepository.getCompatibleTravelers(selected, "")
                     }.getOrDefault(emptyList<TravelerMatchDto>())
                 }
 
                 val footprintParam = if (footprint.isNotEmpty()) footprint.joinToString(",") else null
-                val buddyDeferred: Deferred<List<AiTravelerMatchDto>> = async(Dispatchers.IO) {
+                val buddyDeferred: Deferred<List<AiTravelerMatchDto>> = async(dispatchers.io) {
                     runCatching {
                         val resp = voyagerAi.getTravelBuddyRecommendations(
                             userId = uidStr,

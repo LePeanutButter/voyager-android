@@ -8,8 +8,8 @@ import com.voyager.tourism.data.dashboard.ParsedSeasonalityRow
 import com.voyager.tourism.data.dashboard.ParsedTrendingDestination
 import com.voyager.tourism.data.dto.AiTrendDashboardDto
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardInsightsViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _trending = MutableStateFlow<List<ParsedTrendingDestination>>(emptyList())
@@ -55,7 +56,7 @@ class DashboardInsightsViewModel @Inject constructor(
         _trendingLoading.value = true
         _trendingError.value = null
         try {
-            val res = withContext(Dispatchers.IO) { voyagerAi.getTrendsDashboard() }
+            val res = withContext(dispatchers.io) { voyagerAi.getTrendsDashboard() }
             if (!res.isSuccessful) {
                 _trendingError.value = "No se pudo cargar el panel de tendencias (servicio de IA)."
                 _trending.value = emptyList()
@@ -79,7 +80,7 @@ class DashboardInsightsViewModel @Inject constructor(
     private suspend fun loadWeekly() {
         _weeklyError.value = null
         try {
-            val res = withContext(Dispatchers.IO) { voyagerAi.getWeeklyDigestTyped() }
+            val res = withContext(dispatchers.io) { voyagerAi.getWeeklyDigestTyped() }
             if (!res.isSuccessful) {
                 _weeklyError.value = "Digest semanal no disponible."
                 _weeklyRows.value = emptyList()
@@ -102,7 +103,7 @@ class DashboardInsightsViewModel @Inject constructor(
     private suspend fun loadSeasonality() {
         _seasonalityError.value = null
         try {
-            val res = withContext(Dispatchers.IO) { voyagerAi.getSeasonalityOverview(null) }
+            val res = withContext(dispatchers.io) { voyagerAi.getSeasonalityOverview(null) }
             if (!res.isSuccessful) {
                 _seasonalityError.value = "Panorama estacional no disponible."
                 _seasonalityRows.value = emptyList()

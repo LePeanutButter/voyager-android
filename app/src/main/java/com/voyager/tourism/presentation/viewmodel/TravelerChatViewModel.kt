@@ -6,14 +6,14 @@ import com.voyager.tourism.data.dto.MessageDto
 import com.voyager.tourism.data.dto.SendMessageRequestDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.BackendSupplementRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class TravelerChatMessageUi(
@@ -37,6 +37,7 @@ data class TravelerChatUiState(
 class TravelerChatViewModel @Inject constructor(
     private val backendSupplementRepository: BackendSupplementRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TravelerChatUiState())
@@ -61,7 +62,7 @@ class TravelerChatViewModel @Inject constructor(
 
         _uiState.update { it.copy(isSending = true, error = null) }
         return try {
-            val response = withContext(Dispatchers.IO) {
+            val response = withContext(dispatchers.io) {
                 backendSupplementRepository.sendMessage(
                     SendMessageRequestDto(
                         connectionId = connectionId,
@@ -128,7 +129,7 @@ class TravelerChatViewModel @Inject constructor(
         val maxPages = 100
 
         for (page in 0 until maxPages) {
-            val response = withContext(Dispatchers.IO) {
+            val response = withContext(dispatchers.io) {
                 backendSupplementRepository.getConversationMessages(connectionId, userId, page, pageSize)
             }
             if (response.status !in 200..299) {

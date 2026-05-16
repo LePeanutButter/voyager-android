@@ -33,8 +33,6 @@ class SettingsViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         stored = SmarTripSettingsPayload()
         every { prefs.getSmarTripSettings() } answers { stored }
         every { prefs.updateSmarTripSettings(any()) } answers {
@@ -46,7 +44,6 @@ class SettingsViewModelTest {
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

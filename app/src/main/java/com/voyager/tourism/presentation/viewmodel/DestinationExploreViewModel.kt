@@ -14,8 +14,8 @@ import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
 import com.voyager.tourism.domain.repository.CatalogRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +31,7 @@ class DestinationExploreViewModel @Inject constructor(
     private val catalogRepository: CatalogRepository,
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _destinationLabel = MutableStateFlow("")
@@ -69,7 +70,7 @@ class DestinationExploreViewModel @Inject constructor(
             _rankError.value = null
             runCatching {
                 val hint = resolveDestinationHint(label)
-                val res = withContext(Dispatchers.IO) {
+                val res = withContext(dispatchers.io) {
                     catalogRepository.activities(
                         latitude = hint.lat,
                         longitude = hint.lng,
@@ -116,7 +117,7 @@ class DestinationExploreViewModel @Inject constructor(
                         )
                     },
                 )
-                val res = withContext(Dispatchers.IO) { voyagerAiRepository.postLocalRecommendations(body) }
+                val res = withContext(dispatchers.io) { voyagerAiRepository.postLocalRecommendations(body) }
                 if (res.isSuccessful) {
                     val rawJson = res.body()?.toString() ?: ""
                     _ranked.value = LocalRecommendationParsers.parseItems(rawJson)

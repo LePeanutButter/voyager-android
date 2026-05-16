@@ -65,14 +65,11 @@ class BehaviorAnalysisViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = BehaviorAnalysisViewModel(trackInteraction, analyzeBehavior, repository)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

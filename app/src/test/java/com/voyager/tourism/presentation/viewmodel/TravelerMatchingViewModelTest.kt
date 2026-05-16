@@ -36,14 +36,11 @@ class TravelerMatchingViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         vm = TravelerMatchingViewModel(getCompatible, sendRequest)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

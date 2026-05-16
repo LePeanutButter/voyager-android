@@ -6,6 +6,7 @@ import com.voyager.tourism.data.dto.LocalChatResponseDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -15,6 +16,7 @@ import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -37,23 +39,23 @@ import retrofit2.Response
 @RunWith(RobolectricTestRunner::class)
 class AiAssistantViewModelTest {
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val repo = mockk<VoyagerAiRepository>()
     private val prefs = mockk<PreferencesManager>()
+    private val dispatchers = TestDispatcherProvider(testDispatcher)
     private lateinit var vm: AiAssistantViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-        vm = AiAssistantViewModel(repo, prefs)
+        vm = AiAssistantViewModel(repo, prefs, dispatchers)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test

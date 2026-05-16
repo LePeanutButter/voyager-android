@@ -11,8 +11,8 @@ import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.localai.LocalChatHistoryParsers
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +37,7 @@ data class ChatBubble(val isUser: Boolean, val text: String)
 class AiAssistantViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatBubble>>(emptyList())
@@ -67,7 +68,7 @@ class AiAssistantViewModel @Inject constructor(
             _error.value = null
             runCatching {
                 val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
-                withContext(Dispatchers.IO) { refreshRecommendationPool() }
+                withContext(dispatchers.io) { refreshRecommendationPool() }
                 loadHistoryIntoMessages(sessionId)
             }.onFailure {
                 _error.value = it.message ?: "Error al cargar el asistente"
@@ -129,7 +130,7 @@ class AiAssistantViewModel @Inject constructor(
 
     private suspend fun enrichReplyWithRecommendations(userId: String, message: String, reply: String): String {
         return try {
-            val rankRes = withContext(Dispatchers.IO) {
+            val rankRes = withContext(dispatchers.io) {
                 voyagerAiRepository.postLocalRecommendations(
                     LocalRecommendationRequestBody(
                         userId = userId,
@@ -197,7 +198,7 @@ class AiAssistantViewModel @Inject constructor(
     }
 
     private suspend fun loadHistoryIntoMessages(sessionId: String) {
-        val histRes = withContext(Dispatchers.IO) {
+        val histRes = withContext(dispatchers.io) {
             voyagerAiRepository.getLocalChatHistory(sessionId = sessionId, limit = 50)
         }
         if (!histRes.isSuccessful) {

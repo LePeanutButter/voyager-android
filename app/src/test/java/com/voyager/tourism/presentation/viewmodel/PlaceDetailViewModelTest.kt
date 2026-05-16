@@ -6,6 +6,7 @@ import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,6 +17,7 @@ import io.mockk.slot
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -35,29 +37,26 @@ import retrofit2.Response
 @RunWith(RobolectricTestRunner::class)
 class PlaceDetailViewModelTest {
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>()
+    private val dispatchers = TestDispatcherProvider(testDispatcher)
     private lateinit var vm: PlaceDetailViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-        every { Dispatchers.Main } returns mainDispatcherRule.dispatcher
-        every { Dispatchers.Default } returns mainDispatcherRule.dispatcher
-        
         clearMocks(voyagerAi, prefs)
 
         every { prefs.getCurrentUserId() } returns "42"
-        vm = PlaceDetailViewModel(voyagerAi, prefs)
+        vm = PlaceDetailViewModel(voyagerAi, prefs, dispatchers)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
 

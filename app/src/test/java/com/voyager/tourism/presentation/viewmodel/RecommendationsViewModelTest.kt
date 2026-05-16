@@ -7,6 +7,7 @@ import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -17,6 +18,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -39,28 +41,28 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 class RecommendationsViewModelTest {
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>(relaxed = true)
     private val travelRepo = mockk<TravelRepository>(relaxed = true)
+    private val dispatchers = TestDispatcherProvider(testDispatcher)
     private lateinit var vm: RecommendationsViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-        
         clearMocks(voyagerAi, prefs, travelRepo)
 
         every { prefs.getCurrentUserId() } returns null
-        vm = RecommendationsViewModel(voyagerAi, prefs, travelRepo)
+        vm = RecommendationsViewModel(voyagerAi, prefs, travelRepo, dispatchers)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
+        // No longer needed
     }
 
 

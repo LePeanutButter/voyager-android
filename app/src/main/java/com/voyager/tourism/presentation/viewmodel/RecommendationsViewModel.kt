@@ -9,11 +9,13 @@ import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Fila UI para la lista de recomendaciones rankeadas por `/local/recommendations`. */
@@ -35,6 +37,7 @@ class RecommendationsViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
     private val travelRepository: TravelRepository,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _rows = MutableStateFlow<List<RecommendationListRow>>(emptyList())
@@ -80,7 +83,7 @@ class RecommendationsViewModel @Inject constructor(
                     limit = 5,
                     candidates = candidates,
                 )
-                val response = voyagerAi.postLocalRecommendations(body)
+                val response = withContext(dispatchers.io) { voyagerAi.postLocalRecommendations(body) }
                 if (!response.isSuccessful) {
                     _error.value = "No se pudieron cargar recomendaciones (HTTP ${response.code()})"
                     _rows.value = emptyList()
@@ -121,11 +124,13 @@ class RecommendationsViewModel @Inject constructor(
         val clamped = rating.coerceIn(1, 5)
         viewModelScope.launch {
             runCatching {
-                val res = voyagerAi.postLocalRecommendationFeedback(
-                    userId = userId,
-                    itemId = itemId,
-                    rating = clamped,
-                )
+                val res = withContext(dispatchers.io) {
+                    voyagerAi.postLocalRecommendationFeedback(
+                        userId = userId,
+                        itemId = itemId,
+                        rating = clamped,
+                    )
+                }
                 if (res.isSuccessful) {
                     _feedbackMessage.value = "Valoración enviada"
                 } else {

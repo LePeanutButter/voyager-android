@@ -42,15 +42,12 @@ class AuthViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
         sessionNotifier = SessionInvalidationNotifier()
         coEvery { userRepository.getCurrentUser() } returns Result.success(null)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     private fun viewModel() = AuthViewModel(

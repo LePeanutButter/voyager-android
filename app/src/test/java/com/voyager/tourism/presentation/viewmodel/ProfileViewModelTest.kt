@@ -39,9 +39,6 @@ class ProfileViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Dispatchers::class)
-        every { Dispatchers.IO } returns mainDispatcherRule.dispatcher
-        
         clearMocks(getUserUseCase, updateProfileUseCase, tokenManager)
 
         vm = ProfileViewModel(getUserUseCase, updateProfileUseCase, tokenManager)
@@ -49,7 +46,6 @@ class ProfileViewModelTest {
 
     @After
     fun tearDown() {
-        unmockkStatic(Dispatchers::class)
     }
 
     @Test
