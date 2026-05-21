@@ -12,10 +12,10 @@ data class PagedResponseUserDto(
     @Json(name = "status") val status: Int,
     @Json(name = "message") val message: String,
     @Json(name = "data") val data: List<UserDto>? = null,
-    @Json(name = "current_page") val currentPage: Int = 0,
-    @Json(name = "total_pages") val totalPages: Int = 0,
-    @Json(name = "total_elements") val totalElements: Long = 0,
-    @Json(name = "page_size") val pageSize: Int = 0,
+    @Json(name = "currentPage") val currentPage: Int = 0,
+    @Json(name = "totalPages") val totalPages: Int = 0,
+    @Json(name = "totalElements") val totalElements: Long = 0,
+    @Json(name = "pageSize") val pageSize: Int = 0,
     @Json(name = "first") val first: Boolean = false,
     @Json(name = "last") val last: Boolean = false,
     @Json(name = "path") val path: String? = null,
@@ -30,10 +30,10 @@ data class PagedResponseTravelPlanDto(
     @Json(name = "status") val status: Int,
     @Json(name = "message") val message: String,
     @Json(name = "data") val data: List<TravelPlanDto>? = null,
-    @Json(name = "current_page") val currentPage: Int = 0,
-    @Json(name = "total_pages") val totalPages: Int = 0,
-    @Json(name = "total_elements") val totalElements: Long = 0,
-    @Json(name = "page_size") val pageSize: Int = 0,
+    @Json(name = "currentPage") val currentPage: Int = 0,
+    @Json(name = "totalPages") val totalPages: Int = 0,
+    @Json(name = "totalElements") val totalElements: Long = 0,
+    @Json(name = "pageSize") val pageSize: Int = 0,
     @Json(name = "first") val first: Boolean = false,
     @Json(name = "last") val last: Boolean = false,
     @Json(name = "path") val path: String? = null,
@@ -48,10 +48,10 @@ data class PagedResponseMessageDto(
     @Json(name = "status") val status: Int,
     @Json(name = "message") val message: String,
     @Json(name = "data") val data: List<MessageDto>? = null,
-    @Json(name = "current_page") val currentPage: Int = 0,
-    @Json(name = "total_pages") val totalPages: Int = 0,
-    @Json(name = "total_elements") val totalElements: Long = 0,
-    @Json(name = "page_size") val pageSize: Int = 0,
+    @Json(name = "currentPage") val currentPage: Int = 0,
+    @Json(name = "totalPages") val totalPages: Int = 0,
+    @Json(name = "totalElements") val totalElements: Long = 0,
+    @Json(name = "pageSize") val pageSize: Int = 0,
     @Json(name = "first") val first: Boolean = false,
     @Json(name = "last") val last: Boolean = false,
     @Json(name = "path") val path: String? = null,
@@ -72,13 +72,13 @@ data class UserStatisticsDto(
 @JsonClass(generateAdapter = true)
 data class MessageDto(
     @Json(name = "id") val id: Long? = null,
-    @Json(name = "connection_id") val connectionId: Long? = null,
-    @Json(name = "sender_id") val senderId: Long? = null,
-    @Json(name = "recipient_id") val recipientId: Long? = null,
+    @Json(name = "connectionId") val connectionId: Long? = null,
+    @Json(name = "senderId") val senderId: Long? = null,
+    @Json(name = "recipientId") val recipientId: Long? = null,
     @Json(name = "content") val content: String? = null,
     @Json(name = "status") val status: String? = null,
-    @Json(name = "created_at") val createdAt: String? = null,
-    @Json(name = "updated_at") val updatedAt: String? = null,
+    @Json(name = "createdAt") val createdAt: String? = null,
+    @Json(name = "updatedAt") val updatedAt: String? = null,
 )
 
 /**
@@ -86,8 +86,8 @@ data class MessageDto(
  */
 @JsonClass(generateAdapter = true)
 data class SendMessageRequestDto(
-    @Json(name = "connection_id") val connectionId: Long,
-    @Json(name = "sender_id") val senderId: Long,
+    @Json(name = "connectionId") val connectionId: Long,
+    @Json(name = "senderId") val senderId: Long,
     @Json(name = "content") val content: String,
 )
 
@@ -96,13 +96,13 @@ data class SendMessageRequestDto(
  */
 @JsonClass(generateAdapter = true)
 data class MatchResponseDto(
-    @Json(name = "user_id") val userId: Long,
+    @Json(name = "userId") val userId: Long,
     @Json(name = "username") val username: String? = null,
     @Json(name = "destination") val destination: String? = null,
     @Json(name = "score") val score: Double? = null,
-    @Json(name = "destination_points") val destinationPoints: Int? = null,
-    @Json(name = "date_points") val datePoints: Int? = null,
-    @Json(name = "interest_points") val interestPoints: Int? = null,
+    @Json(name = "destinationPoints") val destinationPoints: Int? = null,
+    @Json(name = "datePoints") val datePoints: Int? = null,
+    @Json(name = "interestPoints") val interestPoints: Int? = null,
 )
 
 /**
@@ -115,10 +115,10 @@ data class ReservationDto(
     @Json(name = "description") val description: String? = null,
     @Json(name = "type") val type: String? = null,
     @Json(name = "status") val status: String? = null,
-    @Json(name = "confirmation_number") val confirmationNumber: String? = null,
-    @Json(name = "start_date") val startDate: String? = null,
-    @Json(name = "end_date") val endDate: String? = null,
+    @Json(name = "confirmationNumber") val confirmationNumber: String? = null,
+    @Json(name = "startDate") val startDate: String? = null,
+    @Json(name = "endDate") val endDate: String? = null,
     @Json(name = "location") val location: String? = null,
     @Json(name = "totalCost") val totalCost: Double? = null,
-    @Json(name = "is_paid") val isPaid: Boolean? = null,
+    @Json(name = "isPaid") val isPaid: Boolean? = null,
 )

@@ -4,6 +4,7 @@ import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.database.dao.TripDao
 import com.voyager.tourism.data.database.dao.UserDao
 import com.voyager.tourism.data.dto.AiUserPreferencesBody
+import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
