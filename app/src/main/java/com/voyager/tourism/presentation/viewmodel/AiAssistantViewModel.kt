@@ -199,7 +199,7 @@ class AiAssistantViewModel @Inject constructor(
 
     private suspend fun loadHistoryIntoMessages(sessionId: String) {
         val histRes = withContext(dispatchers.io) {
-            voyagerAiRepository.getLocalChatHistory(sessionId = sessionId, limit = 50)
+            voyagerAiRepository.getLocalChatHistoryTyped(sessionId = sessionId, limit = 50)
         }
         if (!histRes.isSuccessful) {
             _messages.value = listOf(ChatBubble(isUser = false, text = welcomeFallback()))
@@ -208,10 +208,11 @@ class AiAssistantViewModel @Inject constructor(
         val bodyList = histRes.body()
         val lines = mutableListOf<Pair<Boolean, String>>()
         if (bodyList != null && bodyList.isNotEmpty()) {
-            // Convert typed LocalChatResponseDto list into display pairs (assistant replies assumed)
+            // Convert typed LocalChatResponseDto list into display pairs
             for (item in bodyList) {
                 val text = item.reply.ifBlank { "(Sin respuesta)" }
-                lines.add(false to text)
+                val isUser = item.role?.lowercase() == "user"
+                lines.add(isUser to text)
             }
         } else {
             // fallback to legacy raw parsing if any (defensive)

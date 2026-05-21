@@ -99,7 +99,8 @@ class UserRepositoryImpl @Inject constructor(
             )
             if (response.status == 200 && response.data != null) {
                 val login = response.data
-                val dto = login.user.copy(token = login.token)
+                val userDto = login.user ?: return Result.failure(Exception("Login missing user data"))
+                val dto = userDto.copy(token = login.token)
                 dto.token?.let { preferencesManager.saveAuthToken(it) }
                 preferencesManager.saveCurrentUserId(dto.id.toString())
                 userDao.insertUser(userMapper.toEntity(dto))

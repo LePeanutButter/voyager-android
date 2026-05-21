@@ -66,8 +66,18 @@ class VoyagerAiRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLocalChatHistoryTyped(sessionId: String, limit: Int): Response<List<LocalChatResponseDto>> {
-        // API already returns typed LocalChatResponseDto list; delegate directly
-        return api.getLocalChatHistory(sessionId, limit)
+        val resp = api.getLocalChatHistory(sessionId, limit)
+        if (!resp.isSuccessful) return Response.error(resp.code(), resp.errorBody() ?: "".toResponseBody(null))
+        
+        val history = resp.body()?.messages?.map { msg ->
+            LocalChatResponseDto(
+                sessionId = msg.sessionId ?: sessionId,
+                reply = msg.content.ifBlank { msg.message },
+                role = msg.role
+            )
+        } ?: emptyList()
+        
+        return Response.success(history)
     }
 
     // For other API surfaces not specialized above, delegate to the underlying API.

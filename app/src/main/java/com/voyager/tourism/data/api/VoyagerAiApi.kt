@@ -58,13 +58,13 @@ interface VoyagerAiApi {
     suspend fun postLocalChatMessage(@Body body: LocalChatRequestBody): Response<LocalChatResponseDto>
 
     /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web).
-     * Prefer typed list of `LocalChatResponseDto` for strong typing on the client.
+     * Returns a wrapper object containing the 'messages' list to avoid "Expected BEGIN_ARRAY" errors.
      */
     @GET("local/chat/history/{session_id}")
     suspend fun getLocalChatHistory(
         @Path("session_id") sessionId: String,
         @Query("limit") limit: Int = 50,
-    ): Response<List<com.voyager.tourism.data.dto.LocalChatResponseDto>>
+    ): Response<com.voyager.tourism.data.dto.LocalChatHistoryResponseDto>
 
     // --- users (perfil IA) ---
     /** Bootstraps an AI-side user profile mirror. */

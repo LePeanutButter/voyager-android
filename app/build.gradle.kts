@@ -13,12 +13,12 @@ kotlin {
 }
 
 val voyagerBackendBaseUrl: String =
-    (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://192.168.1.8:8080/api/v1/"
+    (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.removeSurrounding("\"")?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "https://ktvcj1a32d.execute-api.us-east-1.amazonaws.com/prod/backend/"
 
 val voyagerAiBaseUrl: String =
-    (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://192.168.1.8:8000/api/v1/"
+    (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.removeSurrounding("\"")?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "https://ktvcj1a32d.execute-api.us-east-1.amazonaws.com/prod/ai/"
 
 val voyagerChatBrokerUrl: String =
     (project.findProperty("VOYAGER_CHAT_BROKER_URL") as? String)?.trim().orEmpty()

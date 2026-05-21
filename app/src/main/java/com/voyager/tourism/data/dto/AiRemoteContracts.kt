@@ -66,6 +66,23 @@ data class LocalChatRequestBody(
 data class LocalChatResponseDto(
     @Json(name = "session_id") val sessionId: String = "",
     @Json(name = "reply") val reply: String = "",
+    @Json(name = "role") val role: String? = null,
+)
+
+/**
+ * Wrapper for chat history response when returned as an object (Expected BEGIN_ARRAY but was BEGIN_OBJECT).
+ */
+@JsonClass(generateAdapter = true)
+data class LocalChatHistoryResponseDto(
+    @Json(name = "messages") val messages: List<LocalChatMessageDto> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class LocalChatMessageDto(
+    @Json(name = "role") val role: String = "",
+    @Json(name = "content") val content: String = "",
+    @Json(name = "message") val message: String = "",
+    @Json(name = "session_id") val sessionId: String? = null
 )
 
 /**

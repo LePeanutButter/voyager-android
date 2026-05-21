@@ -36,9 +36,9 @@ data class AiTravelerMatchDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiTrendDashboardDto(
-    @Json(name = "trending_destinations") val trendingDestinations: List<TrendItemDto>,
-    @Json(name = "popular_activities") val popularActivities: List<TrendItemDto>,
-    @Json(name = "emerging_segments") val emergingSegments: List<String>,
+    @Json(name = "trending_destinations") val trendingDestinations: List<TrendItemDto> = emptyList(),
+    @Json(name = "popular_activities") val popularActivities: List<TrendItemDto> = emptyList(),
+    @Json(name = "emerging_segments") val emergingSegments: List<String> = emptyList(),
     @Json(name = "last_updated") val lastUpdated: String? = null
 )
 
@@ -55,10 +55,10 @@ data class TrendItemDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiSeasonalityOverviewDto(
-    @Json(name = "reference_month") val referenceMonth: Int,
-    @Json(name = "curves") val curves: Map<String, List<Double>>,
-    @Json(name = "peak_destinations") val peakDestinations: List<String>,
-    @Json(name = "shoulder_destinations") val shoulderDestinations: List<String>
+    @Json(name = "reference_month") val referenceMonth: Int = 1,
+    @Json(name = "curves") val curves: Map<String, List<Double>> = emptyMap(),
+    @Json(name = "peak_destinations") val peakDestinations: List<String> = emptyList(),
+    @Json(name = "shoulder_destinations") val shoulderDestinations: List<String> = emptyList()
 )
 
 /**
