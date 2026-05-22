@@ -30,20 +30,19 @@ class UserApiServiceWireTest {
     }
 
     @Test
-    fun `login serializes UserLoginDto and parses ApiResponse LoginResponseDto`() = runTest {
-        val user = TestFixtures.userDto(token = null)
-        val login = TestFixtures.loginResponseDto(user = user)
+    fun `login serializes UserLoginDto and parses ApiResponse UserDto`() = runTest {
+        val user = TestFixtures.userDto(token = "jwt-token")
         serverRule.server.enqueue(
             MockResponse()
                 .setResponseCode(200)
-                .setBody(ApiResponseEnvelope.success(serverRule.moshi, login, LoginResponseDto::class.java)),
+                .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
         )
 
         val response = api.loginUser(UserLoginDto(usernameOrEmail = "traveler@mail.com", password = "p4ss"))
 
         assertEquals(200, response.status)
-        assertEquals(user.id, response.data?.user?.id)
-        assertEquals(user.email, response.data?.user?.email)
+        assertEquals(user.id, response.data?.id)
+        assertEquals(user.email, response.data?.email)
         assertEquals("jwt-token", response.data?.token)
 
         val req = serverRule.server.takeRequest()

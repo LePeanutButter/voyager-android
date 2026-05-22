@@ -30,7 +30,9 @@ class VoyagerAiRepositoryImplTest {
                 LocalRecommendationCandidateBody("a", "A", "c", 0.0, ""),
             ),
         )
-        val mockResponse = AiMatchingResponseDto(emptyList(), "42", 0)
+        val mockResponse = com.voyager.tourism.data.dto.LocalRecommendationResponseDto(
+            items = emptyList()
+        )
         coEvery { api.postLocalRecommendations(body) } returns Response.success(mockResponse)
         assertTrue(repo.postLocalRecommendations(body).isSuccessful)
         coVerify { api.postLocalRecommendations(body) }

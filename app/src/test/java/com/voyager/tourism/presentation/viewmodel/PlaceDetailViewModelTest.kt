@@ -3,6 +3,8 @@ package com.voyager.tourism.presentation.viewmodel
 import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.AiTravelerMatchDto
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import com.voyager.tourism.data.dto.LocalRecommendationResponseDto
+import com.voyager.tourism.data.dto.LocalRecommendationItemDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
@@ -63,10 +65,16 @@ class PlaceDetailViewModelTest {
     @Test
     fun `loadPlace success clears loading`() = runTest {
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(
-                matches = listOf(AiTravelerMatchDto("m1", "Item 1", 30, 85.0, emptyList(), 0.85, "Bio")),
-                userId = "42",
-                totalMatches = 1
+            LocalRecommendationResponseDto(
+                items = listOf(
+                    LocalRecommendationItemDto(
+                        id = "m1",
+                        name = "Item 1",
+                        category = "match",
+                        score = 0.85,
+                        contentText = "Bio"
+                    )
+                )
             )
         )
 
@@ -96,7 +104,7 @@ class PlaceDetailViewModelTest {
         every { prefs.getCurrentUserId() } returns "   "
         val bodySlot = slot<LocalRecommendationRequestBody>()
         coEvery { voyagerAi.postLocalRecommendations(capture(bodySlot)) } returns Response.success(
-            AiMatchingResponseDto(emptyList(), "anonymous", 0)
+            LocalRecommendationResponseDto(items = emptyList())
         )
         vm.loadPlace("x")
         advanceUntilIdle()

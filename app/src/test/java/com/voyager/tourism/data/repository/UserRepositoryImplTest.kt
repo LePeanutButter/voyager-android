@@ -85,7 +85,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `authenticate persists token and user`() = runTest {
-        val dto = TestFixtures.loginResponseDto(user = TestFixtures.userDto(token = null))
+        val dto = TestFixtures.userDto(token = "jwt-token")
         coEvery { userApi.loginUser(any()) } returns apiOk(dto)
         every { prefs.saveAuthToken(any()) } returns Unit
         every { prefs.saveCurrentUserId(any()) } returns Unit

@@ -3,6 +3,10 @@ package com.voyager.tourism.presentation.viewmodel
 import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.AiTrendDashboardDto
 import com.voyager.tourism.data.dto.LocalChatResponseDto
+import com.voyager.tourism.data.dto.LocalChatHistoryResponseDto
+import com.voyager.tourism.data.dto.LocalChatMessageDto
+import com.voyager.tourism.data.dto.LocalRecommendationResponseDto
+import com.voyager.tourism.data.dto.LocalRecommendationItemDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
@@ -97,7 +101,7 @@ class AiAssistantViewModelTest {
             )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            emptyList()
+            LocalChatHistoryResponseDto(emptyList())
         )
         vm.ensureInitialized()
         advanceUntilIdle()
@@ -151,9 +155,11 @@ class AiAssistantViewModelTest {
             )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            listOf(
-                LocalChatResponseDto(reply = "u"),
-                LocalChatResponseDto(reply = "a")
+            LocalChatHistoryResponseDto(
+                messages = listOf(
+                    LocalChatMessageDto(content = "u"),
+                    LocalChatMessageDto(content = "a")
+                )
             )
         )
         vm.ensureInitialized()
@@ -194,24 +200,22 @@ class AiAssistantViewModelTest {
             )
         )
         coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            emptyList()
+            LocalChatHistoryResponseDto(emptyList())
         )
         vm.ensureInitialized()
         advanceUntilIdle()
 
         coEvery { repo.postLocalChatMessage(any()) } returns Response.success(LocalChatResponseDto(reply = "ok"))
         coEvery { repo.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(
-                matches = listOf(
-                    com.voyager.tourism.data.dto.AiTravelerMatchDto(
-                        userId = "1",
+            LocalRecommendationResponseDto(
+                items = listOf(
+                    LocalRecommendationItemDto(
+                        id = "1",
                         name = "Museo",
-                        compatibilityScore = 0.5,
-                        travelStyleMatch = 0.5
+                        category = "match",
+                        score = 0.5
                     )
-                ),
-                userId = "42",
-                totalMatches = 1
+                )
             )
         )
         vm.sendMessage("quiero recomendaciones de museos")

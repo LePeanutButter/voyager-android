@@ -109,11 +109,20 @@ class DestinationExploreViewModelTest {
             catalog.activities(any(), any(), any(), any())
         } returns ok(listOf(ActivityDto("1", "Walk", "Nice", pictures = emptyList())))
         
-        val body = mockk<AiMatchingResponseDto>()
         val json = """{"items":[{"id":"1","name":"Walk","category":"catalog_activity","score":0.5,"content_text":"Nice"}]}"""
-        every { body.toString() } returns json
+        val mockResponse = com.voyager.tourism.data.dto.LocalRecommendationResponseDto(
+            items = listOf(
+                com.voyager.tourism.data.dto.LocalRecommendationItemDto(
+                    id = "1",
+                    name = "Walk",
+                    category = "catalog_activity",
+                    score = 0.5,
+                    contentText = "Nice"
+                )
+            )
+        )
         
-        coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(body)
+        coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(mockResponse)
 
         vm.loadExplore("Paris", "FR", "d1")
         advanceUntilIdle()

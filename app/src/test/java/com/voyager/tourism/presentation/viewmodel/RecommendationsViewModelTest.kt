@@ -2,6 +2,8 @@ package com.voyager.tourism.presentation.viewmodel
 
 import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.AiTravelerMatchDto
+import com.voyager.tourism.data.dto.LocalRecommendationResponseDto
+import com.voyager.tourism.data.dto.LocalRecommendationItemDto
 import com.voyager.tourism.data.dto.TravelType
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.TravelRepository
@@ -70,12 +72,16 @@ class RecommendationsViewModelTest {
     fun `load anonymous user fetches default candidates and maps rows`() = runTest {
         every { prefs.getCurrentUserId() } returns null
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(
-                matches = listOf(
-                    AiTravelerMatchDto("u1", "R1", 25, 80.0, emptyList(), 0.8, "Bio 1")
-                ),
-                userId = "anonymous",
-                totalMatches = 1
+            LocalRecommendationResponseDto(
+                items = listOf(
+                    LocalRecommendationItemDto(
+                        id = "u1",
+                        name = "R1",
+                        category = "match",
+                        score = 0.8,
+                        contentText = "Bio 1"
+                    )
+                )
             )
         )
 
@@ -95,12 +101,16 @@ class RecommendationsViewModelTest {
         val plan = TestFixtures.travelPlanDto(destination = "Tokyo")
         coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(plan))
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(
-                matches = listOf(
-                    AiTravelerMatchDto("u2", "Y", 30, 95.0, emptyList(), 0.9, "Bio 2")
-                ),
-                userId = "42",
-                totalMatches = 1
+            LocalRecommendationResponseDto(
+                items = listOf(
+                    LocalRecommendationItemDto(
+                        id = "u2",
+                        name = "Y",
+                        category = "match",
+                        score = 0.9,
+                        contentText = "Bio 2"
+                    )
+                )
             )
         )
 
@@ -130,7 +140,7 @@ class RecommendationsViewModelTest {
     @Test
     fun `load sets error when service returns no items`() = runTest {
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(emptyList(), "42", 0)
+            LocalRecommendationResponseDto(items = emptyList())
         )
 
         vm.load()
@@ -238,12 +248,15 @@ class RecommendationsViewModelTest {
         val plan = TestFixtures.travelPlanDto().copy(travelType = TravelType.CULTURAL)
         coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(listOf(plan))
         coEvery { voyagerAi.postLocalRecommendations(any()) } returns Response.success(
-            AiMatchingResponseDto(
-                matches = listOf(
-                    AiTravelerMatchDto("u3", "R", 20, 70.0, emptyList(), 0.7)
-                ),
-                userId = "42",
-                totalMatches = 1
+            LocalRecommendationResponseDto(
+                items = listOf(
+                    LocalRecommendationItemDto(
+                        id = "u3",
+                        name = "R",
+                        category = "match",
+                        score = 0.7
+                    )
+                )
             )
         )
 

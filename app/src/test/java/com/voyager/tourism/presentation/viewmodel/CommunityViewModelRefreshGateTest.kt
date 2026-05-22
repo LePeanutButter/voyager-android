@@ -58,7 +58,7 @@ class CommunityViewModelRefreshGateTest {
         coEvery { socialRepo.getCompatibleTravelers(any(), any()) } returns emptyList()
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
-        } returns Response.success(AiMatchingResponseDto(emptyList(), "42", 0))
+        } returns Response.success(AiMatchingResponseDto(userId = "42"))
         vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
     }
 

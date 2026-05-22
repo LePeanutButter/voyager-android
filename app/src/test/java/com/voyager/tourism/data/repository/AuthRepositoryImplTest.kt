@@ -148,14 +148,13 @@ class AuthRepositoryImplTest {
     }
 
     @Test
-    fun `loginUser success merges token into user`() = runBlocking {
+    fun `loginUser success returns user data`() = runBlocking {
         val request = UserLoginDto(
             usernameOrEmail = "test@example.com",
             password = "password123",
         )
-        val userCore = TestFixtures.userDto(id = 123L, token = null)
-        val loginPayload = TestFixtures.loginResponseDto(user = userCore, token = "jwt-token")
-        coEvery { userApiService.loginUser(request) } returns apiResponse(200, loginPayload)
+        val userDto = TestFixtures.userDto(id = 123L, token = "jwt-token")
+        coEvery { userApiService.loginUser(request) } returns apiResponse(200, userDto)
 
         val result = authRepository.loginUser("test@example.com", "password123")
 
@@ -170,7 +169,7 @@ class AuthRepositoryImplTest {
             usernameOrEmail = "test@example.com",
             password = "password123",
         )
-        coEvery { userApiService.loginUser(request) } returns apiResponse<LoginResponseDto>(200, null, message = "")
+        coEvery { userApiService.loginUser(request) } returns apiResponse<UserDto>(200, null, message = "")
 
         val result = authRepository.loginUser("test@example.com", "password123")
 
@@ -340,8 +339,8 @@ class AuthRepositoryImplTest {
         assertEquals(u2, res2.getOrNull())
 
         val loginReq = UserLoginDto("e1@e.com", "p")
-        val lp = TestFixtures.loginResponseDto(user = u1, token = "t1")
-        coEvery { userApiService.loginUser(loginReq) } returns apiResponse(200, lp)
+        val u1WithToken = u1.copy(token = "t1")
+        coEvery { userApiService.loginUser(loginReq) } returns apiResponse(200, u1WithToken)
 
         val lr = authRepository.loginUser("e1@e.com", "p")
         assertTrue(lr.isSuccess)
