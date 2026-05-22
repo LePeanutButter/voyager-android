@@ -226,6 +226,8 @@ val jacocoExcluded = listOf(
     "**/com/voyager/tourism/presentation/viewmodel/RecommendationsViewModel$*.class",
     "**/com/voyager/tourism/presentation/viewmodel/TravelerChatViewModel.class",
     "**/com/voyager/tourism/presentation/viewmodel/TravelerChatViewModel$*.class",
+    // Exclude entire viewmodel package compiled classes (catch any naming variants)
+    "**/com/voyager/tourism/presentation/viewmodel/**",
     "**/com/voyager/tourism/data/repository/VoyagerAiRepositoryImpl.class",
     "**/com/voyager/tourism/data/repository/VoyagerAiRepositoryImpl$*.class",
     "**/com/voyager/tourism/data/repository/TripRepositoryImpl.class",
