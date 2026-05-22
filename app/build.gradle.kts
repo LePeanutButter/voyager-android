@@ -179,7 +179,7 @@ ksp {
 }
 
 jacoco {
-    toolVersion = "0.8.13"
+    toolVersion = "0.8.12"
 }
 
 dependencyLocking {
@@ -242,17 +242,14 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     executionData.setFrom(
         fileTree(layout.buildDirectory.asFile.get()) {
             include(
-                "**/*.exec",
-                "**/*.ec",
-                "jacoco/*.exec",
-                "outputs/unit_test_code_coverage/**/testDebugUnitTest.exec",
+                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+                "jacoco/testDebugUnitTest.exec",
             )
         },
     )
 
     reports {
         xml.required.set(true)
-        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacocoTestReport/jacocoTestReport.xml"))
         html.required.set(true)
         html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
     }
