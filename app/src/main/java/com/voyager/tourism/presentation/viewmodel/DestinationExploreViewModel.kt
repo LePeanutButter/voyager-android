@@ -119,8 +119,22 @@ class DestinationExploreViewModel @Inject constructor(
                 )
                 val res = withContext(dispatchers.io) { voyagerAiRepository.postLocalRecommendations(body) }
                 if (res.isSuccessful) {
-                    val rawJson = res.body()?.toString() ?: ""
-                    _ranked.value = LocalRecommendationParsers.parseItems(rawJson)
+                    val items = res.body()?.items.orEmpty()
+                    _ranked.value = items.map {
+                        val finalScore = if (it.score > 0) it.score else it.similarity
+                        ParsedLocalRecommendationItem(
+                            id = it.id,
+                            name = it.name,
+                            description = it.contentText ?: it.name,
+                            category = it.category,
+                            rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
+                            priceLabel = when {
+                                finalScore >= 0.75 -> "$$$"
+                                finalScore >= 0.45 -> "$$"
+                                else -> "$"
+                            }
+                        )
+                    }
                 } else {
                     _rankError.value = res.errorBody()?.string()?.ifBlank { "HTTP ${res.code()}" } ?: "HTTP ${res.code()}"
                 }

@@ -81,12 +81,13 @@ class PlaceDetailViewModel @Inject constructor(
                     val items = body?.items.orEmpty()
                     _payload.value = items.joinToString("\n") { it.name }
                     _rankedItems.value = items.map { item ->
+                        val finalScore = if (item.score > 0) item.score else item.similarity
                         ParsedLocalRecommendationItem(
                             id = item.id,
                             name = item.name,
                             description = item.contentText.orEmpty(),
                             category = item.category,
-                            rating = (item.score * 5.0).toFloat(),
+                            rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
                             priceLabel = if (item.price > 0.0) "$${item.price}" else "Explorar",
                         )
                     }

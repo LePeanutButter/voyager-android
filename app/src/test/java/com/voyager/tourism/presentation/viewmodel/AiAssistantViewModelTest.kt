@@ -100,8 +100,8 @@ class AiAssistantViewModelTest {
                 lastUpdated = "now"
             )
         )
-        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            LocalChatHistoryResponseDto(emptyList())
+        coEvery { repo.getLocalChatHistoryTyped(any(), any()) } returns Response.success(
+            emptyList()
         )
         vm.ensureInitialized()
         advanceUntilIdle()
@@ -154,12 +154,10 @@ class AiAssistantViewModelTest {
                 lastUpdated = "now"
             )
         )
-        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            LocalChatHistoryResponseDto(
-                messages = listOf(
-                    LocalChatMessageDto(content = "u"),
-                    LocalChatMessageDto(content = "a")
-                )
+        coEvery { repo.getLocalChatHistoryTyped(any(), any()) } returns Response.success(
+            listOf(
+                LocalChatResponseDto(reply = "u", role = "user"),
+                LocalChatResponseDto(reply = "a", role = "assistant")
             )
         )
         vm.ensureInitialized()
@@ -199,8 +197,8 @@ class AiAssistantViewModelTest {
                 lastUpdated = "now"
             )
         )
-        coEvery { repo.getLocalChatHistory(any(), any()) } returns Response.success(
-            LocalChatHistoryResponseDto(emptyList())
+        coEvery { repo.getLocalChatHistoryTyped(any(), any()) } returns Response.success(
+            emptyList()
         )
         vm.ensureInitialized()
         advanceUntilIdle()

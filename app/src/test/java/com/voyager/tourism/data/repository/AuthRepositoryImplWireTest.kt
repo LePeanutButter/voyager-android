@@ -58,11 +58,10 @@ class AuthRepositoryImplWireTest {
 
     @Test
     fun `loginUser maps 200 envelope to success`() = runTest {
-        val user = TestFixtures.userDto(token = null)
-        val login = TestFixtures.loginResponseDto(user = user, token = "jwt-abc")
+        val user = TestFixtures.userDto(token = "jwt-abc")
         serverRule.server.enqueue(
             MockResponse()
-                .setBody(ApiResponseEnvelope.success(serverRule.moshi, login, LoginResponseDto::class.java)),
+                .setBody(ApiResponseEnvelope.success(serverRule.moshi, user, UserDto::class.java)),
         )
 
         val result = repository.loginUser("traveler@mail.com", "secret")
@@ -74,7 +73,7 @@ class AuthRepositoryImplWireTest {
 
     @Test
     fun `loginUser failure when data null`() = runTest {
-        val json = ApiResponseEnvelope.success(serverRule.moshi, null, LoginResponseDto::class.java, status = 401, message = "Bad creds")
+        val json = ApiResponseEnvelope.success(serverRule.moshi, null, UserDto::class.java, status = 401, message = "Bad creds")
         serverRule.server.enqueue(MockResponse().setBody(json))
 
         val result = repository.loginUser("x", "y")
