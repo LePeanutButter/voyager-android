@@ -24,4 +24,18 @@ class CatalogRepositoryImplTest {
         assertEquals(200, repo.flightOffers(q.toQueryMap()).status)
         coVerify { api.flightOffers(q.toQueryMap()) }
     }
+
+    @Test
+    fun `delegates other catalog calls`() = runTest {
+        val api = mockk<CatalogApiService>()
+        val repo = CatalogRepositoryImpl(api)
+        coEvery { api.hotelsByCity("LIM") } returns ok(null)
+        assertEquals(200, repo.hotelsByCity("LIM").status)
+        
+        coEvery { api.hotelOffers("h1", "2027-01-01", "2027-01-05", 1, 1, "USD") } returns ok(null)
+        assertEquals(200, repo.hotelOffers("h1", "2027-01-01", "2027-01-05", 1, 1, "USD").status)
+        
+        coEvery { api.activities(1.0, 2.0, 10.0, "KM") } returns ok(emptyList())
+        assertEquals(200, repo.activities(1.0, 2.0, 10.0, "KM").status)
+    }
 }

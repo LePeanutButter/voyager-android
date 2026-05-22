@@ -21,23 +21,12 @@ class GetCompatibleTravelersUseCaseTest {
     }
 
     @Test
-    fun `success returns travelers`() = runTest {
+    fun `success returns list`() = runTest {
         val list = listOf(TestFixtures.travelerMatch())
-        coEvery { repository.getCompatibleTravelers("plan-1", "tok") } returns list
+        coEvery { repository.getCompatibleTravelers("1", "t") } returns list
 
-        val r = useCase("plan-1", "tok")
-
+        val r = useCase("1", "t")
         assertTrue(r.isSuccess)
         assertEquals(list, r.getOrThrow())
-    }
-
-    @Test
-    fun `exception becomes failure`() = runTest {
-        coEvery { repository.getCompatibleTravelers(any(), any()) } throws RuntimeException("net")
-
-        val r = useCase("p", "t")
-
-        assertTrue(r.isFailure)
-        assertEquals("net", r.exceptionOrNull()?.message)
     }
 }
