@@ -3,7 +3,6 @@ package com.voyager.tourism.data.repository
 import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.api.GoogleAuthApiService
 import com.voyager.tourism.data.dto.GoogleServerAuthRequest
-import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
@@ -67,13 +66,10 @@ class AuthRepositoryImpl @Inject constructor(
             )
             
             val response = userApiService.loginUser(request)
-            val loginData = response.data
+            val userDto = response.data
 
-            if (response.status == 200 && loginData != null) {
+            if (response.status == 200 && userDto != null) {
                 // El backend actual ya incluye el token dentro del objeto UserDto en la raíz de 'data'
-                // pero ahora usamos LoginResponseDto que separa el token del usuario.
-                // Los mapeamos para cumplir el contrato de Result<UserDto>.
-                val userDto = loginData.user.copy(token = loginData.token)
                 Result.success(userDto)
             } else {
                 Result.failure(Exception(response.message.ifBlank { "Login failed" }))

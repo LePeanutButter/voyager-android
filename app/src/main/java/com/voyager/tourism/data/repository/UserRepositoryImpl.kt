@@ -4,7 +4,6 @@ import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.database.dao.TripDao
 import com.voyager.tourism.data.database.dao.UserDao
 import com.voyager.tourism.data.dto.AiUserPreferencesBody
-import com.voyager.tourism.data.dto.LoginResponseDto
 import com.voyager.tourism.data.dto.UserDto
 import com.voyager.tourism.data.dto.UserLoginDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
@@ -99,13 +98,11 @@ class UserRepositoryImpl @Inject constructor(
                 UserLoginDto(usernameOrEmail = email, password = password),
             )
             if (response.status == 200 && response.data != null) {
-                val login = response.data
-                val userDto = login.user ?: return Result.failure(Exception("Login missing user data"))
-                val dto = userDto.copy(token = login.token)
-                dto.token?.let { preferencesManager.saveAuthToken(it) }
-                preferencesManager.saveCurrentUserId(dto.id.toString())
-                userDao.insertUser(userMapper.toEntity(dto))
-                Result.success(userMapper.toDomain(dto))
+                val userDto = response.data
+                userDto.token?.let { preferencesManager.saveAuthToken(it) }
+                preferencesManager.saveCurrentUserId(userDto.id.toString())
+                userDao.insertUser(userMapper.toEntity(userDto))
+                Result.success(userMapper.toDomain(userDto))
             } else {
                 Result.failure(Exception(response.message))
             }
