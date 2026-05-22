@@ -89,19 +89,21 @@ class RecommendationsViewModel @Inject constructor(
                     _rows.value = emptyList()
                     return@runCatching
                 }
-                val bodyResponse: AiMatchingResponseDto = response.body() ?: AiMatchingResponseDto(emptyList(), userId, 0)
-                _rows.value = bodyResponse.matches.map {
+                val bodyResponse = response.body()
+                val items = bodyResponse?.items.orEmpty()
+                _rows.value = items.map {
+                    val finalScore = if (it.score > 0) it.score else it.similarity
                     RecommendationListRow(
-                        id = it.userId,
+                        id = it.id,
                         name = it.name,
-                        description = it.bio.orEmpty(),
-                        rating = (it.compatibilityScore / 20.0).toFloat(),
+                        description = it.contentText ?: it.name,
+                        rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
                         priceLabel = when {
-                            it.compatibilityScore >= 75.0 -> "$$$"
-                            it.compatibilityScore >= 45.0 -> "$$"
+                            finalScore >= 0.75 -> "$$$"
+                            finalScore >= 0.45 -> "$$"
                             else -> "$"
                         },
-                        category = "match",
+                        category = it.category,
                     )
                 }
                 if (_rows.value.isEmpty()) {

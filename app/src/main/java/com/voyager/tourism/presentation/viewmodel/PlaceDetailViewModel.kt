@@ -3,7 +3,6 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
-import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
@@ -78,20 +77,17 @@ class PlaceDetailViewModel @Inject constructor(
                     voyagerAiRepository.postLocalRecommendations(body)
                 }
                 if (response.isSuccessful) {
-                    val ranked = response.body() ?: AiMatchingResponseDto(matches = emptyList(), userId = userId, totalMatches = 0)
-                    _payload.value = ranked.matches.joinToString("\n") { it.name }
-                    _rankedItems.value = ranked.matches.map { match ->
+                    val body = response.body()
+                    val items = body?.items.orEmpty()
+                    _payload.value = items.joinToString("\n") { it.name }
+                    _rankedItems.value = items.map { item ->
                         ParsedLocalRecommendationItem(
-                            id = match.userId,
-                            name = match.name,
-                            description = match.bio.orEmpty(),
-                            category = "match",
-                            rating = ((match.compatibilityScore / 100.0) * 5.0).toFloat(),
-                            priceLabel = when {
-                                match.compatibilityScore >= 75.0 -> "$$$"
-                                match.compatibilityScore >= 45.0 -> "$$"
-                                else -> "$"
-                            },
+                            id = item.id,
+                            name = item.name,
+                            description = item.contentText.orEmpty(),
+                            category = item.category,
+                            rating = (item.score * 5.0).toFloat(),
+                            priceLabel = if (item.price > 0.0) "$${item.price}" else "Explorar",
                         )
                     }
                 } else {

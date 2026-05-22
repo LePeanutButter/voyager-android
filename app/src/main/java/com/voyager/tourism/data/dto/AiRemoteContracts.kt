@@ -53,6 +53,26 @@ data class LocalRecommendationRequestBody(
     @Json(name = "candidates") val candidates: List<LocalRecommendationCandidateBody>,
 )
 
+/** Respuesta [POST /local/recommendations] (con lista de 'items'). */
+@JsonClass(generateAdapter = true)
+data class LocalRecommendationResponseDto(
+    @Json(name = "items") val items: List<LocalRecommendationItemDto> = emptyList(),
+    @Json(name = "user") val user: Map<String, Any>? = null,
+    @Json(name = "preferences") val preferences: List<String> = emptyList(),
+)
+
+/** Item rankeado en la respuesta de recomendaciones locales. */
+@JsonClass(generateAdapter = true)
+data class LocalRecommendationItemDto(
+    @Json(name = "id") val id: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "category") val category: String,
+    @Json(name = "price") val price: Double = 0.0,
+    @Json(name = "score") val score: Double = 0.0,
+    @Json(name = "similarity") val similarity: Double = 0.0,
+    @Json(name = "content_text") val contentText: String? = null,
+)
+
 /** Cuerpo [POST /local/chat/message] (mismo contrato que `useAIChat` en el web). */
 @JsonClass(generateAdapter = true)
 data class LocalChatRequestBody(

@@ -5,13 +5,16 @@ import com.squareup.moshi.JsonClass
 
 /**
  * Collection of matches returned by the AI matching service.
+ * Polymorphic: handles 'matches', 'recommendations' or 'items' depending on the endpoint.
  */
 @JsonClass(generateAdapter = true)
 data class AiMatchingResponseDto(
-    @Json(name = "matches") val matches: List<AiTravelerMatchDto>,
-    @Json(name = "userId") val userId: String,
-    @Json(name = "totalMatches") val totalMatches: Int,
-    @Json(name = "generatedAt") val generatedAt: String? = null
+    @Json(name = "matches") val matches: List<AiTravelerMatchDto> = emptyList(),
+    @Json(name = "recommendations") val recommendations: List<AiTravelerMatchDto> = emptyList(),
+    @Json(name = "user_id") val userId: String,
+    @Json(name = "total_matches") val totalMatches: Int = 0,
+    @Json(name = "total_count") val totalCount: Int = 0,
+    @Json(name = "generated_at") val generatedAt: String? = null
 )
 
 /**

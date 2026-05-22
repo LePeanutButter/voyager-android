@@ -43,7 +43,7 @@ interface VoyagerAiApi {
     @POST("local/recommendations")
     suspend fun postLocalRecommendations(
         @Body body: LocalRecommendationRequestBody,
-    ): Response<AiMatchingResponseDto>
+    ): Response<com.voyager.tourism.data.dto.LocalRecommendationResponseDto>
 
     /** Feedback 1–5 para ítems rankeados por [postLocalRecommendations]. */
     @POST("local/recommendations/feedback")

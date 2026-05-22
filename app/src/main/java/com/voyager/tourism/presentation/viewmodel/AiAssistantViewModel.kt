@@ -141,7 +141,7 @@ class AiAssistantViewModel @Inject constructor(
                 )
             }
             if (rankRes.isSuccessful) {
-                val names = rankRes.body()?.matches.orEmpty()
+                val names = rankRes.body()?.items.orEmpty()
                     .map { it.name }
                     .filter { it.isNotBlank() }
                     .take(5)

@@ -213,7 +213,12 @@ class CommunityViewModel @Inject constructor(
                             limit = 15,
                             seekerFootprint = footprintParam,
                         )
-                        if (resp.isSuccessful) resp.body()?.matches.orEmpty() else emptyList<AiTravelerMatchDto>()
+                        if (resp.isSuccessful) {
+                            val body = resp.body()
+                            body?.matches?.takeIf { it.isNotEmpty() } ?: body?.recommendations.orEmpty()
+                        } else {
+                            emptyList<AiTravelerMatchDto>()
+                        }
                     }.getOrDefault(emptyList<AiTravelerMatchDto>())
                 }
 
