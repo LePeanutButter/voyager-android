@@ -98,12 +98,11 @@ class UserRepositoryImpl @Inject constructor(
                 UserLoginDto(usernameOrEmail = email, password = password),
             )
             if (response.status == 200 && response.data != null) {
-                val login = response.data
-                val dto = login.user.copy(token = login.token)
-                dto.token?.let { preferencesManager.saveAuthToken(it) }
-                preferencesManager.saveCurrentUserId(dto.id.toString())
-                userDao.insertUser(userMapper.toEntity(dto))
-                Result.success(userMapper.toDomain(dto))
+                val userDto = response.data
+                userDto.token?.let { preferencesManager.saveAuthToken(it) }
+                preferencesManager.saveCurrentUserId(userDto.id.toString())
+                userDao.insertUser(userMapper.toEntity(userDto))
+                Result.success(userMapper.toDomain(userDto))
             } else {
                 Result.failure(Exception(response.message))
             }

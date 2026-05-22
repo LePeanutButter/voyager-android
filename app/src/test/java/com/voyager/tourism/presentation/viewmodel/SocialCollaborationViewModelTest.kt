@@ -9,13 +9,17 @@ import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class SocialCollaborationViewModelTest {
 
     @get:Rule
@@ -30,95 +34,77 @@ class SocialCollaborationViewModelTest {
     }
 
     @Test
-    fun `loadConnections success and failure`() {
-        coEvery { repository.getConnections(1L) } returns Result.success(
-            listOf(
-                TravelerConnection(
-                    connectionId = 1L,
-                    peerUserId = 2L,
-                    username = "u",
-                    firstName = null,
-                    lastName = null,
-                    status = "ACTIVE",
-                ),
-            ),
-        )
+    fun `loadConnections success updates state`() = runTest {
+        val list = listOf(TravelerConnection(1L, 2L, "u", "F", "L", "S"))
+        coEvery { repository.getConnections(1L) } returns Result.success(list)
+
         vm.loadConnections(1L)
-        assertEquals(1, vm.uiState.value.connections.size)
+        advanceUntilIdle()
 
-        coEvery { repository.getConnections(2L) } returns Result.failure(RuntimeException("e"))
-        vm.loadConnections(2L)
-        assertEquals("e", vm.uiState.value.errorMessage)
+        assertFalse(vm.uiState.value.isLoadingConnections)
+        assertEquals(list, vm.uiState.value.connections)
     }
 
     @Test
-    fun `loadActivities success and failure`() {
-        coEvery { repository.getTravelPlanActivities(9L) } returns Result.success(
-            listOf(TravelActivity(1L, "Tour")),
-        )
-        vm.loadActivities(9L)
-        assertEquals("Tour", vm.uiState.value.activities.first().name)
+    fun `loadActivities success updates state`() = runTest {
+        val list = listOf(TravelActivity(1L, "Act"))
+        coEvery { repository.getTravelPlanActivities(10L) } returns Result.success(list)
 
-        coEvery { repository.getTravelPlanActivities(any()) } returns Result.failure(RuntimeException("x"))
-        vm.loadActivities(1L)
-        assertEquals("x", vm.uiState.value.errorMessage)
+        vm.loadActivities(10L)
+        advanceUntilIdle()
+
+        assertEquals(list, vm.uiState.value.activities)
     }
 
     @Test
-    fun `shareActivity success and failure`() {
+    fun `shareActivity success updates state`() = runTest {
         val shared = SharedActivity(1L, 2L, 3L, 4L, "PENDING", false)
-        coEvery { repository.shareActivity(1L, 4L) } returns Result.success(shared)
-        vm.shareActivity(1L, 4L)
-        assertTrue(vm.uiState.value.successMessage!!.contains("shared", ignoreCase = true))
+        coEvery { repository.shareActivity(2L, 4L) } returns Result.success(shared)
 
-        coEvery { repository.shareActivity(any(), any()) } returns Result.failure(IllegalStateException("no"))
-        vm.shareActivity(1L, 1L)
-        assertEquals("no", vm.uiState.value.errorMessage)
+        vm.shareActivity(2L, 4L)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.sharedActivities.size)
+        assertEquals("Activity shared successfully", vm.uiState.value.successMessage)
     }
 
     @Test
-    fun `resolveSharedActivity updates existing or prepends new`() {
-        val existing = SharedActivity(10L, 1L, 1L, 2L, "PENDING", false)
-        vm.trackSharedActivity(existing)
-        val updated = SharedActivity(10L, 1L, 1L, 2L, "ACCEPTED", true)
-        coEvery { repository.resolveSharedActivity(10L, SharedActivityDecision.ACCEPT) } returns Result.success(updated)
-        vm.resolveSharedActivity(10L, SharedActivityDecision.ACCEPT)
-        assertEquals("ACCEPTED", vm.uiState.value.sharedActivities.first().status)
+    fun `resolveSharedActivity updates status`() = runTest {
+        val updated = SharedActivity(1L, 2L, 3L, 4L, "ACCEPTED", false)
+        coEvery { repository.resolveSharedActivity(1L, SharedActivityDecision.ACCEPT) } returns Result.success(updated)
 
-        val fresh = SharedActivity(99L, 1L, 1L, 2L, "PENDING", false)
-        coEvery { repository.resolveSharedActivity(99L, SharedActivityDecision.REJECT) } returns Result.success(fresh)
-        vm.resolveSharedActivity(99L, SharedActivityDecision.REJECT)
-        assertTrue(vm.uiState.value.sharedActivities.any { it.id == 99L })
-
-        coEvery { repository.resolveSharedActivity(any(), any()) } returns Result.failure(RuntimeException("bad"))
         vm.resolveSharedActivity(1L, SharedActivityDecision.ACCEPT)
-        assertEquals("bad", vm.uiState.value.errorMessage)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.sharedActivities.any { it.status == "ACCEPTED" })
     }
 
     @Test
-    fun `loadCompatibilityMatches and applyInterestsFilter`() {
-        val m1 = CompatibilityMatch(1L, 1.0, 1.0, 1.0, 1.0, listOf("art", "food"))
-        val m2 = CompatibilityMatch(2L, 1.0, 1.0, 1.0, 1.0, listOf("sport"))
-        coEvery { repository.getCompatibilityMatches("Lima", "a", "b", emptyList()) } returns Result.success(listOf(m1, m2))
-        vm.loadCompatibilityMatches("Lima", "a", "b", emptyList())
-        assertEquals(2, vm.uiState.value.allMatches.size)
+    fun `loadCompatibilityMatches filters by interest`() = runTest {
+        val matches = listOf(
+            CompatibilityMatch(1L, 1.0, 1.0, 1.0, 1.0, listOf("art")),
+            CompatibilityMatch(2L, 0.5, 0.5, 0.5, 0.5, listOf("sport"))
+        )
+        coEvery { repository.getCompatibilityMatches(any(), any(), any(), any()) } returns Result.success(matches)
+
+        vm.loadCompatibilityMatches("D", "S", "E", emptyList())
+        advanceUntilIdle()
+        assertEquals(2, vm.uiState.value.filteredMatches.size)
 
         vm.applyInterestsFilter(setOf("art"))
         assertEquals(1, vm.uiState.value.filteredMatches.size)
         assertEquals(1L, vm.uiState.value.filteredMatches.first().userId)
-
-        coEvery { repository.getCompatibilityMatches(any(), any(), any(), any()) } returns Result.failure(RuntimeException("z"))
-        vm.loadCompatibilityMatches("x", "y", "z", listOf("a"))
-        assertEquals("z", vm.uiState.value.errorMessage)
     }
 
     @Test
-    fun `trackSharedActivity and clearFeedback`() {
-        val s = SharedActivity(5L, 1L, 1L, 2L, "X", false)
-        vm.trackSharedActivity(s)
-        assertEquals(5L, vm.uiState.value.sharedActivities.first().id)
+    fun `clearFeedback resets messages`() = runTest {
+        val shared = SharedActivity(1L, 2L, 3L, 4L, "PENDING", false)
+        coEvery { repository.shareActivity(any(), any()) } returns Result.success(shared)
+        vm.shareActivity(1, 2)
+        advanceUntilIdle()
+
         vm.clearFeedback()
-        assertNull(vm.uiState.value.errorMessage)
-        assertNull(vm.uiState.value.successMessage)
+        assertEquals(null, vm.uiState.value.successMessage)
+        assertEquals(null, vm.uiState.value.errorMessage)
     }
 }

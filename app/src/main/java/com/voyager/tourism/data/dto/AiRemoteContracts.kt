@@ -53,6 +53,26 @@ data class LocalRecommendationRequestBody(
     @Json(name = "candidates") val candidates: List<LocalRecommendationCandidateBody>,
 )
 
+/** Respuesta [POST /local/recommendations] (con lista de 'items'). */
+@JsonClass(generateAdapter = true)
+data class LocalRecommendationResponseDto(
+    @Json(name = "items") val items: List<LocalRecommendationItemDto> = emptyList(),
+    @Json(name = "user") val user: Map<String, Any>? = null,
+    @Json(name = "preferences") val preferences: List<String> = emptyList(),
+)
+
+/** Item rankeado en la respuesta de recomendaciones locales. */
+@JsonClass(generateAdapter = true)
+data class LocalRecommendationItemDto(
+    @Json(name = "id") val id: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "category") val category: String,
+    @Json(name = "price") val price: Double = 0.0,
+    @Json(name = "score") val score: Double = 0.0,
+    @Json(name = "similarity") val similarity: Double = 0.0,
+    @Json(name = "content_text") val contentText: String? = null,
+)
+
 /** Cuerpo [POST /local/chat/message] (mismo contrato que `useAIChat` en el web). */
 @JsonClass(generateAdapter = true)
 data class LocalChatRequestBody(
@@ -66,6 +86,23 @@ data class LocalChatRequestBody(
 data class LocalChatResponseDto(
     @Json(name = "session_id") val sessionId: String = "",
     @Json(name = "reply") val reply: String = "",
+    @Json(name = "role") val role: String? = null,
+)
+
+/**
+ * Wrapper for chat history response when returned as an object (Expected BEGIN_ARRAY but was BEGIN_OBJECT).
+ */
+@JsonClass(generateAdapter = true)
+data class LocalChatHistoryResponseDto(
+    @Json(name = "messages") val messages: List<LocalChatMessageDto> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class LocalChatMessageDto(
+    @Json(name = "role") val role: String = "",
+    @Json(name = "content") val content: String = "",
+    @Json(name = "message") val message: String = "",
+    @Json(name = "session_id") val sessionId: String? = null
 )
 
 /**

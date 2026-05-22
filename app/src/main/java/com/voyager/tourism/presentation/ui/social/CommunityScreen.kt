@@ -77,6 +77,7 @@ data class CommunityDiscoverData(
 @Composable
 fun CommunityScreen(
     onBack: () -> Unit,
+    onChatClick: (TravelerConnection) -> Unit,
     viewModel: CommunityViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -159,6 +160,7 @@ fun CommunityScreen(
                 CommunityTab.CONNECTIONS -> ConnectionsTabContent(
                     isLoading = state.isLoadingHeader,
                     connections = state.connections,
+                    onChatClick = onChatClick,
                     onRemoveClick = { pendingRemove = it },
                 )
                 CommunityTab.REQUESTS -> RequestsTabContent(
@@ -192,6 +194,7 @@ fun CommunityScreen(
 private fun ConnectionsTabContent(
     isLoading: Boolean,
     connections: List<TravelerConnection>,
+    onChatClick: (TravelerConnection) -> Unit,
     onRemoveClick: (TravelerConnection) -> Unit,
 ) {
     when {
@@ -231,8 +234,13 @@ private fun ConnectionsTabContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        TextButton(onClick = { onRemoveClick(conn) }) {
-                            Text("Quitar")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { onChatClick(conn) }) {
+                                Text("Chat")
+                            }
+                            TextButton(onClick = { onRemoveClick(conn) }) {
+                                Text("Quitar")
+                            }
                         }
                     }
                 }

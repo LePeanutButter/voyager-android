@@ -2,19 +2,20 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.voyager.tourism.data.catalog.CatalogActivitiesParser
 import com.voyager.tourism.data.catalog.CatalogActivityRow
 import com.voyager.tourism.data.destination.buildDestinationExploreLabel
 import com.voyager.tourism.data.destination.resolveDestinationHint
-import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
+import com.voyager.tourism.data.dto.ActivityDto
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
+import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
 import com.voyager.tourism.domain.repository.CatalogRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,7 @@ class DestinationExploreViewModel @Inject constructor(
     private val catalogRepository: CatalogRepository,
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _destinationLabel = MutableStateFlow("")
@@ -68,7 +70,7 @@ class DestinationExploreViewModel @Inject constructor(
             _rankError.value = null
             runCatching {
                 val hint = resolveDestinationHint(label)
-                val res = withContext(Dispatchers.IO) {
+                val res = withContext(dispatchers.io) {
                     catalogRepository.activities(
                         latitude = hint.lat,
                         longitude = hint.lng,
@@ -76,12 +78,7 @@ class DestinationExploreViewModel @Inject constructor(
                         radiusUnit = "KM",
                     )
                 }
-                if (res.isSuccessful) {
-                    val text = res.body()?.string().orEmpty()
-                    _activities.value = CatalogActivitiesParser.parseActivitiesJson(text)
-                } else {
-                    _catalogError.value = res.errorBody()?.string()?.take(1_500) ?: "HTTP ${res.code()}"
-                }
+                _activities.value = res.data.orEmpty().mapNotNull { it.toCatalogRow() }
             }.onFailure {
                 _catalogError.value = it.message ?: "Error de catálogo"
             }
@@ -120,12 +117,26 @@ class DestinationExploreViewModel @Inject constructor(
                         )
                     },
                 )
-                val res = withContext(Dispatchers.IO) { voyagerAiRepository.postLocalRecommendations(body) }
+                val res = withContext(dispatchers.io) { voyagerAiRepository.postLocalRecommendations(body) }
                 if (res.isSuccessful) {
-                    val text = res.body()?.string().orEmpty()
-                    _ranked.value = LocalRecommendationParsers.parseItems(text)
+                    val items = res.body()?.items.orEmpty()
+                    _ranked.value = items.map {
+                        val finalScore = if (it.score > 0) it.score else it.similarity
+                        ParsedLocalRecommendationItem(
+                            id = it.id,
+                            name = it.name,
+                            description = it.contentText ?: it.name,
+                            category = it.category,
+                            rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
+                            priceLabel = when {
+                                finalScore >= 0.75 -> "$$$"
+                                finalScore >= 0.45 -> "$$"
+                                else -> "$"
+                            }
+                        )
+                    }
                 } else {
-                    _rankError.value = res.errorBody()?.string()?.take(1_500) ?: "HTTP ${res.code()}"
+                    _rankError.value = res.errorBody()?.string()?.ifBlank { "HTTP ${res.code()}" } ?: "HTTP ${res.code()}"
                 }
             }.onFailure {
                 _rankError.value = it.message ?: "Error de red"
@@ -133,4 +144,14 @@ class DestinationExploreViewModel @Inject constructor(
             _rankLoading.value = false
         }
     }
+}
+
+private fun ActivityDto.toCatalogRow(): CatalogActivityRow? {
+    val nameValue = name.trim()
+    if (nameValue.isBlank()) return null
+    return CatalogActivityRow(
+        id = id,
+        name = nameValue,
+        description = shortDescription?.trim().orEmpty().ifBlank { nameValue },
+    )
 }

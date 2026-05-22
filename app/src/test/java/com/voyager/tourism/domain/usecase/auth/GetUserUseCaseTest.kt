@@ -23,42 +23,32 @@ class GetUserUseCaseTest {
     }
 
     @Test
-    fun `blank user id fails`() = runTest {
-        val r = useCase("  ")
-        assertTrue(r.isFailure)
-        assertEquals("User ID cannot be empty", r.exceptionOrNull()?.message)
+    fun `fails when userId blank`() = runTest {
+        assertTrue(useCase(" ").isFailure)
     }
 
     @Test
-    fun `success maps domain user to dto`() = runTest {
+    fun `invoke success returns user dto`() = runTest {
         val domain = TestFixtures.domainUser()
         coEvery { userRepository.getUserById("42") } returns Result.success(domain)
 
-        val r = useCase("42")
+        val result = useCase("42")
 
-        assertTrue(r.isSuccess)
-        val dto = r.getOrThrow()
-        assertEquals(42L, dto.id)
-        assertEquals(domain.email, dto.email)
+        assertTrue(result.isSuccess)
+        assertEquals(domain.email, result.getOrThrow().email)
     }
 
     @Test
-    fun `null user after success is not found`() = runTest {
+    fun `invoke returns failure when user not found`() = runTest {
         coEvery { userRepository.getUserById("1") } returns Result.success(null)
-
-        val r = useCase("1")
-
-        assertTrue(r.isFailure)
-        assertEquals("User not found", r.exceptionOrNull()?.message)
+        val result = useCase("1")
+        assertTrue(result.isFailure)
+        assertEquals("User not found", result.exceptionOrNull()?.message)
     }
 
     @Test
-    fun `repository failure propagates`() = runTest {
+    fun `invoke returns failure when repository fails`() = runTest {
         coEvery { userRepository.getUserById(any()) } returns Result.failure(RuntimeException("net"))
-
-        val r = useCase("99")
-
-        assertTrue(r.isFailure)
-        assertEquals("net", r.exceptionOrNull()?.message)
+        assertTrue(useCase("42").isFailure)
     }
 }

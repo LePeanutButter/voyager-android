@@ -336,6 +336,9 @@ VOYAGER_BACKEND_BASE_URL=https://your-host:8080/api/v1/
 
 # AI microservice (FastAPI) — typically .../api/v1/
 VOYAGER_AI_BASE_URL=https://your-host:8000/api/v1/
+
+# Optional broker URL for traveler chat real-time transport
+VOYAGER_CHAT_BROKER_URL=wss://your-host/ws-chat
 ```
 
 Optional `local.properties` (not committed) can hold SDK paths and machine-specific overrides; keep secrets out of version control.

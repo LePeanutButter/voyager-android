@@ -34,8 +34,8 @@ interface BackendMiscApiService {
     @GET("matches")
     suspend fun getDestinationMatches(
         @Query("destination") destination: String,
-        @Query("startDate") startDate: String,
-        @Query("endDate") endDate: String,
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String,
         @Query("interests") interests: List<String>? = null,
         @Query("limit") limit: Int = 20,
     ): ApiResponse<List<MatchResponseDto>>

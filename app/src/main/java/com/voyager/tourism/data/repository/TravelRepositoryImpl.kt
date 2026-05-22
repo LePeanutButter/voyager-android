@@ -110,7 +110,7 @@ class TravelRepositoryImpl @Inject constructor(
     private fun TravelPlanRequest.toTravelPlanDto(): TravelPlanDto = TravelPlanDto(
         title = title,
         description = description,
-        status = TravelPlanStatus.DRAFT,
+        status = TravelPlanStatus.ACTIVE,
         travelType = TravelType.LEISURE,
         startDate = startDate,
         endDate = endDate,

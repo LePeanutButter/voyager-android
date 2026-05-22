@@ -45,7 +45,7 @@ data class TripDto(
     val accommodations: List<AccommodationDto> = emptyList(),
     
     @Json(name = "activities")
-    val activities: List<ActivityDto> = emptyList(),
+    val activities: List<TripActivityDto> = emptyList(),
     
     @Json(name = "created_at")
     val createdAt: Long,
@@ -184,7 +184,7 @@ data class AccommodationDto(
  * Activity DTO
  */
 @JsonClass(generateAdapter = true)
-data class ActivityDto(
+data class TripActivityDto(
     @Json(name = "id")
     val id: String,
     
@@ -208,6 +208,13 @@ data class ActivityDto(
     
     @Json(name = "category")
     val category: String,
+    
+    // Additional optional fields aligned with catalog ActivityDto
+    @Json(name = "short_description")
+    val shortDescription: String? = null,
+    
+    @Json(name = "booking_link")
+    val bookingLink: String? = null,
     
     @Json(name = "images")
     val images: List<String> = emptyList()

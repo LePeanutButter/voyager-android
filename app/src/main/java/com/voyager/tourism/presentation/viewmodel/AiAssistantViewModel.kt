@@ -3,6 +3,7 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dashboard.AiDashboardParsers
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
 import com.voyager.tourism.data.dto.LocalChatRequestBody
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
@@ -10,8 +11,8 @@ import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.data.localai.LocalChatHistoryParsers
 import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,7 @@ data class ChatBubble(val isUser: Boolean, val text: String)
 class AiAssistantViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatBubble>>(emptyList())
@@ -66,7 +68,7 @@ class AiAssistantViewModel @Inject constructor(
             _error.value = null
             runCatching {
                 val sessionId = preferencesManager.getOrCreateLocalChatSessionId(userId)
-                withContext(Dispatchers.IO) { refreshRecommendationPool() }
+                withContext(dispatchers.io) { refreshRecommendationPool() }
                 loadHistoryIntoMessages(sessionId)
             }.onFailure {
                 _error.value = it.message ?: "Error al cargar el asistente"
@@ -117,7 +119,6 @@ class AiAssistantViewModel @Inject constructor(
             val err = chatRes.errorBody()?.string()?.take(2_000) ?: "HTTP ${chatRes.code()}"
             throw Exception("Error: $err")
         }
-        
         var reply = chatRes.body()?.reply?.take(8_000)?.ifBlank { "(Sin respuesta)" } ?: "(Sin respuesta)"
         
         if (wantsLocalRanking(message) && recommendationPool.isNotEmpty()) {
@@ -129,7 +130,7 @@ class AiAssistantViewModel @Inject constructor(
 
     private suspend fun enrichReplyWithRecommendations(userId: String, message: String, reply: String): String {
         return try {
-            val rankRes = withContext(Dispatchers.IO) {
+            val rankRes = withContext(dispatchers.io) {
                 voyagerAiRepository.postLocalRecommendations(
                     LocalRecommendationRequestBody(
                         userId = userId,
@@ -140,10 +141,10 @@ class AiAssistantViewModel @Inject constructor(
                 )
             }
             if (rankRes.isSuccessful) {
-                val ranked = LocalRecommendationParsers.parseItems(
-                    rankRes.body()?.string().orEmpty(),
-                )
-                val names = ranked.map { it.name }.filter { it.isNotBlank() }.take(5)
+                val names = rankRes.body()?.items.orEmpty()
+                    .map { it.name }
+                    .filter { it.isNotBlank() }
+                    .take(5)
                 if (names.isNotEmpty()) {
                     reply + "\n\nSugerencias: ${names.joinToString(", ")}"
                 } else {
@@ -178,14 +179,17 @@ class AiAssistantViewModel @Inject constructor(
                 recommendationPool = emptyList()
                 return
             }
-            val body = res.body()?.string().orEmpty()
-            recommendationPool = AiDashboardParsers.parseTrendsDashboard(body).map { d ->
+            val body: AiTrendDashboardDto = res.body() ?: run {
+                recommendationPool = emptyList()
+                return
+            }
+            recommendationPool = body.trendingDestinations.map { d ->
                 LocalRecommendationCandidateBody(
                     id = d.id ?: d.name,
                     name = d.name,
                     category = "destination",
                     price = 0.0,
-                    contentText = listOf(d.name, d.country).filter { it.isNotBlank() }.joinToString(" · "),
+                    contentText = d.name,
                 )
             }.take(25)
         }.onFailure {
@@ -194,18 +198,34 @@ class AiAssistantViewModel @Inject constructor(
     }
 
     private suspend fun loadHistoryIntoMessages(sessionId: String) {
-        val histRes = withContext(Dispatchers.IO) {
-            voyagerAiRepository.getLocalChatHistory(sessionId = sessionId, limit = 50)
+        val histRes = withContext(dispatchers.io) {
+            voyagerAiRepository.getLocalChatHistoryTyped(sessionId = sessionId, limit = 50)
         }
         if (!histRes.isSuccessful) {
             _messages.value = listOf(ChatBubble(isUser = false, text = welcomeFallback()))
             return
         }
-        val lines = LocalChatHistoryParsers.parseMessages(histRes.body()?.string().orEmpty())
+        val bodyList = histRes.body()
+        val lines = mutableListOf<Pair<Boolean, String>>()
+        if (bodyList != null && bodyList.isNotEmpty()) {
+            // Convert typed LocalChatResponseDto list into display pairs
+            for (item in bodyList) {
+                val text = item.reply.ifBlank { "(Sin respuesta)" }
+                val isUser = item.role?.lowercase() == "user"
+                lines.add(isUser to text)
+            }
+        } else {
+            // fallback to legacy raw parsing if any (defensive)
+            val raw = ""
+            val parsed = LocalChatHistoryParsers.parseMessages(raw)
+            lines.addAll(parsed)
+        }
+
         if (lines.isEmpty()) {
             _messages.value = listOf(ChatBubble(isUser = false, text = welcomeEmptyHistory()))
             return
         }
+
         _messages.value = lines.map { (isUser, t) -> ChatBubble(isUser = isUser, text = t) }
     }
 

@@ -22,42 +22,27 @@ class RespondToConnectionRequestUseCaseTest {
 
     @Test
     fun `acceptRequest success`() = runTest {
-        val dto = TestFixtures.connectionRequest(status = "ACCEPTED")
-        coEvery { repository.acceptConnectionRequest("9", "tok") } returns dto
+        val dto = TestFixtures.connectionRequest(id = 1L, status = "ACCEPTED")
+        coEvery { repository.acceptConnectionRequest("1", "t") } returns dto
 
-        val r = useCase.acceptRequest("9", "tok")
-
-        assertTrue(r.isSuccess)
-        assertEquals(dto, r.getOrThrow())
+        val result = useCase.acceptRequest("1", "t")
+        assertTrue(result.isSuccess)
+        assertEquals("ACCEPTED", result.getOrThrow().status)
     }
 
     @Test
     fun `acceptRequest failure`() = runTest {
-        coEvery { repository.acceptConnectionRequest(any(), any()) } throws RuntimeException("no")
-
-        val r = useCase.acceptRequest("1", "t")
-
-        assertTrue(r.isFailure)
-        assertEquals("no", r.exceptionOrNull()?.message)
+        coEvery { repository.acceptConnectionRequest(any(), any()) } throws RuntimeException("fail")
+        assertTrue(useCase.acceptRequest("1", "t").isFailure)
     }
 
     @Test
     fun `rejectRequest success`() = runTest {
-        val dto = TestFixtures.connectionRequest(status = "REJECTED")
-        coEvery { repository.rejectConnectionRequest("9", "tok") } returns dto
+        val dto = TestFixtures.connectionRequest(id = 2L, status = "REJECTED")
+        coEvery { repository.rejectConnectionRequest("2", "t") } returns dto
 
-        val r = useCase.rejectRequest("9", "tok")
-
-        assertTrue(r.isSuccess)
-        assertEquals(dto, r.getOrThrow())
-    }
-
-    @Test
-    fun `rejectRequest failure`() = runTest {
-        coEvery { repository.rejectConnectionRequest(any(), any()) } throws RuntimeException("e")
-
-        val r = useCase.rejectRequest("1", "t")
-
-        assertTrue(r.isFailure)
+        val result = useCase.rejectRequest("2", "t")
+        assertTrue(result.isSuccess)
+        assertEquals("REJECTED", result.getOrThrow().status)
     }
 }

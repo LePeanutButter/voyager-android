@@ -2,16 +2,30 @@ package com.voyager.tourism.presentation.viewmodel
 
 import com.voyager.tourism.data.dto.SmarTripSettingsPayload
 import com.voyager.tourism.data.local.PreferencesManager
+import com.voyager.tourism.util.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class SettingsViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private val prefs = mockk<PreferencesManager>(relaxed = true)
     private var stored = SmarTripSettingsPayload()
@@ -26,6 +40,10 @@ class SettingsViewModelTest {
             stored = transform(stored)
         }
         vm = SettingsViewModel(prefs)
+    }
+
+    @After
+    fun tearDown() {
     }
 
     @Test

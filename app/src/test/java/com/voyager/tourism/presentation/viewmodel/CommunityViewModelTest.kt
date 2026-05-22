@@ -1,30 +1,41 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
+import com.voyager.tourism.data.dto.AiTravelerMatchDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class CommunityViewModelTest {
 
     @get:Rule
@@ -35,6 +46,7 @@ class CommunityViewModelTest {
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val supplementRepo = mockk<BackendSupplementRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>(relaxed = true)
+    private val testDispatchers = TestDispatcherProvider(mainDispatcherRule.dispatcher)
     private lateinit var vm: CommunityViewModel
 
     @Before
@@ -46,13 +58,17 @@ class CommunityViewModelTest {
         coEvery { socialRepo.getCompatibleTravelers(any(), any()) } returns emptyList()
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
-        } returns Response.success("{}".toResponseBody("application/json".toMediaType()))
-        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
+        } returns Response.success(AiMatchingResponseDto(userId = "42"))
+        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
+    }
+
+    @After
+    fun tearDown() {
     }
 
     @Test
     fun `initial ui state uses defaults`() {
-        val fresh = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
+        val fresh = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
         assertEquals(CommunityTab.CONNECTIONS, fresh.uiState.value.activeTab)
         assertEquals(null, fresh.uiState.value.error)
     }
@@ -113,25 +129,49 @@ class CommunityViewModelTest {
 
     @Test
     fun `discover tab merges backend and ai rows`() = runTest {
-        coEvery { travelRepo.getUserTravelPlans("42") } returns Result.success(
-            listOf(TestFixtures.travelPlanDto(id = 1L)),
+        val uid = "42"
+        val planId = 1L
+        val planIdStr = planId.toString()
+        val dest = "Lima"
+
+        coEvery { travelRepo.getUserTravelPlans(uid) } returns Result.success(
+            listOf(TestFixtures.travelPlanDto(id = planId, destination = dest)),
         )
-        coEvery { socialRepo.getCompatibleTravelers("1", "") } returns listOf(TestFixtures.travelerMatch(10L))
+        
+        coEvery { socialRepo.getCompatibleTravelers(planIdStr, "") } returns listOf(TestFixtures.travelerMatch(10L))
+        
         coEvery {
-            voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
+            voyagerAi.getTravelBuddyRecommendations(
+                userId = any(),
+                location = any(),
+                limit = any(),
+                seekerFootprint = any()
+            )
         } returns Response.success(
-            """
-            {"data":{"recommendations":[
-              {"user_id":11,"name":"AI Buddy","compatibility_score":0.9,"shared_destinations":["Lima"]}
-            ]}}
-            """.trimIndent().toResponseBody("application/json".toMediaType()),
+            AiMatchingResponseDto(
+                matches = listOf(
+                    AiTravelerMatchDto(
+                        userId = "11",
+                        name = "AI Buddy",
+                        compatibilityScore = 95.0,
+                        travelStyleMatch = 0.9,
+                        sharedDestinations = listOf(dest)
+                    )
+                ),
+                userId = uid,
+                totalMatches = 1
+            )
         )
 
         vm.selectTab(CommunityTab.DISCOVER)
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.discoverRows.isNotEmpty())
-        assertTrue(vm.uiState.value.aiHighlightRows.isNotEmpty())
+        val state = vm.uiState.value
+        val ids = state.discoverRows.map { it.userId }
+        
+        assertTrue("Discover rows should not be empty", state.discoverRows.isNotEmpty())
+        assertTrue("Should contain backend match 10. Found: $ids", ids.contains(10L))
+        assertTrue("Should contain AI match 11. Found: $ids", ids.contains(11L))
     }
 
     @Test
@@ -150,7 +190,7 @@ class CommunityViewModelTest {
         coEvery { socialRepo.getCompatibleTravelers("2", "") } returns emptyList()
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
-        } returns Response.success("{}".toResponseBody("application/json".toMediaType()))
+        } returns Response.success(AiMatchingResponseDto(userId = "42"))
 
         vm.selectTab(CommunityTab.DISCOVER)
         advanceUntilIdle()

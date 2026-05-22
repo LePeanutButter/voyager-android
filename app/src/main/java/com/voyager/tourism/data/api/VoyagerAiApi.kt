@@ -2,6 +2,12 @@ package com.voyager.tourism.data.api
 
 import com.voyager.tourism.data.dto.AiChatRequestDto
 import com.voyager.tourism.data.dto.AiChatReplyDto
+import com.voyager.tourism.data.dto.AiAdaptiveMenuDto
+import com.voyager.tourism.data.dto.AiHomeFeedDto
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
+import com.voyager.tourism.data.dto.AiSeasonalityOverviewDto
+import com.voyager.tourism.data.dto.AiTrendDashboardDto
+import com.voyager.tourism.data.dto.ConnectionDto
 import com.voyager.tourism.data.dto.AiConnectionOutcomeRequestBody
 import com.voyager.tourism.data.dto.AiSeasonalForecastRequestBody
 import com.voyager.tourism.data.dto.AiTravelerMatchRequestBody
@@ -37,7 +43,7 @@ interface VoyagerAiApi {
     @POST("local/recommendations")
     suspend fun postLocalRecommendations(
         @Body body: LocalRecommendationRequestBody,
-    ): Response<ResponseBody>
+    ): Response<com.voyager.tourism.data.dto.LocalRecommendationResponseDto>
 
     /** Feedback 1–5 para ítems rankeados por [postLocalRecommendations]. */
     @POST("local/recommendations/feedback")
@@ -45,72 +51,74 @@ interface VoyagerAiApi {
         @Query("user_id") userId: String,
         @Query("item_id") itemId: String,
         @Query("rating") rating: Int,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     /** Turno de chat local (Ollama / SQLite) alineado con `aiService.sendLocalChatMessage`. */
     @POST("local/chat/message")
     suspend fun postLocalChatMessage(@Body body: LocalChatRequestBody): Response<LocalChatResponseDto>
 
-    /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web). */
+    /** Historial de mensajes por sesión (`useAIChat` / `getLocalChatHistory` en el web).
+     * Returns a wrapper object containing the 'messages' list to avoid "Expected BEGIN_ARRAY" errors.
+     */
     @GET("local/chat/history/{session_id}")
     suspend fun getLocalChatHistory(
         @Path("session_id") sessionId: String,
         @Query("limit") limit: Int = 50,
-    ): Response<ResponseBody>
+    ): Response<com.voyager.tourism.data.dto.LocalChatHistoryResponseDto>
 
     // --- users (perfil IA) ---
     /** Bootstraps an AI-side user profile mirror. */
     @POST("users/profile")
-    suspend fun postUserProfile(@Body body: AiUserProfileBody): Response<ResponseBody>
+    suspend fun postUserProfile(@Body body: AiUserProfileBody): Response<Unit>
 
     /** Retrieves AI enrichment data for a user id. */
     @GET("users/profile/{user_id}")
-    suspend fun getUserProfile(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun getUserProfile(@Path("user_id") userId: String): Response<AiUserProfileBody>
 
     /** Overwrites mutable AI profile fields. */
     @PUT("users/profile/{user_id}")
     suspend fun putUserProfile(
         @Path("user_id") userId: String,
         @Body body: AiUserProfileUpdateBody,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     /** Sends compact preference vectors learned from UI interactions. */
     @POST("users/preferences/{user_id}")
     suspend fun postUserPreferences(
         @Path("user_id") userId: String,
         @Body body: AiUserPreferencesBody,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     /** Notifies the service about a user gesture for modeling. */
     @POST("users/interaction")
-    suspend fun postUserInteraction(@Body body: AiUserInteractionBody): Response<ResponseBody>
+    suspend fun postUserInteraction(@Body body: AiUserInteractionBody): Response<Unit>
 
     /** Streams the latest ranked interactions for analytics views. */
     @GET("users/history/{user_id}")
     suspend fun getUserInteractionHistory(
         @Path("user_id") userId: String,
         @Query("limit") limit: Int = 50,
-    ): Response<ResponseBody>
+    ): Response<List<AiUserInteractionBody>>
 
     /** Fetches condensed insight statements for coaching UI surfaces. */
     @GET("users/insights/{user_id}")
-    suspend fun getUserInsights(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun getUserInsights(@Path("user_id") userId: String): Response<Map<String, Any>>
 
     /** Deletes mirrored AI data for GDPR or account closure flows. */
     @DELETE("users/profile/{user_id}")
-    suspend fun deleteUserProfile(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun deleteUserProfile(@Path("user_id") userId: String): Response<Unit>
 
     // --- matching ---
     /** Runs the AI traveler matching pipeline with rich filters. */
     @POST("matching/find")
-    suspend fun postMatchingFind(@Body body: AiTravelerMatchRequestBody): Response<ResponseBody>
+    suspend fun postMatchingFind(@Body body: AiTravelerMatchRequestBody): Response<AiMatchingResponseDto>
 
     /** Returns a compatibility score between two Voyager user ids. */
     @GET("matching/compatibility/{user_id}/{target_user_id}")
     suspend fun getMatchingCompatibility(
         @Path("user_id") userId: String,
         @Path("target_user_id") targetUserId: String,
-    ): Response<ResponseBody>
+    ): Response<Map<String, Double>>
 
     /** Initiates a match connection with an optional ice-breaker message. */
     @POST("matching/connect/{user_id}/{target_user_id}")
@@ -118,14 +126,14 @@ interface VoyagerAiApi {
         @Path("user_id") userId: String,
         @Path("target_user_id") targetUserId: String,
         @Query("message") message: String? = null,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     /** Lists pending or accepted AI-suggested connections for review. */
     @GET("matching/connections/{user_id}")
     suspend fun getMatchingConnections(
         @Path("user_id") userId: String,
         @Query("status") status: String? = null,
-    ): Response<ResponseBody>
+    ): Response<List<ConnectionDto>>
 
     /** Accepts or declines an AI match suggestion by connection id. */
     @PUT("matching/connections/{connection_id}/respond")
@@ -133,7 +141,7 @@ interface VoyagerAiApi {
         @Path("connection_id") connectionId: String,
         @Query("response") response: String,
         @Query("message") message: String? = null,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     /**
      * Sugiere compañeros de viaje; [seekerFootprint] es opcional (coma-separado, mismo query que el web:
@@ -145,11 +153,11 @@ interface VoyagerAiApi {
         @Query("location") location: String? = null,
         @Query("limit") limit: Int = 10,
         @Query("seeker_footprint") seekerFootprint: String? = null,
-    ): Response<ResponseBody>
+    ): Response<AiMatchingResponseDto>
 
     /** Logs whether a suggestion converted to a real-world meetup. */
     @POST("matching/learning/connection-outcome")
-    suspend fun postConnectionOutcome(@Body body: AiConnectionOutcomeRequestBody): Response<ResponseBody>
+    suspend fun postConnectionOutcome(@Body body: AiConnectionOutcomeRequestBody): Response<Unit>
 
     /** Captures qualitative feedback about a proposed match pairing. */
     @POST("matching/feedback/{user_id}/{target_user_id}")
@@ -158,37 +166,37 @@ interface VoyagerAiApi {
         @Path("target_user_id") targetUserId: String,
         @Query("rating") rating: Int,
         @Query("feedback_text") feedbackText: String? = null,
-    ): Response<ResponseBody>
+    ): Response<Unit>
 
     // --- trends ---
     /** Aggregated KPIs for executive trend dashboards. */
     @GET("trends/dashboard")
-    suspend fun getTrendsDashboard(): Response<ResponseBody>
+    suspend fun getTrendsDashboard(): Response<AiTrendDashboardDto>
 
     /** Deep dive metrics for a named marketing segment. */
     @GET("trends/segments/{segment_id}/insights")
-    suspend fun getSegmentInsights(@Path("segment_id") segmentId: String): Response<ResponseBody>
+    suspend fun getSegmentInsights(@Path("segment_id") segmentId: String): Response<Map<String, Any>>
 
     /** Weekly narrative digest for newsletter or push notifications. */
     @GET("trends/weekly-digest")
-    suspend fun getWeeklyDigest(): Response<ResponseBody>
+    suspend fun getWeeklyDigest(): Response<Map<String, Any>>
 
     // --- seasonality ---
     /** Overview of seasonal demand curves with optional pivot month. */
     @GET("seasonality/overview")
-    suspend fun getSeasonalityOverview(@Query("reference_month") referenceMonth: Int? = null): Response<ResponseBody>
+    suspend fun getSeasonalityOverview(@Query("reference_month") referenceMonth: Int? = null): Response<AiSeasonalityOverviewDto>
 
     /** Forecast notes for a specific destination identifier. */
     @GET("seasonality/destinations/{destination_id}")
-    suspend fun getDestinationSeasonalProfile(@Path("destination_id") destinationId: String): Response<ResponseBody>
+    suspend fun getDestinationSeasonalProfile(@Path("destination_id") destinationId: String): Response<Map<String, Any>>
 
     /** Runs a seasonal demand projection with structured inputs. */
     @POST("seasonality/forecast")
-    suspend fun postSeasonalForecast(@Body body: AiSeasonalForecastRequestBody): Response<ResponseBody>
+    suspend fun postSeasonalForecast(@Body body: AiSeasonalForecastRequestBody): Response<Map<String, Any>>
 
     /** Applies AI-proposed ranking boosts for shoulder seasons. */
     @POST("seasonality/visibility-adjustments")
-    suspend fun postVisibilityAdjustments(@Body body: AiVisibilityAdjustmentsRequestBody): Response<ResponseBody>
+    suspend fun postVisibilityAdjustments(@Body body: AiVisibilityAdjustmentsRequestBody): Response<Unit>
 
     // --- chat ---
     /** Sends a user utterance to the guided travel assistant. */
@@ -197,27 +205,42 @@ interface VoyagerAiApi {
 
     /** Retrieves recent chat turns for continuity in the UI. */
     @GET("chat/{user_id}/history")
-    suspend fun getChatHistory(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun getChatHistory(@Path("user_id") userId: String): Response<List<AiChatReplyDto>>
 
     /** Clears stored chat transcripts for privacy resets. */
     @DELETE("chat/{user_id}/history")
-    suspend fun deleteChatHistory(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun deleteChatHistory(@Path("user_id") userId: String): Response<Unit>
 
     // --- adaptive UI ---
     /** Builds a role-aware menu tree for adaptive shells. */
     @GET("adaptive-ui/menu/{user_id}")
-    suspend fun getAdaptiveMenu(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun getAdaptiveMenu(@Path("user_id") userId: String): Response<AiAdaptiveMenuDto>
 
     /** Home feed cards curated from AI ranking signals. */
     @GET("adaptive-ui/home-feed/{user_id}")
-    suspend fun getAdaptiveHomeFeed(@Path("user_id") userId: String): Response<ResponseBody>
+    suspend fun getAdaptiveHomeFeed(@Path("user_id") userId: String): Response<AiHomeFeedDto>
 
     // --- service diagnostics (absolute paths on host) ---
     /** Public landing JSON describing the FastAPI service. */
     @GET("/")
-    suspend fun getServiceRoot(): Response<ResponseBody>
+    suspend fun getServiceRoot(): Response<Map<String, Any>>
 
     /** Lightweight readiness probe for uptime monitors. */
     @GET("/health")
-    suspend fun getHealth(): Response<ResponseBody>
+    suspend fun getHealth(): Response<Map<String, Any>>
+
+    // --- ingest / admin (exposed by web client's aiService; mobile rarely uses these,
+    // but expose them here behind admin callers if needed) ---
+    @POST("trends/ingest/signals")
+    suspend fun ingestTrendSignals(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("trends/ingest/segments")
+    suspend fun ingestTrendSegments(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("seasonality/ingest/profiles")
+    suspend fun ingestSeasonalityProfiles(@Body body: Map<String, Any>): Response<Unit>
+
+    @POST("matching/profiles/ingest")
+    suspend fun ingestMatchingProfiles(@Body body: Map<String, Any>): Response<Unit>
 }
+

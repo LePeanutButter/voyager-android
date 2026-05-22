@@ -38,7 +38,7 @@ interface UserApiService {
      * Authenticates a user with email/username and password.
      */
     @POST("users/login")
-    suspend fun loginUser(@Body body: UserLoginDto): ApiResponse<LoginResponseDto>
+    suspend fun loginUser(@Body body: UserLoginDto): ApiResponse<UserDto>
 
     /**
      * Fetches a user profile by numeric identifier.

@@ -2,18 +2,20 @@ package com.voyager.tourism.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.dto.LocalRecommendationCandidateBody
 import com.voyager.tourism.data.dto.LocalRecommendationRequestBody
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.local.PreferencesManager
-import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Fila UI para la lista de recomendaciones rankeadas por `/local/recommendations`. */
@@ -35,6 +37,7 @@ class RecommendationsViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
     private val travelRepository: TravelRepository,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _rows = MutableStateFlow<List<RecommendationListRow>>(emptyList())
@@ -80,22 +83,26 @@ class RecommendationsViewModel @Inject constructor(
                     limit = 5,
                     candidates = candidates,
                 )
-                val response = voyagerAi.postLocalRecommendations(body)
+                val response = withContext(dispatchers.io) { voyagerAi.postLocalRecommendations(body) }
                 if (!response.isSuccessful) {
-                    _error.value = response.errorBody()?.string()?.take(1_500)
-                        ?: "No se pudieron cargar recomendaciones (HTTP ${response.code()})"
+                    _error.value = "No se pudieron cargar recomendaciones (HTTP ${response.code()})"
                     _rows.value = emptyList()
                     return@runCatching
                 }
-                val text = response.body()?.string().orEmpty()
-                val parsed = LocalRecommendationParsers.parseItems(text)
-                _rows.value = parsed.map {
+                val bodyResponse = response.body()
+                val items = bodyResponse?.items.orEmpty()
+                _rows.value = items.map {
+                    val finalScore = if (it.score > 0) it.score else it.similarity
                     RecommendationListRow(
                         id = it.id,
                         name = it.name,
-                        description = it.description,
-                        rating = it.rating,
-                        priceLabel = it.priceLabel,
+                        description = it.contentText ?: it.name,
+                        rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
+                        priceLabel = when {
+                            finalScore >= 0.75 -> "$$$"
+                            finalScore >= 0.45 -> "$$"
+                            else -> "$"
+                        },
                         category = it.category,
                     )
                 }
@@ -119,16 +126,17 @@ class RecommendationsViewModel @Inject constructor(
         val clamped = rating.coerceIn(1, 5)
         viewModelScope.launch {
             runCatching {
-                val res = voyagerAi.postLocalRecommendationFeedback(
-                    userId = userId,
-                    itemId = itemId,
-                    rating = clamped,
-                )
+                val res = withContext(dispatchers.io) {
+                    voyagerAi.postLocalRecommendationFeedback(
+                        userId = userId,
+                        itemId = itemId,
+                        rating = clamped,
+                    )
+                }
                 if (res.isSuccessful) {
                     _feedbackMessage.value = "Valoración enviada"
                 } else {
-                    _feedbackMessage.value = res.errorBody()?.string()?.take(500)
-                        ?: "No se pudo registrar la valoración"
+                    _feedbackMessage.value = "No se pudo registrar la valoración"
                 }
             }.onFailure {
                 _feedbackMessage.value = it.message ?: "Error al enviar valoración"

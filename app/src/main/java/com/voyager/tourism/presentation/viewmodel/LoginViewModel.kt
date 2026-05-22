@@ -37,10 +37,10 @@ class LoginViewModel @Inject constructor(
     }
 
     private var googleSignInClient: GoogleSignInClient? = null
-    
+
     // El Client ID del Backend (tipo Web Application) obtenido del .env del backend
     private val WEB_CLIENT_ID = "141800747513-e8sriq2r4dk7fq0909ga56f47i9e7llg.apps.googleusercontent.com"
-    
+
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
     

@@ -3,6 +3,7 @@ package com.voyager.tourism.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyager.tourism.data.dto.ConnectionRequestDto
+import com.voyager.tourism.data.dto.AiTravelerMatchDto
 import com.voyager.tourism.data.dto.SendConnectionRequestDto
 import com.voyager.tourism.data.dto.TravelPlanDto
 import com.voyager.tourism.data.dto.TravelerMatchDto
@@ -12,16 +13,20 @@ import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import com.voyager.tourism.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.max
@@ -75,6 +80,7 @@ class CommunityViewModel @Inject constructor(
     private val voyagerAi: VoyagerAiRepository,
     private val supplementRepository: BackendSupplementRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CommunityUiState())
@@ -133,9 +139,15 @@ class CommunityViewModel @Inject constructor(
         }
         _uiState.update { it.copy(isLoadingHeader = true, error = null) }
         runCatching {
-            val conns = socialRepository.getConnections(uid).getOrThrow()
-            val pending = socialRepository.getPendingRequests("")
-            Pair(conns, pending)
+            coroutineScope {
+                val connsDeferred = async(dispatchers.io) {
+                    socialRepository.getConnections(uid).getOrThrow()
+                }
+                val pendingDeferred = async(dispatchers.io) {
+                    socialRepository.getPendingRequests("")
+                }
+                connsDeferred.await() to pendingDeferred.await()
+            }
         }.onSuccess { (conns, pending) ->
             _uiState.update {
                 it.copy(isLoadingHeader = false, connections = conns, pendingRequests = pending)
@@ -185,33 +197,46 @@ class CommunityViewModel @Inject constructor(
 
         _uiState.update { it.copy(discoverLoading = true, error = null) }
         runCatching {
-            val compat = runCatching {
-                socialRepository.getCompatibleTravelers(selected, "")
-            }.getOrDefault(emptyList())
+            coroutineScope {
+                val compatDeferred: Deferred<List<TravelerMatchDto>> = async(dispatchers.io) {
+                    runCatching {
+                        socialRepository.getCompatibleTravelers(selected, "")
+                    }.getOrDefault(emptyList<TravelerMatchDto>())
+                }
 
-            val footprintParam = if (footprint.isNotEmpty()) footprint.joinToString(",") else null
-            val buddyBody = runCatching {
-                val resp = voyagerAi.getTravelBuddyRecommendations(
-                    userId = uidStr,
-                    location = dest.ifBlank { null },
-                    limit = 15,
-                    seekerFootprint = footprintParam,
-                )
-                if (resp.isSuccessful) resp.body()?.string().orEmpty() else ""
-            }.getOrDefault("")
+                val footprintParam = if (footprint.isNotEmpty()) footprint.joinToString(",") else null
+                val buddyDeferred: Deferred<List<AiTravelerMatchDto>> = async(dispatchers.io) {
+                    runCatching {
+                        val resp = voyagerAi.getTravelBuddyRecommendations(
+                            userId = uidStr,
+                            location = dest.ifBlank { null },
+                            limit = 15,
+                            seekerFootprint = footprintParam,
+                        )
+                        if (resp.isSuccessful) {
+                            val body = resp.body()
+                            body?.matches?.takeIf { it.isNotEmpty() } ?: body?.recommendations.orEmpty()
+                        } else {
+                            emptyList<AiTravelerMatchDto>()
+                        }
+                    }.getOrDefault(emptyList<AiTravelerMatchDto>())
+                }
 
-            val merged = mergeDiscoveryMatches(compat, buddyBody, dest, userId)
-            val onlyAi = merged.filter { it.source == "ai" || it.source == "both" }.take(4)
-                .map { it.copy(isAiHighlight = true) }
-            val aiIds = onlyAi.map { it.userId }.toSet()
-            val ranked = onlyAi + merged.filter { it.userId !in aiIds }
+                val compat = compatDeferred.await()
+                val buddyBody = buddyDeferred.await()
+                val merged = mergeDiscoveryMatches(compat, buddyBody, dest, userId)
+                val onlyAi = merged.filter { it.source == "ai" || it.source == "both" }.take(4)
+                    .map { it.copy(isAiHighlight = true) }
+                val aiIds = onlyAi.map { it.userId }.toSet()
+                val ranked = onlyAi + merged.filter { it.userId !in aiIds }
 
-            _uiState.update {
-                it.copy(
-                    discoverLoading = false,
-                    aiHighlightRows = onlyAi,
-                    discoverRows = ranked,
-                )
+                _uiState.update {
+                    it.copy(
+                        discoverLoading = false,
+                        aiHighlightRows = onlyAi,
+                        discoverRows = ranked,
+                    )
+                }
             }
             if (recordManualSuccess) {
                 beginManualRefreshCooldownFull()
@@ -296,7 +321,14 @@ class CommunityViewModel @Inject constructor(
         cooldownJob = viewModelScope.launch {
             _uiState.update { it.copy(refreshCooldownSec = 60) }
             repeat(60) {
-                delay(1000)
+                if (BuildConfig.DEBUG) {
+                    // In debug builds keep the per-second ticking for easier observation
+                    kotlinx.coroutines.delay(1000)
+                } else {
+                    // In release builds, update UI without artificial long-running delays
+                    // (keeps responsiveness and avoids blocking test runners)
+                    kotlinx.coroutines.yield()
+                }
                 _uiState.update { s -> s.copy(refreshCooldownSec = max(0, s.refreshCooldownSec - 1)) }
             }
         }
@@ -309,7 +341,7 @@ class CommunityViewModel @Inject constructor(
             var left = sec
             while (left > 0) {
                 _uiState.update { it.copy(refreshCooldownSec = left) }
-                delay(1000)
+                if (BuildConfig.DEBUG) kotlinx.coroutines.delay(1000) else kotlinx.coroutines.yield()
                 left--
             }
             _uiState.update { it.copy(refreshCooldownSec = 0) }
@@ -319,7 +351,7 @@ class CommunityViewModel @Inject constructor(
 
 private fun mergeDiscoveryMatches(
     compat: List<TravelerMatchDto>,
-    buddyJson: String,
+    buddyMatches: List<AiTravelerMatchDto>,
     planDestination: String,
     currentUserId: Long,
 ): List<DiscoverMatchRow> {
@@ -342,74 +374,39 @@ private fun mergeDiscoveryMatches(
             isAiHighlight = false,
         )
     }
-    for (r in parseBuddyRecommendations(buddyJson)) {
-        val uid = r.userId
+    for (r in buddyMatches) {
+        val uid = r.userId.toLongOrNull() ?: continue
         if (uid == currentUserId) continue
         val existing = byId[uid]
-        val score = r.score.coerceIn(0.0, 1.0)
+        val score = (r.compatibilityScore / 100.0).coerceIn(0.0, 1.0)
+        val parts = r.name.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }
+        val firstName = parts.firstOrNull().orEmpty().ifBlank { "Viajero" }
+        val lastName = parts.drop(1).joinToString(" ")
+        val shared = r.sharedDestinations.ifEmpty { r.commonPreferences }
+        val username = r.userId
         if (existing != null) {
             val newSource = if (existing.source == "backend") "both" else existing.source
             byId[uid] = existing.copy(
                 compatibilityScore = max(existing.compatibilityScore, score),
                 source = newSource,
-                sharedDestinations = (existing.sharedDestinations + r.shared).distinct(),
+                sharedDestinations = (existing.sharedDestinations + shared).distinct(),
             )
         } else {
             byId[uid] = DiscoverMatchRow(
                 userId = uid,
-                firstName = r.firstName,
-                lastName = r.lastName,
-                username = r.username,
+                firstName = firstName,
+                lastName = lastName,
+                username = username,
                 compatibilityScore = score,
                 travelPlanTitle = null,
                 destinationLocation = planDestination.ifBlank { null },
                 travelStartDate = null,
                 travelEndDate = null,
-                sharedDestinations = r.shared,
+                sharedDestinations = shared,
                 source = "ai",
                 isAiHighlight = false,
             )
         }
     }
     return byId.values.sortedByDescending { it.compatibilityScore }
-}
-
-private data class BuddyParsed(
-    val userId: Long,
-    val firstName: String,
-    val lastName: String,
-    val username: String,
-    val score: Double,
-    val shared: List<String>,
-)
-
-private fun parseBuddyRecommendations(json: String): List<BuddyParsed> {
-    if (json.isBlank()) return emptyList()
-    return runCatching {
-        val root = JSONObject(json)
-        val recs: JSONArray = root.optJSONObject("data")?.optJSONArray("recommendations")
-            ?: root.optJSONArray("recommendations")
-            ?: return emptyList()
-        val out = ArrayList<BuddyParsed>()
-        for (i in 0 until recs.length()) {
-            val r = recs.optJSONObject(i) ?: continue
-            val uid = r.optLong("user_id", r.optLong("userId", -1L))
-            if (uid < 0) continue
-            val name = r.optString("name", "").trim().ifBlank { "Viajero" }
-            val parts = name.split("\\s+".toRegex()).filter { it.isNotEmpty() }
-            val fn = parts.firstOrNull() ?: "Viajero"
-            val ln = parts.drop(1).joinToString(" ")
-            val un = r.optString("username", "user_$uid").ifBlank { "user_$uid" }
-            val sc = r.optDouble("compatibility_score", r.optDouble("compatibilityScore", 0.75))
-            val sharedArr = r.optJSONArray("shared_destinations") ?: r.optJSONArray("sharedDestinations")
-            val shared = mutableListOf<String>()
-            if (sharedArr != null) {
-                for (j in 0 until sharedArr.length()) {
-                    sharedArr.optString(j)?.takeIf { it.isNotBlank() }?.let { shared.add(it) }
-                }
-            }
-            out.add(BuddyParsed(uid, fn, ln, un, sc, shared))
-        }
-        out
-    }.getOrDefault(emptyList())
 }

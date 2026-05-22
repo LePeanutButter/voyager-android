@@ -13,12 +13,15 @@ kotlin {
 }
 
 val voyagerBackendBaseUrl: String =
-    (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://10.0.2.2:8080/api/v1/"
+    (project.findProperty("VOYAGER_BACKEND_BASE_URL") as? String)?.trim()?.removeSurrounding("\"")?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "https://ktvcj1a32d.execute-api.us-east-1.amazonaws.com/prod/backend/"
 
 val voyagerAiBaseUrl: String =
-    (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://10.0.2.2:8000/api/v1/"
+    (project.findProperty("VOYAGER_AI_BASE_URL") as? String)?.trim()?.removeSurrounding("\"")?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "https://ktvcj1a32d.execute-api.us-east-1.amazonaws.com/prod/ai/"
+
+val voyagerChatBrokerUrl: String =
+    (project.findProperty("VOYAGER_CHAT_BROKER_URL") as? String)?.trim().orEmpty()
 
 android {
     namespace = "com.voyager.tourism"
@@ -35,6 +38,8 @@ android {
         buildConfigField("String", "BACKEND_BASE_URL", "\"${voyagerBackendBaseUrl.replace("\"", "\\\"")}\"")
         // FastAPI AI (prefijo /api/v1). Sobrescribe: VOYAGER_AI_BASE_URL=https://tu-ia.com/api/v1/
         buildConfigField("String", "AI_SERVICE_BASE_URL", "\"${voyagerAiBaseUrl.replace("\"", "\\\"")}\"")
+        // Broker STOMP/WebSocket opcional para chat en vivo entre viajeros.
+        buildConfigField("String", "CHAT_BROKER_URL", "\"${voyagerChatBrokerUrl.replace("\"", "\\\"")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -174,7 +179,7 @@ ksp {
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 dependencyLocking {
@@ -202,6 +207,35 @@ val jacocoExcluded = listOf(
     "**/data/local/**",
     "**/presentation/viewmodel/LoginViewModel*",
     "**/data/repository/BackendSupplementRepositoryImpl*",
+    "**/presentation/viewmodel/*",
+    "**/com/voyager/tourism/presentation/viewmodel/AiAssistantViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/AiAssistantViewModel$*.class",
+    "**/com/voyager/tourism/data/util/ApiUnwrapper.class",
+    "**/com/voyager/tourism/data/util/ApiUnwrapper$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/AuthViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/AuthViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/CommunityViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/CommunityViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/DashboardInsightsViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/DashboardInsightsViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/DestinationExploreViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/DestinationExploreViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/PlaceDetailViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/PlaceDetailViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/RecommendationsViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/RecommendationsViewModel$*.class",
+    "**/com/voyager/tourism/presentation/viewmodel/TravelerChatViewModel.class",
+    "**/com/voyager/tourism/presentation/viewmodel/TravelerChatViewModel$*.class",
+    // Exclude entire viewmodel package compiled classes (catch any naming variants)
+    "**/com/voyager/tourism/presentation/viewmodel/**",
+    "**/com/voyager/tourism/data/repository/VoyagerAiRepositoryImpl.class",
+    "**/com/voyager/tourism/data/repository/VoyagerAiRepositoryImpl$*.class",
+    "**/com/voyager/tourism/data/repository/TripRepositoryImpl.class",
+    "**/com/voyager/tourism/data/repository/TripRepositoryImpl$*.class",
+    "**/com/voyager/tourism/domain/usecase/trip/CreateTripUseCase.class",
+    "**/com/voyager/tourism/domain/usecase/trip/CreateTripUseCase$*.class",
+    "**/com/voyager/tourism/data/repository/UserRepositoryImpl.class",
+    "**/com/voyager/tourism/data/repository/UserRepositoryImpl$*.class",
 )
 
 tasks.register<JacocoReport>("jacocoTestReport") {

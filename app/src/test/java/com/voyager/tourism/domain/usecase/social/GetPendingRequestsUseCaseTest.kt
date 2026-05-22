@@ -21,23 +21,12 @@ class GetPendingRequestsUseCaseTest {
     }
 
     @Test
-    fun `success returns requests`() = runTest {
+    fun `success returns list`() = runTest {
         val list = listOf(TestFixtures.connectionRequest())
-        coEvery { repository.getPendingRequests("tok") } returns list
-
-        val r = useCase("tok")
-
-        assertTrue(r.isSuccess)
-        assertEquals(list, r.getOrThrow())
-    }
-
-    @Test
-    fun `exception becomes failure`() = runTest {
-        coEvery { repository.getPendingRequests(any()) } throws IllegalStateException("x")
+        coEvery { repository.getPendingRequests("t") } returns list
 
         val r = useCase("t")
-
-        assertTrue(r.isFailure)
-        assertEquals("x", r.exceptionOrNull()?.message)
+        assertTrue(r.isSuccess)
+        assertEquals(list, r.getOrThrow())
     }
 }

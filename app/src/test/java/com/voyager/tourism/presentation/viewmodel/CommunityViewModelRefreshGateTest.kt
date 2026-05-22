@@ -1,11 +1,13 @@
 package com.voyager.tourism.presentation.viewmodel
 
+import com.voyager.tourism.data.dto.AiMatchingResponseDto
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.BackendSupplementRepository
 import com.voyager.tourism.domain.repository.SocialRepository
 import com.voyager.tourism.domain.repository.TravelRepository
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
 import com.voyager.tourism.util.MainDispatcherRule
+import com.voyager.tourism.util.TestDispatcherProvider
 import com.voyager.tourism.util.TestFixtures
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,14 +18,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
-import java.util.ArrayList
 
 /**
  * Cubre [CommunityViewModel.refreshDiscoverManual] cuando el gate bloquea la petición
@@ -31,6 +33,7 @@ import java.util.ArrayList
  * bloquear ni dejar minutos de [delay] reales.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class CommunityViewModelRefreshGateTest {
 
     private val std = StandardTestDispatcher()
@@ -43,6 +46,7 @@ class CommunityViewModelRefreshGateTest {
     private val voyagerAi = mockk<VoyagerAiRepository>(relaxed = true)
     private val supplementRepo = mockk<BackendSupplementRepository>(relaxed = true)
     private val prefs = mockk<PreferencesManager>(relaxed = true)
+    private val testDispatchers = TestDispatcherProvider(std)
     private lateinit var vm: CommunityViewModel
 
     @Before
@@ -54,9 +58,14 @@ class CommunityViewModelRefreshGateTest {
         coEvery { socialRepo.getCompatibleTravelers(any(), any()) } returns emptyList()
         coEvery {
             voyagerAi.getTravelBuddyRecommendations(any(), any(), any(), any())
-        } returns Response.success("{}".toResponseBody("application/json".toMediaType()))
-        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs)
+        } returns Response.success(AiMatchingResponseDto(userId = "42"))
+        vm = CommunityViewModel(socialRepo, travelRepo, voyagerAi, supplementRepo, prefs, testDispatchers)
     }
+
+    @After
+    fun tearDown() {
+    }
+
 
     @Test
     fun `refreshDiscoverManual when rate limited shows notice`() = runTest(std) {

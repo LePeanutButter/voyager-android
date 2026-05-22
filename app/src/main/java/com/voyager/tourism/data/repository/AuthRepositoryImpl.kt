@@ -66,11 +66,11 @@ class AuthRepositoryImpl @Inject constructor(
             )
             
             val response = userApiService.loginUser(request)
-            val payload = response.data
+            val userDto = response.data
 
-            if (response.status == 200 && payload != null) {
-                val merged = payload.user.copy(token = payload.token)
-                Result.success(merged)
+            if (response.status == 200 && userDto != null) {
+                // El backend actual ya incluye el token dentro del objeto UserDto en la raíz de 'data'
+                Result.success(userDto)
             } else {
                 Result.failure(Exception(response.message.ifBlank { "Login failed" }))
             }

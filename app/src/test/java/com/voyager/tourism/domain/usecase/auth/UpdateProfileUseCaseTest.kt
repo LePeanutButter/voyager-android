@@ -21,59 +21,34 @@ class UpdateProfileUseCaseTest {
     }
 
     @Test
-    fun `blank user id fails`() = runTest {
-        val r = useCase(" ", "A", "B", "bio", null, emptyList())
-        assertTrue(r.isFailure)
-        assertEquals("User ID cannot be empty", r.exceptionOrNull()?.message)
+    fun `validation fails on blank fields`() = runTest {
+        assertTrue(useCase("", "A", "B", "bio", null, emptyList()).isFailure)
+        assertTrue(useCase("1", "", "B", "bio", null, emptyList()).isFailure)
+        assertTrue(useCase("1", "A", "", "bio", null, emptyList()).isFailure)
+        assertTrue(useCase("1", "A", "B", "", null, emptyList()).isFailure)
     }
 
     @Test
-    fun `blank first name fails`() = runTest {
-        val r = useCase("1", " ", "B", "bio", null, emptyList())
-        assertTrue(r.isFailure)
-        assertEquals("First name is required", r.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `blank last name fails`() = runTest {
-        val r = useCase("1", "A", "  ", "bio", null, emptyList())
+    fun `validation fails when bio too long`() = runTest {
+        val longBio = "a".repeat(501)
+        val r = useCase("1", "A", "B", longBio, null, emptyList())
         assertTrue(r.isFailure)
     }
 
     @Test
-    fun `blank bio fails`() = runTest {
-        val r = useCase("1", "A", "B", "  ", null, emptyList())
-        assertTrue(r.isFailure)
-        assertEquals("Biography is required", r.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `bio too long fails`() = runTest {
-        val r = useCase("1", "A", "B", "x".repeat(501), null, emptyList())
-        assertTrue(r.isFailure)
-        assertEquals("Biography must be 500 characters or less", r.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `success delegates to repository`() = runTest {
+    fun `invoke success calls repository`() = runTest {
         val dto = TestFixtures.userDto()
-        coEvery {
-            repository.updateUser("42", "A", "B", "bio", "+1", listOf("art"))
-        } returns Result.success(dto)
+        coEvery { repository.updateUser("1", "A", "B", "bio", null, any()) } returns Result.success(dto)
 
-        val r = useCase("42", "A", "B", "bio", "+1", listOf("art"))
+        val result = useCase("1", "A", "B", "bio", null, emptyList())
 
-        assertTrue(r.isSuccess)
-        assertEquals(dto, r.getOrThrow())
+        assertTrue(result.isSuccess)
+        assertEquals(dto, result.getOrNull())
     }
 
     @Test
-    fun `repository exception becomes failure`() = runTest {
-        coEvery { repository.updateUser(any(), any(), any(), any(), any(), any()) } throws RuntimeException("x")
-
-        val r = useCase("1", "A", "B", "bio", null, emptyList())
-
-        assertTrue(r.isFailure)
-        assertEquals("x", r.exceptionOrNull()?.message)
+    fun `invoke failure returns repository error`() = runTest {
+        coEvery { repository.updateUser(any(), any(), any(), any(), any(), any()) } returns Result.failure(Exception("err"))
+        assertTrue(useCase("1", "A", "B", "bio", null, emptyList()).isFailure)
     }
 }

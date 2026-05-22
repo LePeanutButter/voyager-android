@@ -6,11 +6,13 @@ import com.voyager.tourism.data.api.TravelPlanApiService
 import com.voyager.tourism.data.api.UserApiService
 import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.MatchResponseDto
+import com.voyager.tourism.data.dto.PagedResponseSocialReviewDto
 import com.voyager.tourism.data.dto.PagedResponseTravelPlanDto
 import com.voyager.tourism.data.dto.PagedResponseUserDto
 import com.voyager.tourism.data.dto.ShareActivityRequestDto
 import com.voyager.tourism.data.dto.SharedActivityActionRequestDto
 import com.voyager.tourism.data.dto.SharedActivityResponseDto
+import com.voyager.tourism.data.dto.SocialReviewDto
 import com.voyager.tourism.data.dto.UserRegistrationDto
 import com.voyager.tourism.data.dto.UserStatisticsDto
 import com.voyager.tourism.util.TestFixtures
@@ -72,8 +74,9 @@ class BackendSupplementRepositoryImplTest {
         repo.removeConnection(9L)
         coVerify { socialApi.removeConnection(9L) }
 
-        coEvery { socialApi.getReviews("HOTEL", 1L, 0, 10) } returns Response.success("{}".toResponseBody())
-        assertTrue(repo.getReviews("HOTEL", 1L, 0, 10).isSuccessful)
+        val reviewPaged = PagedResponseSocialReviewDto(emptyList(), 0, 10, 0, 0, true)
+        coEvery { socialApi.getReviews("HOTEL", 1L, 0, 10) } returns ok(reviewPaged)
+        assertEquals(200, repo.getReviews("HOTEL", 1L, 0, 10).status)
     }
 
     @Test

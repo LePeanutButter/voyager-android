@@ -8,11 +8,13 @@ import com.voyager.tourism.data.localai.LocalRecommendationParsers
 import com.voyager.tourism.data.localai.ParsedLocalRecommendationItem
 import com.voyager.tourism.data.local.PreferencesManager
 import com.voyager.tourism.domain.repository.VoyagerAiRepository
+import com.voyager.tourism.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -22,6 +24,7 @@ import javax.inject.Inject
 class PlaceDetailViewModel @Inject constructor(
     private val voyagerAiRepository: VoyagerAiRepository,
     private val preferencesManager: PreferencesManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -70,14 +73,26 @@ class PlaceDetailViewModel @Inject constructor(
                         ),
                     ),
                 )
-                val response = voyagerAiRepository.postLocalRecommendations(body)
+                val response = withContext(dispatchers.io) {
+                    voyagerAiRepository.postLocalRecommendations(body)
+                }
                 if (response.isSuccessful) {
-                    val text = response.body()?.string().orEmpty()
-                    _payload.value = text
-                    _rankedItems.value = LocalRecommendationParsers.parseItems(text)
+                    val body = response.body()
+                    val items = body?.items.orEmpty()
+                    _payload.value = items.joinToString("\n") { it.name }
+                    _rankedItems.value = items.map { item ->
+                        val finalScore = if (item.score > 0) item.score else item.similarity
+                        ParsedLocalRecommendationItem(
+                            id = item.id,
+                            name = item.name,
+                            description = item.contentText.orEmpty(),
+                            category = item.category,
+                            rating = (finalScore * 5.0).toFloat().coerceIn(0f, 5f),
+                            priceLabel = if (item.price > 0.0) "$${item.price}" else "Explorar",
+                        )
+                    }
                 } else {
-                    _error.value = response.errorBody()?.string()?.take(2_000)
-                        ?: "HTTP ${response.code()}"
+                    _error.value = "HTTP ${response.code()}"
                 }
             }.onFailure {
                 _error.value = it.message ?: "Error de red"

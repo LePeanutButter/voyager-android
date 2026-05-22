@@ -3,8 +3,14 @@ package com.voyager.tourism.data.api
 import com.voyager.tourism.data.dto.ApiResponse
 import com.voyager.tourism.data.dto.ConnectionDto
 import com.voyager.tourism.data.dto.ConnectionRequestDto
+import com.voyager.tourism.data.dto.PagedResponseSocialPostDto
+import com.voyager.tourism.data.dto.PagedResponseSocialReviewDto
 import com.voyager.tourism.data.dto.MessageDto
 import com.voyager.tourism.data.dto.PagedResponseMessageDto
+import com.voyager.tourism.data.dto.SocialCommentDto
+import com.voyager.tourism.data.dto.SocialConversationDto
+import com.voyager.tourism.data.dto.SocialPostDto
+import com.voyager.tourism.data.dto.SocialReviewDto
 import com.voyager.tourism.data.dto.SendConnectionRequestDto
 import com.voyager.tourism.data.dto.SendMessageRequestDto
 import com.voyager.tourism.data.dto.TravelerSummaryDto
@@ -74,13 +80,13 @@ interface SocialApiService {
     suspend fun getTravelerSummary(@Path("id") travelerId: Long): ApiResponse<TravelerSummaryDto>
 
     /**
-     * Creates a social review payload using a loosely typed map to mirror backend fields.
+     * Creates a social review payload.
      */
     @POST("social/reviews")
-    suspend fun createReview(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+    suspend fun createReview(@Body body: SocialReviewDto): ApiResponse<SocialReviewDto>
 
     /**
-     * Fetches paginated reviews for a subject (hotel, activity, etc.) as raw JSON.
+     * Fetches paginated reviews for a subject (hotel, activity, etc.).
      */
     @GET("social/reviews/{targetType}/{targetId}")
     suspend fun getReviews(
@@ -88,7 +94,7 @@ interface SocialApiService {
         @Path("targetId") targetId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20,
-    ): Response<ResponseBody>
+    ): ApiResponse<PagedResponseSocialReviewDto>
 
     /**
      * Updates an existing review authored by the caller.
@@ -96,8 +102,8 @@ interface SocialApiService {
     @PUT("social/reviews/{reviewId}")
     suspend fun updateReview(
         @Path("reviewId") reviewId: Long,
-        @Body body: Map<String, @JvmSuppressWildcards Any?>,
-    ): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+        @Body body: SocialReviewDto,
+    ): ApiResponse<SocialReviewDto>
 
     /**
      * Deletes a review by id.
@@ -106,10 +112,17 @@ interface SocialApiService {
     suspend fun deleteReview(@Path("reviewId") reviewId: Long): ApiResponse<Unit>
 
     /**
-     * Lists conversation metadata rows for a user as raw JSON.
+     * Lists conversation metadata rows for a user.
      */
     @GET("social/conversations/{userId}")
-    suspend fun getConversations(@Path("userId") userId: Long): Response<ResponseBody>
+    suspend fun getConversations(@Path("userId") userId: Long): ApiResponse<List<SocialConversationDto>>
+
+    /**
+     * Compatibility query for travelers tied to a travel plan (web: `/travel-plans/{id}/compatible-travelers`).
+     * Duplicate entry here to make the social surface easier to call from feature code.
+     */
+    @GET("travel-plans/{id}/compatible-travelers")
+    suspend fun getCompatibleTravelers(@Path("id") planId: Long): ApiResponse<List<com.voyager.tourism.data.dto.TravelerMatchDto>>
 
     /**
      * Returns a paged chat transcript between the authenticated user and a connection.
@@ -117,7 +130,7 @@ interface SocialApiService {
     @GET("social/connections/{connectionId}/messages")
     suspend fun getConversationMessages(
         @Path("connectionId") connectionId: Long,
-        @Query("userId") userId: Long,
+        @Query("user_id") userId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 50,
     ): PagedResponseMessageDto
@@ -129,32 +142,32 @@ interface SocialApiService {
     suspend fun markMessageAsRead(@Path("messageId") messageId: Long): ApiResponse<Unit>
 
     /**
-     * Streams social feed cards for the timeline UI as raw JSON.
+     * Streams social feed cards for the timeline UI.
      */
     @GET("social/feed/{userId}")
     suspend fun getSocialFeed(
         @Path("userId") userId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20,
-    ): Response<ResponseBody>
+    ): ApiResponse<PagedResponseSocialPostDto>
 
     /**
-     * Publishes a new feed post with arbitrary backend fields.
+     * Publishes a new feed post.
      */
     @POST("social/posts")
-    suspend fun createPost(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+    suspend fun createPost(@Body body: SocialPostDto): ApiResponse<SocialPostDto>
 
     /**
      * Records a like interaction on a feed post.
      */
     @POST("social/posts/{postId}/like")
-    suspend fun likePost(@Path("postId") postId: Long): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+    suspend fun likePost(@Path("postId") postId: Long): ApiResponse<SocialPostDto>
 
     /**
      * Removes a previously recorded like.
      */
     @DELETE("social/posts/{postId}/like")
-    suspend fun unlikePost(@Path("postId") postId: Long): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+    suspend fun unlikePost(@Path("postId") postId: Long): ApiResponse<SocialPostDto>
 
     /**
      * Adds a comment thread entry under a post.
@@ -162,18 +175,18 @@ interface SocialApiService {
     @POST("social/posts/{postId}/comments")
     suspend fun commentOnPost(
         @Path("postId") postId: Long,
-        @Body body: Map<String, @JvmSuppressWildcards Any?>,
-    ): ApiResponse<Map<String, @JvmSuppressWildcards Any?>>
+        @Body body: SocialCommentDto,
+    ): ApiResponse<SocialCommentDto>
 
     /**
-     * Lists comments for a given post as raw feed JSON.
+     * Lists comments for a given post.
      */
     @GET("social/posts/{postId}/comments")
     suspend fun getPostComments(
         @Path("postId") postId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20,
-    ): Response<ResponseBody>
+    ): ApiResponse<List<SocialCommentDto>>
 
     /**
      * Sends a chat message through the social graph.
@@ -181,3 +194,4 @@ interface SocialApiService {
     @POST("social/messages")
     suspend fun sendMessage(@Body body: SendMessageRequestDto): ApiResponse<MessageDto>
 }
+
