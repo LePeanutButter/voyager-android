@@ -179,7 +179,7 @@ ksp {
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 dependencyLocking {
@@ -222,6 +222,33 @@ val jacocoExcluded = listOf(
     "**/data/repository/TripRepositoryImpl*",
     "**/domain/usecase/trip/CreateTripUseCase*",
     "**/data/repository/UserRepositoryImpl*",
+    // Also exclude compiled class files and inner classes for the above sources
+    "**/presentation/viewmodel/AiAssistantViewModel*.class",
+    "**/presentation/viewmodel/AiAssistantViewModel$*.class",
+    "**/data/util/ApiUnwrapper*.class",
+    "**/data/util/ApiUnwrapper$*.class",
+    "**/presentation/viewmodel/AuthViewModel*.class",
+    "**/presentation/viewmodel/AuthViewModel$*.class",
+    "**/presentation/viewmodel/CommunityViewModel*.class",
+    "**/presentation/viewmodel/CommunityViewModel$*.class",
+    "**/presentation/viewmodel/DashboardInsightsViewModel*.class",
+    "**/presentation/viewmodel/DashboardInsightsViewModel$*.class",
+    "**/presentation/viewmodel/DestinationExploreViewModel*.class",
+    "**/presentation/viewmodel/DestinationExploreViewModel$*.class",
+    "**/presentation/viewmodel/PlaceDetailViewModel*.class",
+    "**/presentation/viewmodel/PlaceDetailViewModel$*.class",
+    "**/presentation/viewmodel/RecommendationsViewModel*.class",
+    "**/presentation/viewmodel/RecommendationsViewModel$*.class",
+    "**/presentation/viewmodel/TravelerChatViewModel*.class",
+    "**/presentation/viewmodel/TravelerChatViewModel$*.class",
+    "**/data/repository/VoyagerAiRepositoryImpl*.class",
+    "**/data/repository/VoyagerAiRepositoryImpl$*.class",
+    "**/data/repository/TripRepositoryImpl*.class",
+    "**/data/repository/TripRepositoryImpl$*.class",
+    "**/domain/usecase/trip/CreateTripUseCase*.class",
+    "**/domain/usecase/trip/CreateTripUseCase$*.class",
+    "**/data/repository/UserRepositoryImpl*.class",
+    "**/data/repository/UserRepositoryImpl$*.class",
 )
 
 tasks.register<JacocoReport>("jacocoTestReport") {
@@ -242,17 +269,36 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     executionData.setFrom(
         fileTree(layout.buildDirectory.asFile.get()) {
             include(
-                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
-                "jacoco/testDebugUnitTest.exec",
+                "**/*.exec",
+                "**/*.ec",
+                "jacoco/*.exec",
+                "outputs/unit_test_code_coverage/**/testDebugUnitTest.exec",
             )
         },
     )
 
     reports {
         xml.required.set(true)
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacocoTestReport/jacocoTestReport.xml"))
         html.required.set(true)
         html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
     }
 
     dependsOn("testDebugUnitTest")
+    
+    // Prevent Gradle implicit-dependency validation errors by depending on AGP build tasks
+    val extraTaskDeps = listOf(
+        "compressDebugAssets",
+        "dexBuilderDebug",
+        "l8DexDesugarLibDebug",
+        "mergeExtDexDebug",
+        "mergeLibDexDebug",
+        "assembleDebug",
+    )
+
+    extraTaskDeps.forEach { taskName ->
+        tasks.findByName(taskName)?.let { t ->
+            dependsOn(t)
+        }
+    }
 }
