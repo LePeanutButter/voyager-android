@@ -9,9 +9,9 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class AiMatchingResponseDto(
     @Json(name = "matches") val matches: List<AiTravelerMatchDto>,
-    @Json(name = "user_id") val userId: String,
-    @Json(name = "total_matches") val totalMatches: Int,
-    @Json(name = "generated_at") val generatedAt: String? = null
+    @Json(name = "userId") val userId: String,
+    @Json(name = "totalMatches") val totalMatches: Int,
+    @Json(name = "generatedAt") val generatedAt: String? = null
 )
 
 /**
@@ -19,16 +19,16 @@ data class AiMatchingResponseDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiTravelerMatchDto(
-    @Json(name = "user_id") val userId: String,
+    @Json(name = "userId") val userId: String,
     @Json(name = "name") val name: String,
     @Json(name = "age") val age: Int? = null,
-    @Json(name = "compatibility_score") val compatibilityScore: Double,
-    @Json(name = "common_preferences") val commonPreferences: List<String> = emptyList(),
-    @Json(name = "travel_style_match") val travelStyleMatch: Double,
+    @Json(name = "compatibilityScore") val compatibilityScore: Double,
+    @Json(name = "commonPreferences") val commonPreferences: List<String> = emptyList(),
+    @Json(name = "travelStyleMatch") val travelStyleMatch: Double,
     @Json(name = "bio") val bio: String? = null,
-    @Json(name = "profile_image") val profileImage: String? = null,
-    @Json(name = "dimension_summary") val dimensionSummary: Map<String, Double>? = null,
-    @Json(name = "shared_destinations") val sharedDestinations: List<String> = emptyList()
+    @Json(name = "profileImage") val profileImage: String? = null,
+    @Json(name = "dimensionSummary") val dimensionSummary: Map<String, Double>? = null,
+    @Json(name = "sharedDestinations") val sharedDestinations: List<String> = emptyList()
 )
 
 /**
@@ -36,17 +36,17 @@ data class AiTravelerMatchDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiTrendDashboardDto(
-    @Json(name = "trending_destinations") val trendingDestinations: List<TrendItemDto> = emptyList(),
-    @Json(name = "popular_activities") val popularActivities: List<TrendItemDto> = emptyList(),
-    @Json(name = "emerging_segments") val emergingSegments: List<String> = emptyList(),
-    @Json(name = "last_updated") val lastUpdated: String? = null
+    @Json(name = "trendingDestinations") val trendingDestinations: List<TrendItemDto> = emptyList(),
+    @Json(name = "popularActivities") val popularActivities: List<TrendItemDto> = emptyList(),
+    @Json(name = "emergingSegments") val emergingSegments: List<String> = emptyList(),
+    @Json(name = "lastUpdated") val lastUpdated: String? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class TrendItemDto(
     @Json(name = "id") val id: String,
     @Json(name = "name") val name: String,
-    @Json(name = "growth_rate") val growthRate: Double,
+    @Json(name = "growthRate") val growthRate: Double,
     @Json(name = "score") val score: Double
 )
 
@@ -55,10 +55,10 @@ data class TrendItemDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiSeasonalityOverviewDto(
-    @Json(name = "reference_month") val referenceMonth: Int = 1,
+    @Json(name = "referenceMonth") val referenceMonth: Int = 1,
     @Json(name = "curves") val curves: Map<String, List<Double>> = emptyMap(),
-    @Json(name = "peak_destinations") val peakDestinations: List<String> = emptyList(),
-    @Json(name = "shoulder_destinations") val shoulderDestinations: List<String> = emptyList()
+    @Json(name = "peakDestinations") val peakDestinations: List<String> = emptyList(),
+    @Json(name = "shoulderDestinations") val shoulderDestinations: List<String> = emptyList()
 )
 
 /**
@@ -66,9 +66,9 @@ data class AiSeasonalityOverviewDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiAdaptiveMenuDto(
-    @Json(name = "user_id") val userId: String,
+    @Json(name = "userId") val userId: String,
     @Json(name = "items") val items: List<AdaptiveMenuItemDto>,
-    @Json(name = "layout_version") val layoutVersion: String
+    @Json(name = "layoutVersion") val layoutVersion: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -86,7 +86,7 @@ data class AdaptiveMenuItemDto(
  */
 @JsonClass(generateAdapter = true)
 data class AiHomeFeedDto(
-    @Json(name = "user_id") val userId: String,
+    @Json(name = "userId") val userId: String,
     @Json(name = "cards") val cards: List<AiFeedCardDto>
 )
 
@@ -96,6 +96,6 @@ data class AiFeedCardDto(
     @Json(name = "type") val type: String, // e.g., "RECOMMENDATION", "TREND", "MATCH"
     @Json(name = "title") val title: String,
     @Json(name = "content") val content: String,
-    @Json(name = "image_url") val imageUrl: String? = null,
+    @Json(name = "imageUrl") val imageUrl: String? = null,
     @Json(name = "metadata") val metadata: Map<String, String>? = null
 )
