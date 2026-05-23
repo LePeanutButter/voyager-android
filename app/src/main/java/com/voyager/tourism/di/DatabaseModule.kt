@@ -21,6 +21,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
     
+    /**
+     * Provides the Room [TourismDatabase] singleton with destructive migration enabled.
+     */
     @Provides
     @Singleton
     fun provideTourismDatabase(@ApplicationContext context: Context): TourismDatabase {
@@ -33,16 +36,25 @@ object DatabaseModule {
             .build()
     }
     
+    /**
+     * Provides the Room [UserDao].
+     */
     @Provides
     fun provideUserDao(database: TourismDatabase): UserDao {
         return database.userDao()
     }
     
+    /**
+     * Provides the Room [TripDao].
+     */
     @Provides
     fun provideTripDao(database: TourismDatabase): TripDao {
         return database.tripDao()
     }
     
+    /**
+     * Provides the Room [DestinationDao].
+     */
     @Provides
     fun provideDestinationDao(database: TourismDatabase): DestinationDao {
         return database.destinationDao()

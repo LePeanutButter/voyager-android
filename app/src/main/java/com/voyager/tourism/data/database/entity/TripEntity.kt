@@ -41,26 +41,6 @@ data class TripEntity(
 )
 
 /**
- * Room database entity for Destination table
- */
-@Entity(tableName = "destinations")
-data class DestinationEntity(
-    @PrimaryKey
-    val id: String,
-    val name: String,
-    val country: String,
-    val coordinates: String, // JSON string of Coordinates
-    val timezone: String,
-    val currency: String,
-    val language: String,
-    val climate: String,
-    val bestTimeToVisit: String,
-    val averageCost: Double,
-    val rating: Float,
-    val images: String? = null // JSON string of List<String>
-)
-
-/**
  * Room database entity for Itinerary items
  */
 @Entity(

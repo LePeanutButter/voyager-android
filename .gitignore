@@ -1,326 +1,48 @@
-# Kotlin/JVM build outputs
-build/
-out/
-target/
-classes/
-kotlin-classes/
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*.zip
-*.tar.gz
-*.rar
-
-# Gradle
-.gradle/
-!gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
-gradle-app.setting
-!gradle-wrapper.jar
-gradle.properties
-.gradle/
-
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
-# IDE files
+.DS_Store
 .idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
-
-# Android specific
-*.apk
-*.ap_
-*.dex
-*.class
-bin/
-gen/
+/confluence/target
+/dependencies/repo
+/android.tests.dependencies
+/dependencies/android.tests.dependencies
+/dist
+/local
+/gh-pages
+/ideaSDK
+/clionSDK
+/android-studio/sdk
 out/
-build/
-local.properties
-*.keystore
-!debug.keystore
-
-# Gradle wrapper
-!gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
-
-# Android Studio generated files and folders
-*.hprof
-*.patch
-*.orig
-*.rej
-.AndroidStudio*/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
+/tmp
+/intellij
+workspace.xml
+*.versionsBackup
+/idea/testData/debugger/tinyApp/classes*
+/jps-plugin/testData/kannotator
+/js/js.translator/testData/out/
+/js/js.translator/testData/out-min/
+/js/js.translator/testData/out-pir/
 .gradle/
 build/
-reports/
-android-studio/
-captures/
-.externalNativeBuild/
-.cxx/
-*.keystore
-!debug.keystore
-
-# NDK
-obj/
-*.so
-*.a
-
-# IntelliJ
+!**/src/**/build
+!**/test/**/build
+!**/tests-gen/**/build
 *.iml
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/assetWizardSettings.xml
-.idea/dictionaries
-.idea/libraries
-.idea/caches
-.idea/modules.xml
-.idea/.name
-.idea/compiler.xml
-.idea/copyright/profiles_settings.xml
-.idea/encodings.xml
-.idea/misc.xml
-.idea/modules.xml
-.idea/scopes/scope_settings.xml
-.idea/vcs.xml
-.idea/jsLibraryMappings.xml
-.idea/datasources.xml
-.idea/dataSources.ids
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-.idea/gradle.xml
-.idea/libraries
-.idea/mongoSettings.xml
-
-# OS-specific files
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Logs
-*.log
-logs/
-*.log.*
-*.logs
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-.nyc_output
-
-# Dependency directories
+!**/testData/**/*.iml
 node_modules/
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Application specific
-application.properties
-application-local.properties
-application-dev.properties
-application-prod.properties
-config/
-secrets/
-*.p12
-*.pfx
-*.pem
-*.crt
-*.key
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.temp
-
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Profiling
-*.prof
-
-# Heap dumps
-*.hprof
-
-# Docker
-.dockerignore
-
-# Kubernetes
-*.kubeconfig
-
-# Terraform
-*.tfstate
-*.tfstate.*
-.terraform/
-
-# Helm
-charts/*.tgz
-
-# Monitoring and observability
-*.jfr
-*.dump
-
-# Security
-*.p12
-*.jks
-*.keytab
-*.gpg
-
-# Configuration files with secrets
-config/secrets/
-application-secret.properties
-secrets.properties
-
-# Local development
-local/
-dev/
-test-data/
-
-# Build artifacts
-dist/
-output/
-artifacts/
-releases/
-
-# Documentation build
-docs/build/
-docs/_build/
-
-# Test artifacts
-test-results/
-test-output/
-*.test
-
-# Performance profiling
-*.prof
-*.pprof
-
-# Memory dumps
-*.dump
-*.hprof
-
-# Container-specific
-.dockerignore
-docker-compose.override.yml
-
-# CI/CD
-.github/workflows/*.tmp
-.gitlab-ci.yml.local
-
-# Analytics and monitoring
-*.jfr
-*.trace
+.rpt2_cache/
+local.properties
+buildSrcTmp/
+distTmp/
+outTmp/
+/test.output
+/kotlin-native/dist
+kotlin-ide/
+.kotlin/
+.teamcity/
+.npmrc
+/.idea/AndroidProjectSystem.xml
+**/.junie/memory/
+.claude/local.md
+.claude/CLAUDE.md
+.claude/settings.local.json
+**/xcuserdata
+.test-federation.*

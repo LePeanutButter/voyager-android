@@ -15,11 +15,12 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher_brand"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_launcher_brand"
         android:supportsRtl="true"
-        android:theme="@style/Theme.VoyagerTourism"
+        android:theme="@style/Theme.SmarTrip"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
 
@@ -27,7 +28,7 @@
         <activity
             android:name=".presentation.ui.splash.SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.VoyagerTourism.Splash">
+            android:theme="@style/Theme.SmarTrip.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,8 +38,16 @@
         <!-- Main Activity -->
         <activity
             android:name=".presentation.MainActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoyagerTourism.NoActionBar" />
+            android:exported="true"
+            android:theme="@style/Theme.SmarTrip.NoActionBar">
+            <!-- Deep link OAuth (custom scheme: no autoVerify; eso es solo para App Links https) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="smartrip" android:host="auth" />
+            </intent-filter>
+        </activity>
 
         <!-- Network Security Configuration -->
         <meta-data

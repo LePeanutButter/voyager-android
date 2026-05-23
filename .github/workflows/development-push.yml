@@ -1,0 +1,152 @@
+# ===========================================
+# GitHub Actions Workflow: CI Build & Deploy
+# Environment: Development
+# Description:
+#   - Builds and tests Android project using Gradle
+#   - Trivy (APT + skip-setup-trivy) and SonarCloud (SONAR_TOKEN, ORGANIZATION_KEY, PROJECT_KEY)
+#   - Produces APK/Bundle artifacts for QA validation
+#   - Runs on every push to 'development'
+# ===========================================
+
+name: CI Build & Deploy (Android - Development Push)
+
+# -------------------------------------------
+# Trigger: Run workflow on push to 'development' branch
+# -------------------------------------------
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+# -------------------------------------------
+# Jobs Definition
+# -------------------------------------------
+jobs:
+  # =========================================
+  # Job: Security Scan (Trivy)
+  # Purpose: Scan filesystem and dependencies for vulnerabilities
+  # =========================================
+  trivy_scan:
+    name: Run Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y wget apt-transport-https gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -qq
+          sudo apt-get install -y trivy
+
+      # Step 2: Run Trivy filesystem scan
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          skip-setup-trivy: 'true'
+
+  # =========================================
+  # Job: SonarCloud Scan
+  # Purpose: Run static code analysis with SonarCloud
+  # =========================================
+  sonar_scan:
+    name: SonarCloud Analysis (Android)
+    needs: trivy_scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      # Step 3: Ensure Gradle wrapper executable
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Step 4: Compilar, tests unitarios debug y XML JaCoCo (sonar.coverage.jacoco.xmlReportPaths en sonar-project.properties)
+      - name: Assemble, unit tests y JaCoCo (Sonar)
+        run: ./gradlew :app:assembleDebug :app:jacocoTestReport --stacktrace
+
+      # Step 5: SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ secrets.ORGANIZATION_KEY }}
+            -Dsonar.projectKey=${{ secrets.PROJECT_KEY }}
+            -Dsonar.scm.disabled=true
+            -Dsonar.branch.name=development
+            -Dsonar.branch.target=main
+
+  # =========================================
+  # Job: Build & Test Stage
+  # Purpose: Build and test Android project
+  # =========================================
+  build_and_test:
+    name: Build & Test (Android)
+    needs: sonar_scan
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Java environment
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # Step 3: Ensure Gradle wrapper executable
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Step 4: Run build and tests
+      - name: Build project
+        run: ./gradlew build --stacktrace
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      # Step 5: Huellas de firma (CI usa el debug.keystore del runner; registrar su SHA-1 en Google Cloud además del de tu PC)
+      - name: signingReport (SHA-1 para Google OAuth en dispositivos)
+        run: |
+          echo "Paquete de aplicación: com.voyager.tourism"
+          echo "Copia el SHA1 de la variante debug y añádelo en Google Cloud Console junto al SHA-1 de tu máquina local (./gradlew signingReport)."
+          ./gradlew :app:signingReport --no-daemon --console=plain --stacktrace
+
+      - name: Build APK and Bundle
+        run: ./gradlew :app:assembleDebug :app:bundleDebug --stacktrace
+
+      # Step 6: Upload build artifact
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-artifacts
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/outputs/bundle/**/*.aab
